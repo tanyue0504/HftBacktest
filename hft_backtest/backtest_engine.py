@@ -7,14 +7,14 @@ server端创建match engine settlement engine recorder
 创建双端Account
 迭代数据源 推送数据事件到事件引擎 推进时间轴
 """
-from event_engine import EventEngine
-from test.delay_bus import DelayBus
-from dataset import Dataset, MergedDataset
-from match_engine import MatchEngine
-from settlement_engine import SettlementEngine
-from recorder import Recorder
-from account import Account
-from strategy import Strategy
+from hft_backtest.event_engine import EventEngine
+from hft_backtest.delay_bus import DelayBus
+from hft_backtest.dataset import Dataset, MergedDataset
+from hft_backtest.match_engine import MatchEngine
+from hft_backtest.settlement_engine import SettlementEngine
+from hft_backtest.recorder import Recorder
+from hft_backtest.account import Account
+from hft_backtest.strategy import Strategy
 
 class BacktestEngine:
     def __init__(
@@ -35,12 +35,12 @@ class BacktestEngine:
         self.delaybus_server_to_client = DelayBus(
             source_engine=self.server_engine,
             target_engine=self.client_engine,
-            delay_ms=delay_ms,
+            delay=delay_ms,
         )
         self.delaybus_client_to_server = DelayBus(
             source_engine=self.client_engine,
             target_engine=self.server_engine,
-            delay_ms=delay_ms,
+            delay=delay_ms,
         )
         
         # 构建合并数据集
@@ -74,6 +74,13 @@ class BacktestEngine:
 
     def run(self):
         """启动回测引擎"""
-        for data_event in self.merged_dataset:
-            # 推送数据事件到client引擎
-            self.client_engine.put(data_event)
+        with self:
+            for data_event in self.merged_dataset:
+                self.client_engine.put(data_event)
+
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.recorder.close()
+        return False

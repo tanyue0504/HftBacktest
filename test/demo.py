@@ -1,15 +1,45 @@
-"""
-demo.py
-既是框架测试，也是使用示例
+from hft_backtest import *
 
-核心使用流程
-1. 自定义数据集合，有多少数据源就定义多少个 Dataset 子类
-2. 定义策略 Strategy 子类
-3. 构建 BacktestEngine，传入数据集列表和策略类
-4. 运行 BacktestEngine.run() 开始回测
+from my_dataset import Bookticker4, Trades
 
-请注意
-最核心的是撮合引擎
-而撮合引擎与数据息息相关
-目前实现了一个基于binance bookticker & aggTrades/Trades数据的撮合引擎
-"""
+from datetime import datetime
+
+class Demo(Strategy):
+    """
+    简单演示策略
+    """
+    def __init__(
+        self,
+        event_engine: EventEngine,
+    ):
+        super().__init__(event_engine)
+        event_engine.register(Data, self.on_data)
+    
+    def on_data(self, data: Data):
+        """
+        收到数据时打印一下
+        """
+        pass
+        # print(f"[{data.timestamp}] {data.name} data received: {data.data}")
+
+if __name__ == "__main__":
+    # 定义数据集
+    bookticker_ds = Bookticker4("./test/bookTicker_truncated.parquet")
+    trades_ds = Trades("./test/trades_truncated.parquet")
+    
+    # 构建回测引擎
+    engine = BacktestEngine(
+        delay_ms=100,
+        datasets=[bookticker_ds, trades_ds],
+        match_engine_cls=BinanceHftMatcher,
+        settlement_engine_cls=SettlementEngine,
+        recorder_dir="./test/",
+        snapshot_interval=1000 * 60,
+        strategy_cls=Demo,
+    )
+    
+    # 运行回测
+    dt1 = datetime.now()
+    engine.run()
+    dt2 = datetime.now()
+    print(f"Backtest completed in {(dt2 - dt1).total_seconds()} seconds.")

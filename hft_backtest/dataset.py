@@ -1,5 +1,6 @@
-from event_engine import Event
+from hft_backtest.event_engine import Event
 from abc import ABC, abstractmethod
+import heapq
 
 class Data(Event):
     """
@@ -18,6 +19,9 @@ class Data(Event):
         super().__init__(timestamp=timestamp)
         self.data = data
         self.name = name
+
+    def __repr__(self) -> str:
+        return f"Data(name={self.name}, timestamp={self.timestamp}"
 
 class Dataset(ABC):
     """
@@ -40,6 +44,12 @@ class MergedDataset(Dataset):
     每次迭代返回一个“原始”的 Data（直接来自某个数据源）：
       - 在所有当前可用数据中选择 timestamp 最小的 Data
       - 若存在相同最小时间戳，则按传入顺序选择靠前的数据源
+
+    性能优化（偏置归并）：
+      - 维护一个“当前胜者”（最近一次被选中的数据源）
+      - 其它数据源放入最小堆，按 (timestamp, index) 比较
+      - 若当前胜者下一个元素仍不大于堆顶，仅 O(1) 比较即可继续输出
+      - 当需要切换数据源时才进行堆操作，单步 O(log k)
     """
     
     def __init__(self, *datasets: Dataset, name: str = "merged"):
@@ -47,16 +57,50 @@ class MergedDataset(Dataset):
         super().__init__(name)
         self.datasets = datasets
         self.iterators = [iter(ds) for ds in datasets]
-        self.latest_data = [next(it, None) for it in self.iterators]
-    
-    def __iter__(self):
-        while any(self.latest_data):
-            # 选择 (timestamp, index) 最小者，实现时间优先、索引次优先
-            idx, d = min(
-                ((i, d) for i, d in enumerate(self.latest_data) if d is not None),
+
+        # 初始化：取各数据源的首元素，选出初始胜者，其余入堆
+        heads = [next(it, None) for it in self.iterators]
+        available = [(i, d) for i, d in enumerate(heads) if d is not None]
+        if available:
+            self._cur_idx, self._cur_data = min(
+                available,
                 key=lambda t: (t[1].timestamp, t[0])
             )
-            # 直接转发原始 Data
-            yield d
-            # 推进该数据源
-            self.latest_data[idx] = next(self.iterators[idx], None)
+            # 堆中仅保存“非当前胜者”的候选项：(timestamp, index, data)
+            self._heap = [(d.timestamp, i, d) for i, d in available if i != self._cur_idx]
+            heapq.heapify(self._heap)
+        else:
+            self._cur_idx = None
+            self._cur_data = None
+            self._heap = []
+
+    def __iter__(self):
+        if self._cur_data is None: return
+
+        heap = self._heap
+        iters = self.iterators
+        cur_idx, cur_data = self._cur_idx, self._cur_data
+
+        while True:
+            yield cur_data
+
+            # 推进当前胜者迭代器
+            nxt = next(iters[cur_idx], None)
+
+            if nxt is None:  # 当前数据源耗尽
+                if not heap: 
+                    self._cur_data = None  # 标记结束
+                    break
+                _, cur_idx, cur_data = heapq.heappop(heap)
+                continue
+
+            # 快路径：仅比较时间戳
+            if not heap or nxt.timestamp <= heap[0][0]:
+                cur_data = nxt
+                continue
+
+            # 慢路径：切换数据源
+            _, new_idx, new_data = heapq.heapreplace(
+                heap, (nxt.timestamp, cur_idx, nxt)
+            )
+            cur_idx, cur_data = new_idx, new_data

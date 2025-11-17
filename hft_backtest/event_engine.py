@@ -38,16 +38,16 @@ class EventEngine:
     事件的来源是事件引擎的内存地址
     监听器只严格监听注册的事件类型, 不含其父类或子类
     """
-    # 使用__slots__依然可以动态注入接口，因为方法属于类而非实例，注入实例方法实际上是注入绑定了self实例的方法
+    # 不要使用__slots__, 否则无法动态注入接口
     # 极致的性能和内存优化
-    __slots__ = (
-        "timestamp",
-        "listener_dict",
-        "_queue",
-        "_dispatching",
-        "_current_listener",
-        "_id",
-    )
+    # __slots__ = (
+    #     "timestamp",
+    #     "listener_dict",
+    #     "_queue",
+    #     "_dispatching",
+    #     "_current_listener",
+    #     "_id",
+    # )
 
     def __init__(self):
         self.timestamp = 0

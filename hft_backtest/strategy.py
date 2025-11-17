@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 
-from event_engine import EventEngine
-from dataset import Data
-from order import Order, OrderState
+from hft_backtest import EventEngine, Data, Order, OrderState
 
 class Strategy(ABC):
     """
@@ -15,6 +13,7 @@ class Strategy(ABC):
 
     def send_order(self, order: Order):
         """发送订单到事件引擎"""
+        assert order.state == OrderState.CREATED or order.is_cancel
         order.state = OrderState.SUBMITTED
         self.event_engine.put(order)
 

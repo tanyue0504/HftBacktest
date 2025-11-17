@@ -2,6 +2,8 @@ from enum import Enum, auto
 from itertools import count
 from typing import Optional
 
+from hft_backtest import Event
+
 class OrderType(Enum):
     """
     订单类型
@@ -30,7 +32,7 @@ class OrderState(Enum):
     FILLED = auto()
     CANCELED = auto()
 
-class Order:
+class Order(Event):
     """
     单一订单类型，通过 order_type 区分业务语义。
     字段：
@@ -66,6 +68,7 @@ class Order:
         filled_price: Optional[float] = None,
         commission_fee: Optional[float] = None,
     ):
+        super().__init__()
         self.order_id = order_id
         self.order_type = order_type
         self.symbol = symbol

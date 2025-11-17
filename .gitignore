@@ -1,3 +1,12 @@
+# ignore data files
+*.zip
+*.csv
+*.parquet
+
+# ignore jupyter notebook checkpoints
+.ipynb_checkpoints/
+*.ipynb
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

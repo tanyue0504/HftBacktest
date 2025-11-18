@@ -205,6 +205,33 @@ class Bookticker4(Dataset):
                 name=self.name
             )
 
+class Bookticker5(Dataset):
+    """
+    parquet
+    iter tuples
+    """
+    def __init__(
+        self,
+        path: str,
+        chunksize: int = 10**6,
+        name: str = "bookTicker",
+    ):
+        super().__init__(name)
+        self.path = path
+        self.chunksize = chunksize
+
+    def __iter__(self):
+        pq_file = pq.ParquetFile(self.path)
+        chunk_size = self.chunksize
+        for batch in pq_file.iter_batches(batch_size=chunk_size):
+            df = batch.to_pandas()
+            for tp in df.itertuples():
+                yield Data(
+                    timestamp=tp.transaction_time,
+                    data=tp,
+                    name=self.name
+                )
+
 class Trades(Dataset):
     """
     parquet trades数据集示例
@@ -272,6 +299,16 @@ def main():
         chunksize=10**3,
     )
     test_push_data(dataset7)
+    dataset8 = Bookticker5(
+        path="./test/bookTicker_truncated.parquet",
+        chunksize=10**6,
+    )
+    test_push_data(dataset8)
 
 if __name__ == "__main__":
-    main()
+    dataset8 = Bookticker5(
+        path="./test/bookTicker_truncated.parquet",
+        chunksize=10**6,
+    )
+    test_push_data(dataset8)
+    # main()

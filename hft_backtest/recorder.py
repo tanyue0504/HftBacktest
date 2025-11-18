@@ -1,7 +1,7 @@
 import time
 from pathlib import Path
 
-from hft_backtest import CalcFundingRate, EventEngine, Order, OrderState
+from hft_backtest import CalcFundingRate, EventEngine, Order, OrderState, Data
 
 class Recorder:
     """
@@ -111,6 +111,7 @@ class Recorder:
     def on_order(self, order: Order):
         # 更新引擎时间戳
         self.engine_timestamp = self.event_engine.timestamp
+
         # 仅在成交时累计
         if order.state != OrderState.FILLED:
             return
@@ -125,7 +126,12 @@ class Recorder:
     def on_calc_funding_rate(self, event: CalcFundingRate):
         # 更新引擎时间戳
         self.engine_timestamp = self.event_engine.timestamp
+
         # 解析资金费
         self.funding_fee_dict = event.funding_rate_dict
         # 强制快照
         self.snapshot(forced=True)
+
+    def on_data(self, data:Data):
+        # 更新时间戳
+        self.engine_timestamp = data.timestamp

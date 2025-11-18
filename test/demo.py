@@ -32,7 +32,7 @@ if __name__ == "__main__":
         delay_ms=100,
         datasets=[bookticker_ds, trades_ds],
         match_engine_cls=BinanceHftMatcher,
-        settlement_engine_cls=SettlementEngine,
+        settlement_engine_cls=ClearerEngine,
         recorder_dir="./test/",
         snapshot_interval=1000 * 60,
         strategy_cls=Demo,

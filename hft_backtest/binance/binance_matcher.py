@@ -1,28 +1,6 @@
-from abc import ABC, abstractmethod
 import pandas as pd
 
-from hft_backtest import EventEngine, Order, OrderState, OrderType, Data
-
-class MatchEngine(ABC):
-    """
-    撮合引擎抽象基类
-    监听订单事件和数据事件，处理订单撮合逻辑
-    订单状态发生变化时，推送订单最新状态到事件引擎
-    """
-    def __init__(self, event_engine: EventEngine):
-        self.event_engine = event_engine
-        self.event_engine.register(Order, self.on_order)
-        self.event_engine.register(Data, self.on_data)
-    
-    @abstractmethod
-    def on_order(self, order: Order):
-        """处理订单事件的抽象方法"""
-        pass
-    
-    @abstractmethod
-    def on_data(self, data: Data):
-        """处理数据事件的抽象方法"""
-        pass
+from hft_backtest import EventEngine, MatchEngine, Order, OrderState, OrderType, Data
 
 class BinanceHftMatcher(MatchEngine):
     """

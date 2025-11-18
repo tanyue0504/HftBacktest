@@ -2,6 +2,8 @@ from hft_backtest import Event, EventEngine
 
 class DelayBus:
     """
+    注意DelayBus不属于组件，更像是BacktestEngine的辅助类
+
     监听源事件引擎的消息
     将源自源事件引擎的消息滞后一定时间后再发布到目标事件引擎
 
@@ -19,8 +21,8 @@ class DelayBus:
         self.source_engine = source_engine
         self.target_engine = target_engine
         self.event_queue = []
-        # 注册监听源事件引擎
-        self.source_engine.register(Event, self.on_event)
+        # 注册监听源事件引擎, 全局监听, 最后监听（防止在delay=0时事件先于其他组件推送到目标引擎）
+        self.source_engine.global_register(self.on_event, is_senior=False)
 
     def on_event(self, event:Event):
         assert isinstance(event, Event)

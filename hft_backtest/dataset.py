@@ -13,15 +13,15 @@ class Data(Event):
     def __init__(
         self,
         timestamp:int,
+        name:str,
         data,
-        name:str
     ):
         super().__init__(timestamp=timestamp)
         self.data = data
         self.name = name
 
     def __repr__(self) -> str:
-        return f"Data(name={self.name}, timestamp={self.timestamp}"
+        return f"Data(name={self.name}, timestamp={self.timestamp})"
 
 class Dataset(ABC):
     """

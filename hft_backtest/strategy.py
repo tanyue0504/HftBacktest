@@ -8,8 +8,8 @@ class Strategy(Component, ABC):
     on_data方法需要被子类实现
     """
 
-    def __init__(self, event_engine: EventEngine):
-        self.event_engine = event_engine
+    def __init__(self):
+        super().__init__()
 
     def send_order(self, order: Order):
         """发送订单到事件引擎"""

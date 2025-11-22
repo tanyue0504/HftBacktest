@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Callable, Type, Optional
 from collections import deque
 from itertools import chain
+import copy
 
 class Event:
     """
@@ -28,6 +29,9 @@ class Event:
 
     def __repr__(self) -> str:
         return f"Event(timestamp={self.timestamp}, source={self.source})"
+    
+    def copy(self) -> "Event":
+        return copy.copy(self)
 
 class EventEngine:
     """
@@ -92,8 +96,10 @@ class EventEngine:
         assert listener not in [l[0] for l in lst]
         lst.append((listener, ignore_self))
 
-    def put(self, event: Event):
+    def put(self, event: Event, is_copy: bool = True):
         assert isinstance(event, Event)
+        if is_copy:
+            event = event.copy()
         # 标注来源
         if event.source is None:
             event.source = self._id

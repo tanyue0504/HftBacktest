@@ -1,9 +1,9 @@
 import pandas as pd
 from math import isclose
 
-from hft_backtest import Order, OrderState, EventEngine, Data, Component
+from hft_backtest import EventEngine, Component, Order, OrderState, Data, Account
 
-class Account(Component):
+class BinanceAccount(Account):
     """
     账户类
     1. 监听Order事件 维护订单状态和持仓状态
@@ -17,34 +17,24 @@ class Account(Component):
         self.position_dict: dict[str, float] = {}
         self.price_dict: dict[str, float] = {}
 
-    def start(self, engine: EventEngine):
-        # 注册监听
-        engine.register(Order, self.on_order)
-        engine.register(Data, self.on_data)
-        # 接口注入
-        engine.get_orders = self.get_orders
-        engine.get_positions = self.get_positions
-        engine.get_prices = self.get_prices
-
-    def stop(self):
-        pass
-
     def on_order(self, order: Order):
         assert isinstance(order, Order)
         # 撤单指令本身不计入账户状态（目标订单的状态变更会单独推送）
         if order.is_cancel:
             return
         # 状态机处理
-        st = order.state
-        if st in (OrderState.CREATED, OrderState.SUBMITTED, OrderState.RECEIVED):
+        state = order.state
+        # 不能是CREATED状态, 这表明不是通过send_order接口发出的订单
+        assert state != OrderState.CREATED
+        if state in (OrderState.SUBMITTED, OrderState.RECEIVED):
             self.order_dict[order.order_id] = order
             return
-        elif st == OrderState.FILLED:
+        elif state == OrderState.FILLED:
             # 更新持仓
             pos = self.position_dict[order.symbol] = self.position_dict.get(order.symbol, 0.0) + order.quantity
             if isclose(pos, 0.0):
                 del self.position_dict[order.symbol]
-        # 从活跃订单移除
+        # 走到这里要么是成交了要么是撤单了，都从活跃订单移除
         del self.order_dict[order.order_id]
 
     def on_data(self, data: Data):

@@ -53,6 +53,7 @@ class Order(Event):
       - commission_fee: 手续费（撮合后填充）
     """
     _ID_GEN = count()
+    SCALER = 10**8  # 价格和数量的整数化倍数
 
     def __init__(
         self,
@@ -73,7 +74,9 @@ class Order(Event):
         self.order_type = order_type
         self.symbol = symbol
         self.quantity = quantity
+        self._quantity_int = None  # 延迟计算
         self.price = price
+        self._price_int = None  # 延迟计算
         self.state = state
         self.cancel_target_id = cancel_target_id
         self.rank = rank
@@ -115,6 +118,22 @@ Order(
     @property
     def is_cancel(self) -> bool:
         return self.order_type == OrderType.CANCEL_ORDER
+    
+    @property
+    def price_int(self) -> int:
+        if self.price is None:
+            raise ValueError("Order price is None, cannot convert to int.")
+        if self._price_int is None:
+            self._price_int = int(round(self.price * self.SCALER))
+        return self._price_int
+
+    @property
+    def quantity_int(self) -> int:
+        if self.quantity is None:
+            raise ValueError("Order quantity is None, cannot convert to int.")
+        if self._quantity_int is None:
+            self._quantity_int = int(round(self.quantity * self.SCALER))
+        return self._quantity_int
 
     # --- 工厂方法 ---
     @classmethod

@@ -37,6 +37,8 @@ class BinanceRecorder(Recorder):
     pnl(float, 期间盈亏， 不含资金费和手续费)，
     count(int, 该快照期间内的成交次数)
     """
+
+    BUFFER_LINES = 1000  # 写缓存行数
     def __init__(
         self,
         dir_path: str,          # 记录文件夹路径
@@ -71,15 +73,21 @@ class BinanceRecorder(Recorder):
         self.count_dict = {}           # symbol -> count 期间累计
         self.last_position_cash_dict = {}  # symbol -> 上次持仓价值
 
-
+        # 写缓存
+        self.trade_buffer = []
+        self.snapshot_buffer = []
 
     def stop(self):
         # 强行记录
         self.snapshot(forced=True)
-        # 关闭记录文件
+        # 刷新写缓存
+        self.trade_file.writelines(self.trade_buffer)
+        self.snapshot_file.writelines(self.snapshot_buffer)
+        # 写入磁盘
         self.trade_file.flush()
-        self.trade_file.close()
         self.snapshot_file.flush()
+        # 关闭记录文件
+        self.trade_file.close()
         self.snapshot_file.close()
 
     def snapshot(self, forced: bool = False):
@@ -94,7 +102,6 @@ class BinanceRecorder(Recorder):
         positions = self.event_engine.get_positions()
         prices = self.event_engine.get_prices()
         # 计算并写入每个symbol的快照
-        lines = []
         for symbol in set(self.commission_fee_dict.keys()).union(self.pnl_dict.keys()).union(self.count_dict.keys()).union(self.last_position_cash_dict.keys()).union(positions.keys()):
             position_cash = positions.get(symbol, 0.0) * prices.get(symbol, 0.0)
             margin = abs(position_cash)
@@ -103,10 +110,10 @@ class BinanceRecorder(Recorder):
             pnl = position_cash - self.last_position_cash_dict.get(symbol, 0.0) + self.pnl_dict.get(symbol, 0.0)
             self.last_position_cash_dict[symbol] = position_cash
             count = self.count_dict.get(symbol, 0)
-            lines.append(f"{timestamp},{symbol},{position_cash},{margin},{funding_fee},{commission_fee},{pnl},{count}\n")
+            self.snapshot_buffer.append(f"{timestamp},{symbol},{position_cash},{margin},{funding_fee},{commission_fee},{pnl},{count}\n")
         # 写入快照文件
-        self.snapshot_file.writelines(lines)
-        self.snapshot_file.flush()
+        if len(self.snapshot_buffer) >= self.BUFFER_LINES:
+            self.snapshot_file.writelines(self.snapshot_buffer)
         # 重置累计字段
         self.funding_fee_dict.clear()
         self.commission_fee_dict.clear()
@@ -128,7 +135,9 @@ class BinanceRecorder(Recorder):
         self.snapshot(forced=False)
         # 记录成交
         line = f"{self.engine_timestamp},{order.symbol},{order.quantity},{order.filled_price},{order.commission_fee}\n"
-        self.trade_file.write(line)
+        self.trade_buffer.append(line)
+        if len(self.trade_buffer) >= self.BUFFER_LINES:
+            self.trade_file.writelines(self.trade_buffer)
 
     def on_calc_funding_rate(self, event: ClearerEngine):
         # 更新引擎时间戳

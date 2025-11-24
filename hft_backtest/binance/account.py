@@ -1,8 +1,4 @@
-import pandas as pd
 from math import isclose
-
-from zmq import has
-
 from hft_backtest import Order, OrderState, Data, Account
 
 class BinanceAccount(Account):
@@ -33,8 +29,8 @@ class BinanceAccount(Account):
             return
         elif state == OrderState.FILLED:
             # 更新持仓
-            pos = self.position_dict[order.symbol] = self.position_dict.get(order.symbol, 0.0) + order.quantity
-            if isclose(pos, 0.0):
+            pos = self.position_dict[order.symbol] = self.position_dict.get(order.symbol, 0) + order.quantity_int
+            if pos == 0:
                 del self.position_dict[order.symbol]
         # 走到这里要么是成交了要么是撤单了，都从活跃订单移除
         del self.order_dict[order.order_id]
@@ -51,7 +47,7 @@ class BinanceAccount(Account):
         return self.order_dict.copy()
     
     def get_positions(self):
-        return self.position_dict.copy()
+        return {k:v/Order.SCALER for k,v in self.position_dict.items()}
 
     def get_prices(self):
         return self.price_dict.copy()

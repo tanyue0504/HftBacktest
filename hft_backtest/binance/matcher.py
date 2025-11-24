@@ -1,5 +1,4 @@
-from collections import deque, defaultdict
-from hmac import new
+from collections import deque, defaultdict, OrderedDict
 from hft_backtest import MatchEngine, Order, OrderState, OrderType, Data
 
 class BinanceMatcher(MatchEngine):
@@ -17,7 +16,7 @@ class BinanceMatcher(MatchEngine):
     4. Truth Table Matching: Crossing(Fill) / Capture(Fill) / Queue(Rank).
     """
     
-    PRICE_SCALAR = 100_000_000  # 1e8，支持8位小数精度
+    PRICE_SCALAR = Order.SCALER # 与 Order 类保持一致的价格整数化倍数
     SIDE_BUY = 0
     SIDE_SELL = 1
 
@@ -34,11 +33,11 @@ class BinanceMatcher(MatchEngine):
         # 等待队列：Symbol -> Deque[Order]
         self.pending_order_dict = defaultdict(deque)
         
-        # 核心订单簿：Symbol -> Side (0/1) -> Price(Int) -> Deque[Order]
-        # 使用 lambda 嵌套实现自动初始化
+        # 核心订单簿修改：使用 OrderedDict
+        # Symbol -> Side -> Price(Int) -> OrderedDict[order_id, Order]
         self.order_book = defaultdict(lambda: {
-            self.SIDE_BUY: defaultdict(deque),
-            self.SIDE_SELL: defaultdict(deque)
+            self.SIDE_BUY: defaultdict(OrderedDict),
+            self.SIDE_SELL: defaultdict(OrderedDict)
         })
         
         # 极值缓存：Symbol -> {'max_buy': int|None, 'min_sell': int|None}
@@ -63,16 +62,16 @@ class BinanceMatcher(MatchEngine):
         return int(round(price * self.PRICE_SCALAR))
 
     def _add_order_to_book(self, order: Order, price_int: int, side: int):
-        """ 将订单加入订单簿并维护极值 """
         symbol = order.symbol
         book = self.order_book[symbol][side]
         bounds = self.bounds[symbol]
         
-        # 1. 入库
-        book[price_int].append(order)
+        # 1. 入库 (使用 order_id 作为 key)
+        # OrderedDict 自动维护插入顺序，模拟了队列的 append
+        book[price_int][order.order_id] = order
         self.order_index[order.order_id] = (symbol, side, price_int)
         
-        # 2. 维护极值 (O(1))
+        # 2. 维护极值
         if side == self.SIDE_BUY:
             if bounds['max_buy'] is None or price_int > bounds['max_buy']:
                 bounds['max_buy'] = price_int
@@ -87,12 +86,11 @@ class BinanceMatcher(MatchEngine):
 
         symbol, side, price_int = self.order_index[order.order_id]
         
-        # 1. 从 deque 移除 (注意：这里假设 Order 对象引用一致，deque.remove 是 O(N))
-        # 在极高频优化中，可以使用双向链表节点。但在 Python deque 中，若 N 不大尚可接受。
-        try:
-            self.order_book[symbol][side][price_int].remove(order)
-        except ValueError:
-            pass # 已经被删除了
+        # 1. 从 OrderedDict 移除 (O(1))
+        # 之前是 deque.remove(order) -> O(N)
+        bucket = self.order_book[symbol][side][price_int]
+        if order.order_id in bucket:
+            del bucket[order.order_id]
             
         del self.order_index[order.order_id]
         
@@ -156,44 +154,42 @@ class BinanceMatcher(MatchEngine):
             new_order.order_type = OrderType.LIMIT_ORDER
             if new_order.quantity > 0:
                 new_order.price = line.best_bid_price
-                new_order._price_int = bid_int
             else:
                 new_order.price = line.best_ask_price
-                new_order._price_int = ask_int
 
         # --- Limit Buy ---
         if new_order.quantity > 0:
             # 1. Taker (Crossing Ask)
-            if new_order._price_int >= ask_int:
+            if new_order.price_int >= ask_int:
                 self.fill_order(new_order, line.best_ask_price, is_taker=True)
                 return
 
             # 2. Maker (Init Rank or None)
-            if new_order._price_int == bid_int:
+            if new_order.price_int == bid_int:
                 new_order.rank = line.best_bid_qty
                 new_order.traded = 0
             else:
                 new_order.rank = None
                 new_order.traded = 0
             
-            self._add_order_to_book(new_order, new_order._price_int, self.SIDE_BUY)
+            self._add_order_to_book(new_order, new_order.price_int, self.SIDE_BUY)
 
         # --- Limit Sell ---
         elif new_order.quantity < 0:
             # 1. Taker (Crossing Bid)
-            if new_order._price_int <= bid_int:
+            if new_order.price_int <= bid_int:
                 self.fill_order(new_order, line.best_bid_price, is_taker=True)
                 return
 
             # 2. Maker (Init Rank or None)
-            if new_order._price_int == ask_int:
+            if new_order.price_int == ask_int:
                 new_order.rank = line.best_ask_qty
                 new_order.traded = 0
             else:
                 new_order.rank = None
                 new_order.traded = 0
                 
-            self._add_order_to_book(new_order, new_order._price_int, self.SIDE_SELL)
+            self._add_order_to_book(new_order, new_order.price_int, self.SIDE_SELL)
             # 推送事件：订单已挂入
             self.event_engine.put(new_order)
 
@@ -217,7 +213,7 @@ class BinanceMatcher(MatchEngine):
             for price_int in list(buy_book.keys()):
                 bucket = buy_book[price_int]
                 # 对该价位的所有订单进行快照遍历
-                for order in list(bucket):
+                for order in list(bucket.values()):
                     # 1. 被动成交 (Ask 砸穿)
                     if price_int >= ask_int:
                         self.fill_order(order, order.price, is_taker=False)
@@ -303,8 +299,8 @@ class BinanceMatcher(MatchEngine):
             bucket = self.order_book[symbol][self.SIDE_BUY][current_max_price]
             
             # 整个 bucket 全部成交
-            while bucket:
-                order = bucket.popleft()
+            orders_to_fill = list(bucket.values()) 
+            for order in orders_to_fill:
                 self.fill_order(order, order.price, is_taker=False)
             
             # Bucket 空了，移除并更新 max_buy (Lazy Update logic inside _remove is optimized, 
@@ -318,7 +314,7 @@ class BinanceMatcher(MatchEngine):
         if bounds['max_buy'] == trade_price_int:
             bucket = self.order_book[symbol][self.SIDE_BUY][trade_price_int]
             # 必须复制 list，因为 fill_order 会修改 deque
-            for order in list(bucket):
+            for order in list(bucket.values()):
                 # Case A: Capture (Buyer Taker 吃 Ask)
                 if not line.is_buyer_maker:
                     self.fill_order(order, order.price, is_taker=False)

@@ -1,42 +1,60 @@
 from hft_backtest import Event, EventEngine
 from collections import deque
+from hft_backtest import Event, EventEngine
+from collections import deque
+import math
+
 class DelayBus:
-    """
-    注意DelayBus不属于组件，更像是BacktestEngine的辅助类
-
-    监听源事件引擎的消息
-    将源自源事件引擎的消息滞后一定时间后再发布到目标事件引擎
-
-    使用时间戳作为dt的表达, 避免使用datetime类型带来的计算开销
-    高频交易系统消息延迟总线的业务场景是高put, 低update, 使用朴素列表实现比较合理
-    加入了很多断言方便bug调试, 实际使用中请关闭以释放性能
-    """
     def __init__(
         self,
-        source_engine:EventEngine,
-        target_engine:EventEngine,
-        delay:int = 100,
+        source_engine: EventEngine,
+        target_engine: EventEngine,
+        delay: int = 100,
     ):
         self.delay = delay
         self.source_engine = source_engine
         self.target_engine = target_engine
-        self.event_queue = deque()  # 存储 (event, ready_time) 元组
-        # 注册监听源事件引擎, 全局监听, 最后监听（防止在delay=0时事件先于其他组件推送到目标引擎）
+        # 存储 (event, ready_time)
+        self.event_queue: deque[tuple[Event, int]] = deque()
+        # 注册监听
         self.source_engine.global_register(self.on_event, is_senior=False)
 
-    def on_event(self, event:Event):
-        assert isinstance(event, Event)
-        # 仅接收源事件引擎的事件
+    def on_event(self, event: Event):
+        # 仅处理源引擎产生的事件
         if event.source == self.source_engine._id:
-            self.event_queue.append((event, event.timestamp + self.delay))
-        # 推送可用事件到目标事件引擎
+            # 计算该事件应该在什么时候到达目标引擎
+            ready_time = event.timestamp + self.delay
+            self.event_queue.append((event, ready_time))
+
+    @property
+    def next_timestamp(self) -> int:
+        """返回队列中最早待处理事件的时间，如果没有则返回无穷大"""
+        if not self.event_queue:
+            return math.inf
+        # 队列是按时间顺序进入的（假设源引擎时间单调递增），所以队头就是最早的
+        return self.event_queue[0][1]
+
+    def process_until(self, timestamp: int):
+        """
+        处理所有 ready_time <= timestamp 的事件
+        将它们推送到 target_engine
+        """
         while self.event_queue:
-            event, ready_time = self.event_queue.popleft()
-            if ready_time <= self.source_engine.timestamp:
-                self.target_engine.put(event)
-            else:
-                self.event_queue.appendleft((event, ready_time))
+            # 偷看队头
+            event, ready_time = self.event_queue[0]
+            
+            if ready_time > timestamp:
                 break
+            
+            # 弹出并处理
+            self.event_queue.popleft()
+            
+            # 【关键】在推送前，必须先把目标引擎的时间更新到 ready_time
+            # 否则目标引擎可能会觉得“时间倒流”或者“时间没变”
+            if self.target_engine.timestamp < ready_time:
+                self.target_engine.timestamp = ready_time
+                
+            self.target_engine.put(event)
 
 if __name__ == "__main__":
     source_engine = EventEngine()

@@ -9,6 +9,10 @@ class Data(Event):
     data: 数据内容 (pd.DataFrame或其他格式)
     name: 数据源名称 (str)
     """
+    __slots__ = (
+        "data",
+        "name",
+    )
     
     def __init__(
         self,

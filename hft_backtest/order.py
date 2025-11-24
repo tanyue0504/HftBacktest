@@ -54,7 +54,21 @@ class Order(Event):
     """
     _ID_GEN = count()
     SCALER = 10**8  # 价格和数量的整数化倍数
-
+    __slots__ = (
+        "order_id",
+        "order_type",
+        "symbol",
+        "quantity",
+        "_quantity_int",
+        "price",
+        "_price_int",
+        "state",
+        "cancel_target_id",
+        "rank",
+        "traded",
+        "filled_price",
+        "commission_fee",
+    )
     def __init__(
         self,
         order_id: int,

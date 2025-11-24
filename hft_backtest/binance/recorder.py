@@ -70,8 +70,12 @@ class BinanceRecorder(Recorder):
 
 
     def stop(self):
-        """关闭记录文件"""
+        # 强行记录
+        self.snapshot(forced=True)
+        # 关闭记录文件
+        self.trade_file.flush()
         self.trade_file.close()
+        self.snapshot_file.flush()
         self.snapshot_file.close()
 
     def snapshot(self, forced: bool = False):
@@ -111,13 +115,15 @@ class BinanceRecorder(Recorder):
         # 仅在成交时累计
         if order.state != OrderState.FILLED:
             return
-        # 更新流量变量
         # 更新pnl时只要记录成交的现金流入流出即可，平仓价值在快照时计算
         self.commission_fee_dict[order.symbol] = self.commission_fee_dict.get(order.symbol, 0.0) + order.commission_fee
         self.pnl_dict[order.symbol] = self.pnl_dict.get(order.symbol, 0.0) - order.quantity * order.filled_price
         self.count_dict[order.symbol] = self.count_dict.get(order.symbol, 0) + 1
         # 调用快照（不强制）
         self.snapshot(forced=False)
+        # 记录成交
+        line = f"{self.engine_timestamp},{order.symbol},{order.quantity},{order.filled_price},{order.commission_fee}\n"
+        self.trade_file.write(line)
 
     def on_calc_funding_rate(self, event: ClearerEngine):
         # 更新引擎时间戳

@@ -14,6 +14,7 @@
 2. 提供注册监听方法
 3. 提供put推送事件方法
 4. 确保事件按顺序推送
+5. 如果组件需要处理并更新状态，务必先derive事件以后再修改
 ### delay_bus
 1. 高频交易回测延迟模拟的核心组件
 2. 监听source event engine的事件，延迟一定时间后推送到target event engine

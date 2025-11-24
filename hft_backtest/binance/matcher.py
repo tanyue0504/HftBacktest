@@ -176,8 +176,9 @@ class BinanceMatcher(MatchEngine):
                 order.traded = 0
             
             self._add_order_to_book(order, order._price_int, self.SIDE_BUY)
-            # 推送事件：订单已挂入
-            self.event_engine.put(order)
+            # 推送事件：订单已挂入（使用derive保持一致性）
+            placed_order = order.derive()
+            self.event_engine.put(placed_order)
 
         # --- Limit Sell ---
         elif order.quantity < 0:
@@ -195,8 +196,9 @@ class BinanceMatcher(MatchEngine):
                 order.traded = 0
                 
             self._add_order_to_book(order, order._price_int, self.SIDE_SELL)
-            # 推送事件：订单已挂入
-            self.event_engine.put(order)
+            # 推送事件：订单已挂入（使用derive保持一致性）
+            placed_order = order.derive()
+            self.event_engine.put(placed_order)
 
     def process_bookTicker_data(self, data: Data):
         line = data.data
@@ -389,9 +391,8 @@ class BinanceMatcher(MatchEngine):
                 self._remove_order_from_book(target_order)
                 self.event_engine.put(canceled_order)
         
-        # 使用derive方法创建新事件，避免修改原事件导致时间戳问题
-        filled_cancel_order = order.derive()
-        filled_cancel_order.state = OrderState.FILLED
+        # 注意：撤单指令本身不需要推送到事件引擎（账户会忽略撤单事件）
+        # 只有目标订单的CANCELED状态需要推送
 
     def _process_market_order(self, order: Order, line):
         if order.quantity > 0:

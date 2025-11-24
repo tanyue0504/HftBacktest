@@ -14,8 +14,10 @@ class Strategy(Component, ABC):
     def send_order(self, order: Order):
         """发送订单到事件引擎"""
         assert order.state == OrderState.CREATED or order.is_cancel
-        order.state = OrderState.SUBMITTED
-        self.event_engine.put(order)
+        # 使用derive方法创建新事件，避免修改原事件导致时间戳问题
+        new_order = order.derive()
+        new_order.state = OrderState.SUBMITTED
+        self.event_engine.put(new_order)
 
     @abstractmethod
     def on_data(self, data: Data):

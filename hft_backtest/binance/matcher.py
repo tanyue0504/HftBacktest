@@ -112,15 +112,17 @@ class BinanceMatcher(MatchEngine):
 
     def fill_order(self, order: Order, filled_price: float, is_taker: bool):
         """ 原子成交 """
-        order.state = OrderState.FILLED
-        order.filled_price = filled_price
+        # 使用derive方法创建新事件，避免修改原事件导致时间戳问题
+        new_order = order.derive()
+        new_order.state = OrderState.FILLED
+        new_order.filled_price = filled_price
         
         raw_fee = abs(filled_price * order.quantity)
-        order.commission_fee = raw_fee * self.taker_fee if is_taker else raw_fee * self.maker_fee
+        new_order.commission_fee = raw_fee * self.taker_fee if is_taker else raw_fee * self.maker_fee
         
         # 从账本中移除
         self._remove_order_from_book(order)
-        self.event_engine.put(order)
+        self.event_engine.put(new_order)
 
     # ==========================
     # Core: 事件入口
@@ -132,9 +134,11 @@ class BinanceMatcher(MatchEngine):
         
         assert order.order_id not in self.order_index
         
-        order.state = OrderState.RECEIVED
+        # 使用derive方法创建新事件，避免修改原事件导致时间戳问题
+        new_order = order.derive()
+        new_order.state = OrderState.RECEIVED
         
-        self.pending_order_dict[order.symbol].append(order)
+        self.pending_order_dict[order.symbol].append(new_order)
 
     def on_data(self, data: Data):
         assert data.name in self.data_processors
@@ -172,6 +176,8 @@ class BinanceMatcher(MatchEngine):
                 order.traded = 0
             
             self._add_order_to_book(order, order._price_int, self.SIDE_BUY)
+            # 推送事件：订单已挂入
+            self.event_engine.put(order)
 
         # --- Limit Sell ---
         elif order.quantity < 0:
@@ -377,11 +383,15 @@ class BinanceMatcher(MatchEngine):
                     break
             
             if target_order:
-                target_order.state = OrderState.CANCELED
+                # 使用derive方法创建新事件，避免修改原事件导致时间戳问题
+                canceled_order = target_order.derive()
+                canceled_order.state = OrderState.CANCELED
                 self._remove_order_from_book(target_order)
-                self.event_engine.put(target_order)
+                self.event_engine.put(canceled_order)
         
-        order.state = OrderState.FILLED
+        # 使用derive方法创建新事件，避免修改原事件导致时间戳问题
+        filled_cancel_order = order.derive()
+        filled_cancel_order.state = OrderState.FILLED
 
     def _process_market_order(self, order: Order, line):
         if order.quantity > 0:

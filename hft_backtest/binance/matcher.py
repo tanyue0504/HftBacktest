@@ -1,4 +1,5 @@
 from collections import deque, defaultdict
+from hmac import new
 from hft_backtest import MatchEngine, Order, OrderState, OrderType, Data
 
 class BinanceMatcher(MatchEngine):
@@ -112,15 +113,16 @@ class BinanceMatcher(MatchEngine):
 
     def fill_order(self, order: Order, filled_price: float, is_taker: bool):
         """ 原子成交 """
-        order.state = OrderState.FILLED
-        order.filled_price = filled_price
+        new_order = order.derive()
+        new_order.state = OrderState.FILLED
+        new_order.filled_price = filled_price
         
-        raw_fee = abs(filled_price * order.quantity)
-        order.commission_fee = raw_fee * self.taker_fee if is_taker else raw_fee * self.maker_fee
+        raw_fee = abs(filled_price * new_order.quantity)
+        new_order.commission_fee = raw_fee * self.taker_fee if is_taker else raw_fee * self.maker_fee
         
         # 从账本中移除
         self._remove_order_from_book(order)
-        self.event_engine.put(order)
+        self.event_engine.put(new_order)
 
     # ==========================
     # Core: 事件入口
@@ -132,9 +134,11 @@ class BinanceMatcher(MatchEngine):
         
         assert order.order_id not in self.order_index
         
-        order.state = OrderState.RECEIVED
+        new_order = order.derive()
+        new_order.state = OrderState.RECEIVED
         
-        self.pending_order_dict[order.symbol].append(order)
+        self.pending_order_dict[new_order.symbol].append(new_order)
+        self.event_engine.put(new_order)
 
     def on_data(self, data: Data):
         assert data.name in self.data_processors
@@ -147,50 +151,51 @@ class BinanceMatcher(MatchEngine):
     def _process_new_entry_order(self, order: Order, line, bid_int: int, ask_int: int):
         """ 处理 Pending 订单入场 """
         # Tracking Order 转换
-        if order.order_type == OrderType.TRACKING_ORDER:
-            order.order_type = OrderType.LIMIT_ORDER
-            if order.quantity > 0:
-                order.price = line.best_ask_price
-                order._price_int = ask_int
+        new_order = order.derive()
+        if new_order.order_type == OrderType.TRACKING_ORDER:
+            new_order.order_type = OrderType.LIMIT_ORDER
+            if new_order.quantity > 0:
+                new_order.price = line.best_bid_price
+                new_order._price_int = bid_int
             else:
-                order.price = line.best_bid_price
-                order._price_int = bid_int
+                new_order.price = line.best_ask_price
+                new_order._price_int = ask_int
 
         # --- Limit Buy ---
-        if order.quantity > 0:
+        if new_order.quantity > 0:
             # 1. Taker (Crossing Ask)
-            if order._price_int >= ask_int:
-                self.fill_order(order, line.best_ask_price, is_taker=True)
+            if new_order._price_int >= ask_int:
+                self.fill_order(new_order, line.best_ask_price, is_taker=True)
                 return
 
             # 2. Maker (Init Rank or None)
-            if order._price_int == bid_int:
-                order.rank = line.best_bid_qty
-                order.traded = 0
+            if new_order._price_int == bid_int:
+                new_order.rank = line.best_bid_qty
+                new_order.traded = 0
             else:
-                order.rank = None
-                order.traded = 0
+                new_order.rank = None
+                new_order.traded = 0
             
-            self._add_order_to_book(order, order._price_int, self.SIDE_BUY)
+            self._add_order_to_book(new_order, new_order._price_int, self.SIDE_BUY)
 
         # --- Limit Sell ---
-        elif order.quantity < 0:
+        elif new_order.quantity < 0:
             # 1. Taker (Crossing Bid)
-            if order._price_int <= bid_int:
-                self.fill_order(order, line.best_bid_price, is_taker=True)
+            if new_order._price_int <= bid_int:
+                self.fill_order(new_order, line.best_bid_price, is_taker=True)
                 return
 
             # 2. Maker (Init Rank or None)
-            if order._price_int == ask_int:
-                order.rank = line.best_ask_qty
-                order.traded = 0
+            if new_order._price_int == ask_int:
+                new_order.rank = line.best_ask_qty
+                new_order.traded = 0
             else:
-                order.rank = None
-                order.traded = 0
+                new_order.rank = None
+                new_order.traded = 0
                 
-            self._add_order_to_book(order, order._price_int, self.SIDE_SELL)
+            self._add_order_to_book(new_order, new_order._price_int, self.SIDE_SELL)
             # 推送事件：订单已挂入
-            self.event_engine.put(order)
+            self.event_engine.put(new_order)
 
     def process_bookTicker_data(self, data: Data):
         line = data.data
@@ -268,13 +273,13 @@ class BinanceMatcher(MatchEngine):
         # ==========================
         pending = self.pending_order_dict[symbol]
         while pending:
-            order = pending.popleft()
-            if order.order_type == OrderType.CANCEL_ORDER:
-                self._process_cancel_internal(order)
-            elif order.order_type == OrderType.MARKET_ORDER:
-                self._process_market_order(order, line)
+            new_order = pending.popleft().derive()
+            if new_order.order_type == OrderType.CANCEL_ORDER:
+                self._process_cancel_internal(new_order)
+            elif new_order.order_type == OrderType.MARKET_ORDER:
+                self._process_market_order(new_order, line)
             else:
-                self._process_new_entry_order(order, line, bid_int, ask_int)
+                self._process_new_entry_order(new_order, line, bid_int, ask_int)
 
     def process_trades_data(self, data: Data):
         """ Walk the Book 撮合 """
@@ -377,11 +382,10 @@ class BinanceMatcher(MatchEngine):
                     break
             
             if target_order:
-                target_order.state = OrderState.CANCELED
+                new_order = target_order.derive()
+                new_order.state = OrderState.CANCELED
                 self._remove_order_from_book(target_order)
-                self.event_engine.put(target_order)
-        
-        order.state = OrderState.FILLED
+                self.event_engine.put(new_order)
 
     def _process_market_order(self, order: Order, line):
         if order.quantity > 0:

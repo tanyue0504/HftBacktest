@@ -45,31 +45,31 @@ def test_dataset():
 class DemoStrategy(Strategy):
     def __init__(self):
         super().__init__()
-        self.flag = False
+        self.flag = 0
 
     def on_data(self, data: Data):
-        if self.flag == False:
+        if self.flag == 0:
             order = Order.tracking_order(
                 symbol="BTCUSDT",
                 quantity=0.001,
             )
             self.send_order(order)
-            self.flag = True
-        elif self.flag == True:
-            while True:
-                positions = self.event_engine.get_positions()
-                if positions:
-                    for symbol, quantity in positions.items():
-                        order = Order.market_order(
-                            symbol=symbol,
-                            quantity=-quantity,
-                        )
-                        self.send_order(order)
-                        self.flag = None
-                else:
-                    break
-        else:
-            exit()
+            self.flag = 1
+        elif self.flag == 1:
+            positions = self.event_engine.get_positions()
+            if positions:
+                for symbol, quantity in positions.items():
+                    order = Order.market_order(
+                        symbol=symbol,
+                        quantity=-quantity,
+                    )
+                    self.send_order(order)
+                    self.flag = 2
+        elif self.flag == 2:
+            if self.event_engine.get_positions():
+                pass
+            else:
+                exit()
         
 
 if __name__ == "__main__":

@@ -37,7 +37,7 @@ class BacktestEngine:
     def run(self):
         with self:
             for data_event in self.dataset:
-                self.server_engine.put(data_event, is_copy=False)
+                self.server_engine.put(data_event)
 
     def __enter__(self):
         for component in self.server_components:

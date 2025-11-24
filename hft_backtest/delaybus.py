@@ -1,5 +1,5 @@
 from hft_backtest import Event, EventEngine
-
+from collections import deque
 class DelayBus:
     """
     注意DelayBus不属于组件，更像是BacktestEngine的辅助类
@@ -20,7 +20,7 @@ class DelayBus:
         self.delay = delay
         self.source_engine = source_engine
         self.target_engine = target_engine
-        self.event_queue = []
+        self.event_queue = deque()  # 存储 (event, ready_time) 元组
         # 注册监听源事件引擎, 全局监听, 最后监听（防止在delay=0时事件先于其他组件推送到目标引擎）
         self.source_engine.global_register(self.on_event, is_senior=False)
 
@@ -30,13 +30,13 @@ class DelayBus:
         if event.source == self.source_engine._id:
             self.event_queue.append((event, event.timestamp + self.delay))
         # 推送可用事件到目标事件引擎
-        remain = []
-        for event, ready_time in self.event_queue:
+        while self.event_queue:
+            event, ready_time = self.event_queue.popleft()
             if ready_time <= self.source_engine.timestamp:
                 self.target_engine.put(event)
             else:
-                remain.append((event, ready_time))
-        self.event_queue = remain
+                self.event_queue.appendleft((event, ready_time))
+                break
 
 if __name__ == "__main__":
     source_engine = EventEngine()

@@ -1,3 +1,4 @@
+from os import posix_openpt
 import time
 from pathlib import Path
 
@@ -8,7 +9,9 @@ class BinanceRecorder(Recorder):
     记录类
 
     关键公式
-    期间盈亏 = 持仓价值 + 现金流入 - 现金流出 - 手续费 - 资金费率
+    累计盈亏 = 持仓价值 + 现金流入 - 现金流出 - 手续费 - 资金费率
+    不考虑手续费和资金费率等，则
+    期间盈亏 = △持仓价值 + 期间现金流入 - 期间现金流出
     持仓价值 = 持仓按市价平仓可带来的现金流入
     若做空视作现金流入, 平仓时视作现金流出
     手续费 = 成交量 * 成交价 * 佣金费率
@@ -66,6 +69,7 @@ class BinanceRecorder(Recorder):
         self.commission_fee_dict = {}  # symbol -> commission_fee 期间累计
         self.pnl_dict = {}             # symbol -> pnl 期间累计
         self.count_dict = {}           # symbol -> count 期间累计
+        self.last_position_cash_dict = {}  # symbol -> 上次持仓价值
 
 
 
@@ -91,12 +95,13 @@ class BinanceRecorder(Recorder):
         prices = self.event_engine.get_prices()
         # 计算并写入每个symbol的快照
         lines = []
-        for symbol in set(self.commission_fee_dict.keys()).union(self.pnl_dict.keys()).union(self.count_dict.keys()):
-            position_cash = - positions.get(symbol, 0.0) * prices.get(symbol, 0.0)
+        for symbol in set(self.commission_fee_dict.keys()).union(self.pnl_dict.keys()).union(self.count_dict.keys()).union(self.last_position_cash_dict.keys()).union(positions.keys()):
+            position_cash = positions.get(symbol, 0.0) * prices.get(symbol, 0.0)
             margin = abs(position_cash)
             funding_fee = self.funding_fee_dict.get(symbol, 0.0)
             commission_fee = self.commission_fee_dict.get(symbol, 0.0)
-            pnl = self.pnl_dict.get(symbol, 0.0) + position_cash
+            pnl = position_cash - self.last_position_cash_dict.get(symbol, 0.0) + self.pnl_dict.get(symbol, 0.0)
+            self.last_position_cash_dict[symbol] = position_cash
             count = self.count_dict.get(symbol, 0)
             lines.append(f"{timestamp},{symbol},{position_cash},{margin},{funding_fee},{commission_fee},{pnl},{count}\n")
         # 写入快照文件

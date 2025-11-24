@@ -27,6 +27,7 @@ class Strategy(Component, ABC):
         pass
 
     def start(self, engine: EventEngine):
+        self.event_engine = engine
         engine.register(Data, self.on_data)
         engine.register(Order, self.on_order)
 

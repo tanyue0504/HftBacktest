@@ -8,3 +8,4 @@ from .backtest import BacktestEngine
 from .recorder import Recorder
 from .account import Account
 from .strategy import Strategy
+from .helper import EventPrinter

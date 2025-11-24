@@ -1,5 +1,5 @@
 from collections import deque, defaultdict
-from hft_backtest import EventEngine, MatchEngine, Order, OrderState, OrderType, Data
+from hft_backtest import MatchEngine, Order, OrderState, OrderType, Data
 
 class BinanceMatcher(MatchEngine):
     """
@@ -132,8 +132,6 @@ class BinanceMatcher(MatchEngine):
         
         assert order.order_id not in self.order_index
         
-        # 预计算整数价格，挂载到对象上
-        order._price_int = self.to_int_price(order.price)
         order.state = OrderState.RECEIVED
         
         self.pending_order_dict[order.symbol].append(order)

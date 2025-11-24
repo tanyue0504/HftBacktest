@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from hmac import new
 from typing import Callable, Type, Optional
 from collections import deque
 from itertools import chain
@@ -32,6 +33,13 @@ class Event:
     
     def copy(self) -> "Event":
         return copy.copy(self)
+    
+    def derive(self) -> "Event":
+        new_event = self.copy()
+        new_event.timestamp = None
+        new_event.source = None
+        new_event.producer = None
+        return new_event
 
 class EventEngine:
     """
@@ -96,14 +104,12 @@ class EventEngine:
         assert listener not in [l[0] for l in lst]
         lst.append((listener, ignore_self))
 
-    def put(self, event: Event, is_copy: bool = True):
+    def put(self, event: Event):
         assert isinstance(event, Event)
-        if is_copy:
-            event = event.copy()
         # 标注来源
         if event.source is None:
             event.source = self._id
-        # 自动标注时间戳或更新引擎时间戳，局部变量提升性能
+        # 自动标注时间戳或更新引擎时间戳
         ts = event.timestamp
         if ts is None:
             event.timestamp = self.timestamp

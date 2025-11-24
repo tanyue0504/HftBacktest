@@ -27,7 +27,7 @@ class DelayBus:
     def on_event(self, event:Event):
         assert isinstance(event, Event)
         # 仅接收源事件引擎的事件
-        if event.source == id(self.source_engine):
+        if event.source == self.source_engine._id:
             self.event_queue.append((event, event.timestamp + self.delay))
         # 推送可用事件到目标事件引擎
         remain = []
@@ -43,7 +43,11 @@ if __name__ == "__main__":
     target_engine = EventEngine()
     source_engine.register(Event, lambda e: print(f"Source engine received {e}"))
     target_engine.register(Event, lambda e: print(f"Target engine received {e}"))
-    delay_bus = DelayBus(source_engine, target_engine, delay=100)
+    delay_bus1 = DelayBus(source_engine, target_engine, delay=100)
+    delay_bus2 = DelayBus(target_engine, source_engine, delay=100)
     for i in range(5):
-        event = Event(timestamp=i * 50)
+        event = Event(timestamp= source_engine.timestamp + 50)
         source_engine.put(event)
+    for i in range(5):
+        event = Event(timestamp= target_engine.timestamp + 50)
+        target_engine.put(event)

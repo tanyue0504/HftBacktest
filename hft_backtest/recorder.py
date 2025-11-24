@@ -14,6 +14,7 @@ class Recorder(Component, ABC):
         pass
 
     def start(self, event_engine: EventEngine):
+        self.event_engine = event_engine
         event_engine.register(Order, self.on_order)
         event_engine.register(Data, self.on_data)
 

@@ -1,7 +1,9 @@
 import pandas as pd
 from math import isclose
 
-from hft_backtest import EventEngine, Component, Order, OrderState, Data, Account
+from zmq import has
+
+from hft_backtest import Order, OrderState, Data, Account
 
 class BinanceAccount(Account):
     """
@@ -41,13 +43,9 @@ class BinanceAccount(Account):
         # 仅维护成交价数据
         if data.name != "trades":
             return
-        df: pd.DataFrame = data.data
-        if df.empty or 'symbol' not in df.columns or 'price' not in df.columns:
-            return
-        # 每个 symbol 的最后价格
-        last = df.groupby('symbol', sort=False).tail(1)
-        price_map = last.set_index('symbol')['price'].to_dict()
-        self.price_dict.update(price_map)
+        line = data.data
+        assert hasattr(line, 'symbol') and hasattr(line, 'price')
+        self.price_dict[line.symbol] = line.price
 
     def get_orders(self):
         return self.order_dict.copy()

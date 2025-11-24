@@ -1,7 +1,6 @@
 from hft_backtest import *
+from hft_backtest.binance import BinanceAccount, BinanceMatcher, BinanceRecorder
 
-from hft_backtest import EventEngine
-from my_dataset import Bookticker4, Trades
 import pyarrow.parquet as pq
 from datetime import datetime
 
@@ -49,10 +48,29 @@ class DemoStrategy(Strategy):
         self.flag = False
 
     def on_data(self, data: Data):
-        if self.flag:
-            return
-        print(f"Received data: {data}")
-        self.flag = True
+        if self.flag == False:
+            order = Order.tracking_order(
+                symbol="BTCUSDT",
+                quantity=0.001,
+            )
+            self.send_order(order)
+            self.flag = True
+        elif self.flag == True:
+            while True:
+                positions = self.event_engine.get_positions()
+                if positions:
+                    for symbol, quantity in positions.items():
+                        order = Order.market_order(
+                            symbol=symbol,
+                            quantity=-quantity,
+                        )
+                        self.send_order(order)
+                        self.flag = None
+                else:
+                    break
+        else:
+            exit()
+        
 
 if __name__ == "__main__":
     # test_dataset()
@@ -61,8 +79,21 @@ if __name__ == "__main__":
     trades = BinanceData('trades', "./data/trades_truncated.parquet", symbol="BTCUSDT", timecol="time")
     
     demo = DemoStrategy()
-    engine = BacktestEngine(
-        datasets=[bookticker, trades],
+    backtest_engine = BacktestEngine(datasets=[bookticker, trades], delay=100)
+    matcher = BinanceMatcher()
+    backtest_engine.add_component(matcher, is_server=True)
+    real_account = BinanceAccount()
+    backtest_engine.add_component(real_account, is_server=True)
+    recorder = BinanceRecorder(
+        dir_path="./record",
+        snapshot_interval=60000,
     )
-    engine.add_component(demo, is_server=False)
-    engine.run()
+    backtest_engine.add_component(recorder, is_server=True)
+    server_printer = EventPrinter("server:", event_types=[Order])
+    backtest_engine.add_component(server_printer, is_server=True)
+    client_printer = EventPrinter("client:", event_types=[Order])
+    backtest_engine.add_component(client_printer, is_server=False)
+    local_account = BinanceAccount()
+    backtest_engine.add_component(local_account, is_server=False)
+    backtest_engine.add_component(demo, is_server=False)
+    backtest_engine.run()

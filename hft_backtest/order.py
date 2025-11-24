@@ -81,6 +81,24 @@ class Order(Event):
         self.filled_price = filled_price
         self.commission_fee = commission_fee
 
+    def __repr__(self) -> str:
+        return f"""
+Order(
+    timestamp={self.timestamp},
+    id={self.order_id},
+    type={self.order_type.name},
+    state={self.state.name if self.state else None},
+    symbol={self.symbol},
+    qty={self.quantity},
+    price={self.price},
+    cancel_target_id={self.cancel_target_id},
+    rank={self.rank},
+    traded={self.traded},
+    filled_price={self.filled_price},
+    commission_fee={self.commission_fee}
+)
+        """
+
     # --- 便捷类型判断 ---
     @property
     def is_limit(self) -> bool:

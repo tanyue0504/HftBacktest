@@ -1,9 +1,9 @@
 import time
 from pathlib import Path
 
-from hft_backtest import ClearerEngine, EventEngine, Order, OrderState, Data
+from hft_backtest import Recorder, ClearerEngine, EventEngine, Order, OrderState, Data
 
-class Recorder:
+class BinanceRecorder(Recorder):
     """
     记录类
 
@@ -36,13 +36,11 @@ class Recorder:
     """
     def __init__(
         self,
-        event_engine: EventEngine,
         dir_path: str,          # 记录文件夹路径
         snapshot_interval: int, # 快照间隔，单位毫秒
     ):
         # 生成当前秒级时间戳, 用于记录文件命名
         timestamp = int(time.time())
-        self.event_engine = event_engine
         self.dir_path = Path(dir_path)
         self.dir_path.mkdir(parents=True, exist_ok=True)
         self.snapshot_interval = snapshot_interval
@@ -69,11 +67,9 @@ class Recorder:
         self.pnl_dict = {}             # symbol -> pnl 期间累计
         self.count_dict = {}           # symbol -> count 期间累计
 
-        # 注册监听
-        event_engine.register(Order, self.on_order)
-        event_engine.register(ClearerEngine, self.on_calc_funding_rate)
 
-    def close(self):
+
+    def stop(self):
         """关闭记录文件"""
         self.trade_file.close()
         self.snapshot_file.close()

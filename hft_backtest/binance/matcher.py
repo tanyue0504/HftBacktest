@@ -130,7 +130,8 @@ class BinanceMatcher(MatchEngine):
         self.event_engine.put(new_order)
 
     def on_data(self, data: Data):
-        assert data.name in self.data_processors
+        if data.name not in self.data_processors:
+            return
         self.data_processors[data.name](data)
 
     # ==========================
@@ -356,7 +357,7 @@ class BinanceMatcher(MatchEngine):
             
             # --- 1. 撤单 ---
             if order.order_type == OrderType.CANCEL_ORDER:
-                self._cancel_order(order)
+                self._cancel_order(order.cancel_target_id)
                 continue
 
             # --- 2. Market Order (Assumption: Infinite Liquidity) ---

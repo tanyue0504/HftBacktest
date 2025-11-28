@@ -132,7 +132,7 @@ class EventEngine:
             senior_global_lst = self.senior_global_listeners
             junior_global_lst = self.junior_global_listeners
             # 已经禁止派发期修改监听器集合，因此不拷贝
-            lst_local = listener_dict.get(type(event), [])
+            lst_local = listener_dict.get(type(event)) or ()
             # 已经禁止派发期修改监听器集合，因此不拷贝
             for listener, ignore_self in chain(senior_global_lst, lst_local, junior_global_lst):
                 if ignore_self and event.producer is listener:

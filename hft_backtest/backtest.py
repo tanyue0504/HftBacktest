@@ -11,6 +11,8 @@ class BacktestEngine:
         self,
         datasets: list[Dataset],
         delay:int = 0, # unit: ms
+        start_timestamp: int = None,
+        end_timestamp: int = None,
     ):
         self.dataset = MergedDataset(*datasets)
         self.server_engine = EventEngine()
@@ -27,6 +29,8 @@ class BacktestEngine:
             self.server_engine,
             delay
         )
+        self.start_timestamp = start_timestamp
+        self.end_timestamp = end_timestamp
 
 
     def add_component(self, component:Component, is_server: bool):
@@ -52,6 +56,11 @@ class BacktestEngine:
                 t_c2s = self.client2server_bus.next_timestamp
                 
                 min_t = min(t_data, t_s2c, t_c2s)
+                # 时光回放
+                if self.start_timestamp is not None and min_t < self.start_timestamp:
+                    continue
+                if self.end_timestamp is not None and min_t > self.end_timestamp:
+                    break
 
                 # 2. 谁的时间到了，就处理谁
                 

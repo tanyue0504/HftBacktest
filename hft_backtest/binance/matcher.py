@@ -1,22 +1,11 @@
 from collections import deque, defaultdict, OrderedDict
+import math
+from operator import is_
 from hft_backtest import MatchEngine, Order, OrderState, OrderType, Data
 
 class BinanceMatcher(MatchEngine):
-    """
-    Binance 高频撮合引擎 (最终优化版)
-    
-    Data Structures:
-    - OrderBook: Symbol -> Side -> Price(Int) -> Deque[Order]
-    - Pending: Symbol -> Deque[Order]
-    
-    Key Logics:
-    1. Scaled Integer: Global scalar 1e8 for safe price comparison.
-    2. Lazy Bounds: Maintain max_buy/min_sell, recalculate only on depletion.
-    3. Strict Sequencing: Maintenance -> Entry -> Cache Update.
-    4. Truth Table Matching: Crossing(Fill) / Capture(Fill) / Queue(Rank).
-    """
-    
-    PRICE_SCALAR = Order.SCALER # 与 Order 类保持一致的价格整数化倍数
+
+    PRICE_SCALAR = Order.SCALER 
     SIDE_BUY = 0
     SIDE_SELL = 1
 
@@ -29,88 +18,83 @@ class BinanceMatcher(MatchEngine):
         self.maker_fee = maker_fee
         
         # --- 数据结构 ---
-        
-        # 等待队列：Symbol -> Deque[Order]
         self.pending_order_dict = defaultdict(deque)
         
-        # 核心订单簿修改：使用 OrderedDict
         # Symbol -> Side -> Price(Int) -> OrderedDict[order_id, Order]
         self.order_book = defaultdict(lambda: {
             self.SIDE_BUY: defaultdict(OrderedDict),
             self.SIDE_SELL: defaultdict(OrderedDict)
         })
-        
-        # 极值缓存：Symbol -> {'max_buy': int|None, 'min_sell': int|None}
-        self.bounds = defaultdict(lambda: {'max_buy': None, 'min_sell': None})
-        
-        # 辅助索引：Order ID -> (Symbol, Side, PriceInt)
-        # 用于快速定位撤单
+        # 辅助索引: order_id -> (symbol, side, price_int)
         self.order_index = {}
+        
+        # 极值缓存: symbol -> max or min price int
+        self.max_buy_int = {}
+        self.min_sell_int = {}
 
-        # 数据分发
+        # 缓存最新bid ask price, 用于on_trade处理
+        self.bid_price_int = {}
+        self.ask_price_int = {}
+
         self.data_processors = {
             "bookTicker": self.process_bookTicker_data,
             "trades": self.process_trades_data,
         }
 
     # ==========================
-    # Helper: 价格转换与账本维护
+    # Helper Methods
     # ==========================
 
     def to_int_price(self, price: float) -> int:
-        """ 将浮点价格转换为整数，避免精度问题 """
         return int(round(price * self.PRICE_SCALAR))
 
-    def _add_order_to_book(self, order: Order, price_int: int, side: int):
+    def _add_order_to_book(self, order: Order):
         symbol = order.symbol
+        side = self.SIDE_BUY if order.quantity > 0 else self.SIDE_SELL
+        price_int = order.price_int
         book = self.order_book[symbol][side]
-        bounds = self.bounds[symbol]
         
-        # 1. 入库 (使用 order_id 作为 key)
-        # OrderedDict 自动维护插入顺序，模拟了队列的 append
+        # 1. 入库
         book[price_int][order.order_id] = order
         self.order_index[order.order_id] = (symbol, side, price_int)
         
-        # 2. 维护极值
+        # 2. 极值更新
         if side == self.SIDE_BUY:
-            if bounds['max_buy'] is None or price_int > bounds['max_buy']:
-                bounds['max_buy'] = price_int
+            if price_int > self.max_buy_int.get(symbol, -math.inf):
+                self.max_buy_int[symbol] = price_int
         else:
-            if bounds['min_sell'] is None or price_int < bounds['min_sell']:
-                bounds['min_sell'] = price_int
+            if price_int < self.min_sell_int.get(symbol, math.inf):
+                self.min_sell_int[symbol] = price_int
 
     def _remove_order_from_book(self, order: Order):
-        """ 从订单簿移除订单并维护极值 (Lazy Update) """
         if order.order_id not in self.order_index:
             return
 
         symbol, side, price_int = self.order_index[order.order_id]
-        
-        # 1. 从 OrderedDict 移除 (O(1))
-        # 之前是 deque.remove(order) -> O(N)
         bucket = self.order_book[symbol][side][price_int]
+        
         if order.order_id in bucket:
             del bucket[order.order_id]
-            
+        
         del self.order_index[order.order_id]
         
-        # 2. 检查 Bucket 是否空了
-        if not self.order_book[symbol][side][price_int]:
+        # Lazy Update: 如果 bucket 空了，删除 key
+        if not bucket:
             del self.order_book[symbol][side][price_int]
-            
-            # 3. 只有当删除了极值 Bucket 时，才触发 O(K) 重算
-            bounds = self.bounds[symbol]
-            if side == self.SIDE_BUY:
-                if price_int == bounds['max_buy']:
-                    keys = self.order_book[symbol][side].keys()
-                    bounds['max_buy'] = max(keys) if keys else None
+            # 极值更新, 重新计算
+            keys = self.order_book[symbol][side].keys()
+            if keys:
+                if side == self.SIDE_BUY:
+                    self.max_buy_int[symbol] = max(keys)
+                else:
+                    self.min_sell_int[symbol] = min(keys)
             else:
-                if price_int == bounds['min_sell']:
-                    keys = self.order_book[symbol][side].keys()
-                    bounds['min_sell'] = min(keys) if keys else None
+                if side == self.SIDE_BUY:
+                    self.max_buy_int[symbol] = -math.inf
+                else:
+                    self.min_sell_int[symbol] = math.inf
 
-    def fill_order(self, order: Order, filled_price: float, is_taker: bool):
-        """ 原子成交 """
+    def _fill_order(self, order: Order, filled_price: float, is_taker: bool):
         new_order = order.derive()
         new_order.state = OrderState.FILLED
         new_order.filled_price = filled_price
@@ -118,24 +102,31 @@ class BinanceMatcher(MatchEngine):
         raw_fee = abs(filled_price * new_order.quantity)
         new_order.commission_fee = raw_fee * self.taker_fee if is_taker else raw_fee * self.maker_fee
         
-        # 从账本中移除
+        self._remove_order_from_book(order)
+        self.event_engine.put(new_order)
+
+    def _cancel_order(self, order_id:int):
+        if order_id not in self.order_index:
+            return
+        symbol, side, price_int = self.order_index[order_id]
+        order = self.order_book[symbol][side][price_int][order_id]
+        new_order = order.derive()
+        new_order.state = OrderState.CANCELED
         self._remove_order_from_book(order)
         self.event_engine.put(new_order)
 
     # ==========================
-    # Core: 事件入口
+    # Core Event Handlers
     # ==========================
 
     def on_order(self, order: Order):
-        if not (order.is_cancel or order.state == OrderState.SUBMITTED):
+        # 过滤on data里面推送出去的其他订单状态，只处理 SUBMITTED 状态的订单或撤单
+        if not (order.state == OrderState.SUBMITTED or order.is_cancel):
             return
-        
         assert order.order_id not in self.order_index
-        
         new_order = order.derive()
         new_order.state = OrderState.RECEIVED
-        
-        self.pending_order_dict[new_order.symbol].append(new_order)
+        self.pending_order_dict[order.symbol].append(new_order)
         self.event_engine.put(new_order)
 
     def on_data(self, data: Data):
@@ -143,55 +134,8 @@ class BinanceMatcher(MatchEngine):
         self.data_processors[data.name](data)
 
     # ==========================
-    # Logic: 订单处理流程
+    # Data Processing Logic
     # ==========================
-
-    def _process_new_entry_order(self, order: Order, line, bid_int: int, ask_int: int):
-        """ 处理 Pending 订单入场 """
-        # Tracking Order 转换
-        new_order = order.derive()
-        if new_order.order_type == OrderType.TRACKING_ORDER:
-            new_order.order_type = OrderType.LIMIT_ORDER
-            if new_order.quantity > 0:
-                new_order.price = line.best_bid_price
-            else:
-                new_order.price = line.best_ask_price
-
-        # --- Limit Buy ---
-        if new_order.quantity > 0:
-            # 1. Taker (Crossing Ask)
-            if new_order.price_int >= ask_int:
-                self.fill_order(new_order, line.best_ask_price, is_taker=True)
-                return
-
-            # 2. Maker (Init Rank or None)
-            if new_order.price_int == bid_int:
-                new_order.rank = line.best_bid_qty
-                new_order.traded = 0
-            else:
-                new_order.rank = None
-                new_order.traded = 0
-            
-            self._add_order_to_book(new_order, new_order.price_int, self.SIDE_BUY)
-
-        # --- Limit Sell ---
-        elif new_order.quantity < 0:
-            # 1. Taker (Crossing Bid)
-            if new_order.price_int <= bid_int:
-                self.fill_order(new_order, line.best_bid_price, is_taker=True)
-                return
-
-            # 2. Maker (Init Rank or None)
-            if new_order.price_int == ask_int:
-                new_order.rank = line.best_ask_qty
-                new_order.traded = 0
-            else:
-                new_order.rank = None
-                new_order.traded = 0
-                
-            self._add_order_to_book(new_order, new_order.price_int, self.SIDE_SELL)
-            # 推送事件：订单已挂入
-            self.event_engine.put(new_order)
 
     def process_bookTicker_data(self, data: Data):
         line = data.data
@@ -200,191 +144,253 @@ class BinanceMatcher(MatchEngine):
         bid_int = self.to_int_price(line.best_bid_price)
         ask_int = self.to_int_price(line.best_ask_price)
 
-        # ==========================
-        # Stage 1: Maintenance Phase
-        # ==========================
-        # 遍历所有存量订单。由于订单分散在 buckets 中，我们需要遍历
-        # 这里的遍历效率取决于挂单价位的数量，通常是可以接受的
+        # 更新缓存的 BBO 价格
+        self.bid_price_int[symbol] = bid_int
+        self.ask_price_int[symbol] = ask_int
+
+        # 2. 维护阶段 (Maintenance Phase)
+        # 遍历存量订单，处理穿价和更新 Rank
         
-        # --- Update Buy Orders ---
+        # --- Buy Orders ---
         buy_book = self.order_book[symbol][self.SIDE_BUY]
-        if buy_book:
-            # 复制 keys 防止运行时修改
-            for price_int in list(buy_book.keys()):
-                bucket = buy_book[price_int]
-                # 对该价位的所有订单进行快照遍历
-                for order in list(bucket.values()):
-                    # 1. 被动成交 (Ask 砸穿)
-                    if price_int >= ask_int:
-                        self.fill_order(order, order.price, is_taker=False)
-                        continue
-                    
-                    # 2. 排队维护 (At Bid)
-                    elif price_int == bid_int:
-                        if order.rank is not None:
-                            # FC = max(0, R0 - T - Q1)
-                            front_cancel = max(0, order.rank - order.traded - line.best_bid_qty)
-                            order.rank = order.rank - order.traded - front_cancel
-                            order.traded = 0
-                            
-                            if order.rank < 0:
-                                self.fill_order(order, order.price, is_taker=False)
-                        else:
-                            # 价格回归 BBO，初始化 Rank
-                            order.rank = line.best_bid_qty
-                            order.traded = 0
-                    
-                    # 3. 远离 BBO
-                    else:
-                        order.rank = None
+        for price_int in list(buy_book.keys()):
+            # 当max buy price < best bid price, 就可以结束了
+            if self.max_buy_int.get(symbol, -math.inf) < bid_int:
+                break
+            # ask 打穿 limit buy order -> 成交
+            if ask_int < price_int:
+                for order in list(buy_book[price_int].values()):
+                    self._fill_order(order, order.price, is_taker=False)
+            # 价格在 bid ask 之间(不含), 排第一
+            elif bid_int < price_int < ask_int:
+                for order in list(buy_book[price_int].values()):
+                    order.rank = 0
+                    order.traded = 0
+            # 价格刚好等于 bid, 更新排位
+            elif price_int == bid_int:
+                for order in list(buy_book[price_int].values()):
+                    if order.rank is None:
+                        # 刚挂到 best bid，初始化 rank
+                        order.rank = line.best_bid_qty
                         order.traded = 0
+                    else:
+                        front_cancel = max(0, order.rank - order.traded - line.best_bid_qty)
+                        order.rank = order.rank - order.traded - front_cancel
+                        order.traded = 0
+                        if order.rank < 0:
+                            self._fill_order(order, order.price, is_taker=False)
 
-        # --- Update Sell Orders ---
+        # --- Sell Orders ---
         sell_book = self.order_book[symbol][self.SIDE_SELL]
-        if sell_book:
-            for price_int in list(sell_book.keys()):
-                bucket = sell_book[price_int]
-                for order in list(bucket):
-                    if price_int <= bid_int:
-                        self.fill_order(order, order.price, is_taker=False)
-                        continue
-                    
-                    elif price_int == ask_int:
-                        if order.rank is not None:
-                            front_cancel = max(0, order.rank - order.traded - line.best_ask_qty)
-                            order.rank = order.rank - order.traded - front_cancel
-                            order.traded = 0
-                            
-                            if order.rank < 0:
-                                self.fill_order(order, order.price, is_taker=False)
-                        else:
-                            order.rank = line.best_ask_qty
-                            order.traded = 0
-                    else:
-                        order.rank = None
+        for price_int in list(sell_book.keys()):
+            if self.min_sell_int.get(symbol, math.inf) > ask_int:
+                break
+            # bid 打穿 limit sell order -> 成交
+            if bid_int > price_int:
+                for order in list(sell_book[price_int].values()):
+                    self._fill_order(order, order.price, is_taker=False)
+            # 价格在 bid ask 之间(不含), 排第一
+            elif bid_int < price_int < ask_int:
+                for order in list(sell_book[price_int].values()):
+                    order.rank = 0
+                    order.traded = 0
+            # 价格刚好等于 ask, 更新排位
+            elif price_int == ask_int:
+                for order in list(sell_book[price_int].values()):
+                    if order.rank is None:
+                        order.rank = line.best_ask_qty
                         order.traded = 0
+                    else:
+                        front_cancel = max(0, order.rank - order.traded - line.best_ask_qty)
+                        order.rank = order.rank - order.traded - front_cancel
+                        order.traded = 0
+                        if order.rank < 0:
+                            self._fill_order(order, order.price, is_taker=False)
 
-        # ==========================
-        # Stage 2: Entry Phase
-        # ==========================
-        pending = self.pending_order_dict[symbol]
-        while pending:
-            new_order = pending.popleft().derive()
-            if new_order.order_type == OrderType.CANCEL_ORDER:
-                self._process_cancel_internal(new_order)
-            elif new_order.order_type == OrderType.MARKET_ORDER:
-                self._process_market_order(new_order, line)
+        # 3. 入场阶段 (Entry Phase)
+        # BookTicker 时也是处理 Pending 的好时机，直接用最新的 Book 价格
+        pending_queue = self.pending_order_dict[symbol]
+        while pending_queue:
+            order = pending_queue.popleft()
+            
+            # --- 1. 撤单 ---
+            if order.order_type == OrderType.CANCEL_ORDER:
+                self._process_cancel_internal(order)
+                continue
+
+            # --- 2. Market Order (Assumption: Infinite Liquidity) ---
+            if order.order_type == OrderType.MARKET_ORDER:
+                if order.quantity > 0:
+                    self._fill_order(order, line.best_ask_price, is_taker=True)
+                else:
+                    self._fill_order(order, line.best_bid_price, is_taker=True)
+                continue
+
+            # --- 3. Tracking -> Limit ---
+            if order.order_type == OrderType.TRACKING_ORDER:
+                order = order.derive()
+                order.order_type = OrderType.LIMIT_ORDER
+                if order.quantity > 0:
+                    order.price = line.best_bid_price
+                else:
+                    order.price = line.best_ask_price
+
+            # --- 4. Limit Order ---
+            price_int = order.price_int
+            
+            # 4.1 Check Taker (Immediate Fill)
+            if order.quantity > 0:
+                if price_int >= ask_int:
+                    self._fill_order(order, line.best_ask_price, is_taker=True)
+                    continue
             else:
-                self._process_new_entry_order(new_order, line, bid_int, ask_int)
+                if price_int <= bid_int:
+                    self._fill_order(order, line.best_bid_price, is_taker=True)
+                    continue
+            
+            # 4.2 Maker (Add to Book)
+            self._add_order_to_book(order)
+            
+            # 初始化 Rank
+            if order.quantity > 0:
+                if price_int == bid_int:
+                    order.rank = line.best_bid_qty
+                    order.traded = 0
+                elif bid_int < price_int < ask_int:
+                    order.rank = 0
+                    order.traded = 0
+                else:
+                    order.rank = None
+                    order.traded = None
+            else:
+                if price_int == ask_int:
+                    order.rank = line.best_ask_qty
+                    order.traded = 0
+                elif bid_int < price_int < ask_int:
+                    order.rank = 0
+                    order.traded = 0
+                else:
+                    order.rank = None
+                    order.traded = None
+            
+            # 推送 Order Entered 事件
+            self.event_engine.put(order.derive())
 
     def process_trades_data(self, data: Data):
-        """ Walk the Book 撮合 """
+        """ 
+        改进后的逻辑：
+        1. 推断当前 BBO (基于 Trade 价格)
+        2. Flush Pending Queue (用推断 BBO 成交市价单/Taker单)
+        3. Match Existing Orders (用 Trade 扫书)
+        """
         line = data.data
         symbol = line.symbol
+        trade_price = line.price
+        trade_price_int = self.to_int_price(trade_price)
         
-        # 快速检查：如果没有任何订单，直接返回
-        if not self.order_book[symbol][self.SIDE_BUY] and not self.order_book[symbol][self.SIDE_SELL]:
-            return
-            
-        trade_price_int = self.to_int_price(line.price)
-        bounds = self.bounds[symbol]
-
-        # ------------------------------------
-        # 1. 撮合买单 (Limit Buy)
-        # ------------------------------------
-        # 穿价逻辑：循环吃掉所有 Buy Price > Trade Price 的单子
-        # 使用 max_buy 快速判定
-        while bounds['max_buy'] is not None and bounds['max_buy'] > trade_price_int:
-            current_max_price = bounds['max_buy']
-            bucket = self.order_book[symbol][self.SIDE_BUY][current_max_price]
-            
-            # 整个 bucket 全部成交
-            orders_to_fill = list(bucket.values()) 
-            for order in orders_to_fill:
-                self.fill_order(order, order.price, is_taker=False)
-            
-            # Bucket 空了，移除并更新 max_buy (Lazy Update logic inside _remove is optimized, 
-            # but here we manually cleared the deque. We need to trigger bound update.)
-            # 手动触发极值更新逻辑：
-            del self.order_book[symbol][self.SIDE_BUY][current_max_price]
-            keys = self.order_book[symbol][self.SIDE_BUY].keys()
-            bounds['max_buy'] = max(keys) if keys else None
-
-        # 同价逻辑：Trade Price == Buy Price
-        if bounds['max_buy'] == trade_price_int:
-            bucket = self.order_book[symbol][self.SIDE_BUY][trade_price_int]
-            # 必须复制 list，因为 fill_order 会修改 deque
+        # === Step 1: 更新 BBO 推断===
+        if line.is_buyer_maker: # Seller Taker (砸盘)
+            self.bid_price_int[symbol] = trade_price_int
+            if self.ask_price_int[symbol] < trade_price_int:
+                self.ask_price_int[symbol] = trade_price_int
+        else: # Buyer Taker (拉盘)
+            self.ask_price_int[symbol] = trade_price_int
+            if self.bid_price_int[symbol] > trade_price_int:
+                self.bid_price_int[symbol] = trade_price_int
+        
+        # === Step: 2 先处理book队列防止重复处理pending===
+        max_buy_int = self.max_buy_int.get(symbol, -math.inf)
+        # --- 撮合 Buy Limit ---
+        # 只要买价 > trade price 就一直处理直到全部撮合完
+        while max_buy_int > trade_price_int:
+            bucket = self.order_book[symbol][self.SIDE_BUY][max_buy_int]
             for order in list(bucket.values()):
-                # Case A: Capture (Buyer Taker 吃 Ask)
-                if not line.is_buyer_maker:
-                    self.fill_order(order, order.price, is_taker=False)
-                    continue
-                # Case B: Queue (Seller Taker 砸 Bid)
-                if order.rank is None:
-                    continue
-                order.traded += line.qty
-                if order.traded > order.rank:
-                    self.fill_order(order, order.price, is_taker=False)
-
-        # ------------------------------------
-        # 2. 撮合卖单 (Limit Sell)
-        # ------------------------------------
-        # 穿价逻辑：循环吃掉所有 Sell Price < Trade Price 的单子
-        while bounds['min_sell'] is not None and bounds['min_sell'] < trade_price_int:
-            current_min_price = bounds['min_sell']
-            bucket = self.order_book[symbol][self.SIDE_SELL][current_min_price]
-            
-            while bucket:
-                order = bucket.popleft()
-                self.fill_order(order, order.price, is_taker=False)
-            
-            del self.order_book[symbol][self.SIDE_SELL][current_min_price]
-            keys = self.order_book[symbol][self.SIDE_SELL].keys()
-            bounds['min_sell'] = min(keys) if keys else None
+                self._fill_order(order, order.price, is_taker=False)
+            max_buy_int = self.max_buy_int.get(symbol, -math.inf)
 
         # 同价逻辑
-        if bounds['min_sell'] == trade_price_int:
+        if max_buy_int == trade_price_int:
+            bucket = self.order_book[symbol][self.SIDE_BUY][trade_price_int]
+            # Buyer Taker (吃 Ask), 表明这一瞬间的trade_price是ask price, 要撮合所有 Buy Limit
+            if not line.is_buyer_maker:
+                for order in list(bucket.values()):
+                    self._fill_order(order, order.price, is_taker=False)
+            # Seller Taker (砸 Bid), 累计成交量
+            else:
+                for order in list(bucket.values()):
+                    if order.rank is None:
+                        continue
+                    order.traded += line.qty
+                    if order.traded > order.rank:
+                        self._fill_order(order, order.price, is_taker=False)
+
+        # --- 撮合 Sell Limit ---
+        min_sell_int = self.min_sell_int.get(symbol, math.inf)
+        while trade_price_int > min_sell_int:
+            bucket = self.order_book[symbol][self.SIDE_SELL][min_sell_int]
+            for order in list(bucket.values()):
+                self._fill_order(order, order.price, is_taker=False)
+            min_sell_int = self.min_sell_int.get(symbol, math.inf)
+
+        # 同价逻辑
+        if min_sell_int == trade_price_int:
             bucket = self.order_book[symbol][self.SIDE_SELL][trade_price_int]
-            for order in list(bucket):
-                # Case A: Capture (Seller Taker 吃 Bid) - 注意这里的反直觉：
-                # 对 Sell Order 来说，如果 Trade 是 Buyer Maker (False)，代表 Buyer Taker 吃 Ask，这是同向排队。
-                # 如果 Trade 是 Buyer Maker (True)，代表 Seller Taker 砸 Bid，这才是 Capture？
-                # 不！修正逻辑：
-                # Trade @ Sell Price. 
-                # If is_buyer_maker=True (Seller Taker): 主动卖方砸盘 -> 捕获流动性 -> Fill My Sell Order
-                if line.is_buyer_maker:
-                    self.fill_order(order, order.price, is_taker=False)
-                    continue
-                # If is_buyer_maker=False (Buyer Taker): 主动买方吃单 -> 消耗排队 -> Rank
-                if order.rank is None:
-                    continue
-                order.traded += line.qty
-                if order.traded > order.rank:
-                    self.fill_order(order, order.price, is_taker=False)
+            if line.is_buyer_maker:
+                for order in list(bucket.values()):
+                    self._fill_order(order, order.price, is_taker=False)
+            else:
+                for order in list(bucket.values()):
+                    # Buyer Taker (吃 Ask) -> 正常排队
+                    if order.rank is None:
+                        continue
+                    order.traded += line.qty
+                    if order.traded > order.rank:
+                        self._fill_order(order, order.price, is_taker=False)
 
-    def _process_cancel_internal(self, order: Order):
-        """ 处理撤单 """
-        target_id = order.cancel_target_id
-        if target_id in self.order_index:
-            symbol, side, price_int = self.order_index[target_id]
-            bucket = self.order_book[symbol][side][price_int]
+        # === Step 3: Flush Pending Queue ===
+        pending_queue = self.pending_order_dict[symbol]
+        while pending_queue:
+            order = pending_queue.popleft()
+            bid_price = self.bid_price_int[symbol]
+            ask_price = self.ask_price_int[symbol]
             
-            # 找到目标订单并标记取消
-            # 这里的查找是 O(N)，但在 bucket 内 N 通常很小
-            target_order = None
-            for o in bucket:
-                if o.order_id == target_id:
-                    target_order = o
-                    break
-            
-            if target_order:
-                new_order = target_order.derive()
-                new_order.state = OrderState.CANCELED
-                self._remove_order_from_book(target_order)
-                self.event_engine.put(new_order)
+            # --- 1. 撤单 ---
+            if order.order_type == OrderType.CANCEL_ORDER:
+                self._cancel_order(order)
+                continue
 
-    def _process_market_order(self, order: Order, line):
-        if order.quantity > 0:
-            self.fill_order(order, line.best_ask_price, is_taker=True)
-        else:
-            self.fill_order(order, line.best_bid_price, is_taker=True)
+            # --- 2. Market Order (Assumption: Infinite Liquidity) ---
+            if order.order_type == OrderType.MARKET_ORDER:
+                if order.quantity > 0:
+                    self._fill_order(order, ask_price / self.PRICE_SCALAR, is_taker=True)
+                else:
+                    self._fill_order(order, bid_price / self.PRICE_SCALAR, is_taker=True)
+                continue
+
+            # --- 3. Tracking -> Limit ---
+            if order.order_type == OrderType.TRACKING_ORDER:
+                order = order.derive()
+                order.order_type = OrderType.LIMIT_ORDER
+                if order.quantity > 0:
+                    order.price = bid_price / self.PRICE_SCALAR
+                else:
+                    order.price = ask_price / self.PRICE_SCALAR
+
+            # --- 4. Limit Order ---
+            price_int = order.price_int
+            
+            # 4.1 Check Taker (Immediate Fill)
+            if order.quantity > 0:
+                if price_int >= ask_price:
+                    self._fill_order(order, ask_price / self.PRICE_SCALAR, is_taker=True)
+                    continue
+            else:
+                if price_int <= bid_price:
+                    self._fill_order(order, bid_price / self.PRICE_SCALAR, is_taker=True)
+                    continue
+            
+            # 4.2 Maker (Add to Book)
+            self._add_order_to_book(order)
+            
+            # 推送 Order Entered 事件
+            self.event_engine.put(order.derive())

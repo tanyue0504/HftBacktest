@@ -1,6 +1,6 @@
 from hft_backtest import Order, OrderState, Data, Account
 
-class BinanceAccount(Account):
+class OKXAccount(Account):
     """
     账户类
     1. 监听Order事件 维护订单状态和持仓状态
@@ -35,12 +35,12 @@ class BinanceAccount(Account):
         del self.order_dict[order.order_id]
 
     def on_data(self, data: Data):
-        # 仅维护成交价数据
+        # 仅维护成交价数据, 每次也就这个地方需要改一下
         if data.name != "trades":
             return
         line = data.data
-        assert hasattr(line, 'instrument_name') and hasattr(line, 'price')
-        self.price_dict[line.instrument_name] = line.price
+        assert hasattr(line, 'symbol') and hasattr(line, 'price')
+        self.price_dict[line.symbol] = line.price
 
     def get_orders(self):
         return self.order_dict.copy()

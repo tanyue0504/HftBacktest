@@ -1,8 +1,9 @@
 from collections import deque, defaultdict, OrderedDict
 import math
 from hft_backtest import MatchEngine, Order, OrderState, OrderType, Data
+import operator
 
-class BinanceMatcher(MatchEngine):
+class OKXMatcher(MatchEngine):
 
     PRICE_SCALAR = Order.SCALER 
     SIDE_BUY = 0
@@ -39,6 +40,24 @@ class BinanceMatcher(MatchEngine):
             "bookTicker": self.process_bookTicker_data,
             "trades": self.process_trades_data,
         }
+
+        # --- 预编译数据提取器 ---
+        DEPTH_LEVELS = 25 
+        
+        # 1. 生成字段名列表
+        bid_price_cols = [f"bid_price_{i}" for i in range(1, DEPTH_LEVELS + 1)]
+        bid_qty_cols   = [f"bid_qty_{i}"   for i in range(1, DEPTH_LEVELS + 1)]
+        
+        ask_price_cols = [f"ask_price_{i}" for i in range(1, DEPTH_LEVELS + 1)]
+        ask_qty_cols   = [f"ask_qty_{i}"   for i in range(1, DEPTH_LEVELS + 1)]
+
+        # 2. 预编译提取器 (AttrGetter)
+        # 这会将 namedtuple 属性提取转化为底层的 C 结构体访问
+        self.get_bid_prices = operator.attrgetter(*bid_price_cols)
+        self.get_bid_qtys   = operator.attrgetter(*bid_qty_cols)
+        
+        self.get_ask_prices = operator.attrgetter(*ask_price_cols)
+        self.get_ask_qtys   = operator.attrgetter(*ask_qty_cols)
 
     # ==========================
     # Helper Methods
@@ -140,13 +159,37 @@ class BinanceMatcher(MatchEngine):
     def process_bookTicker_data(self, data: Data):
         line = data.data
         symbol = line.symbol
+        # 构造bid ask dict
+        # 1. 批量提取数据 (返回的是 tuple)
+        raw_bid_prices = self.get_bid_prices(line)
+        raw_bid_qtys   = self.get_bid_qtys(line)
+        raw_ask_prices = self.get_ask_prices(line)
+        raw_ask_qtys   = self.get_ask_qtys(line)
         
-        bid_int = self.to_int_price(line.best_bid_price)
-        ask_int = self.to_int_price(line.best_ask_price)
+        # 2. 这里的 zip 是 Python 中最快的配对方式
+        # 结合 to_int_price 进行转换
+        # 这里的 dict comp 也是高度优化的
+        current_bids_map = {
+            self.to_int_price(p): q 
+            for p, q in zip(raw_bid_prices, raw_bid_qtys)
+            # if q > 0 and p > 0 # 可选：过滤无效档位
+        }
+        current_asks_map = {
+            self.to_int_price(p): q 
+            for p, q in zip(raw_ask_prices, raw_ask_qtys)
+            # if q > 0 and p > 0
+        }
+
+
+        
+        best_bid_int = self.to_int_price(line.bid_price_1)
+        best_ask_int = self.to_int_price(line.ask_price_1)
+        worst_bid_int = self.to_int_price(line.bid_price_25)
+        worst_ask_int = self.to_int_price(line.ask_price_25)
 
         # 更新缓存的 BBO 价格
-        self.bid_price_int[symbol] = bid_int
-        self.ask_price_int[symbol] = ask_int
+        self.bid_price_int[symbol] = best_bid_int
+        self.ask_price_int[symbol] = best_ask_int
 
         # 2. 维护阶段 (Maintenance Phase)
         # 遍历存量订单，处理穿价和更新 Rank
@@ -154,27 +197,28 @@ class BinanceMatcher(MatchEngine):
         # --- Buy Orders ---
         buy_book = self.order_book[symbol][self.SIDE_BUY]
         for price_int in list(buy_book.keys()):
-            # 当max buy price < best bid price, 就可以结束了
-            if self.max_buy_int.get(symbol, -math.inf) < bid_int:
+            # 进入视野盲区, 直接跳过
+            if self.max_buy_int.get(symbol, -math.inf) < worst_bid_int:
                 break
             # ask 打穿 limit buy order -> 成交
-            if ask_int <= price_int:
+            if best_ask_int <= price_int:
                 for order in list(buy_book[price_int].values()):
                     self._fill_order(order, order.price, is_taker=False)
             # 价格在 bid ask 之间(不含), 排第一
-            elif bid_int < price_int < ask_int:
+            elif best_bid_int < price_int < best_ask_int:
                 for order in list(buy_book[price_int].values()):
                     order.rank = 0
                     order.traded = 0
-            # 价格刚好等于 bid, 更新排位
-            elif price_int == bid_int:
+            # 价格介于 worst bid 和 best bid 之间, 更新排位
+            elif worst_bid_int <= price_int <= best_bid_int:
+                qty = current_bids_map.get(price_int, 0)
                 for order in list(buy_book[price_int].values()):
                     if order.rank is None:
                         # 刚挂到 best bid，初始化 rank
-                        order.rank = line.best_bid_qty
+                        order.rank = qty
                         order.traded = 0
                     else:
-                        front_cancel = max(0, order.rank - order.traded - line.best_bid_qty)
+                        front_cancel = max(0, order.rank - order.traded - qty)
                         order.rank = order.rank - order.traded - front_cancel
                         order.traded = 0
                         if order.rank < 0:
@@ -183,22 +227,24 @@ class BinanceMatcher(MatchEngine):
         # --- Sell Orders ---
         sell_book = self.order_book[symbol][self.SIDE_SELL]
         for price_int in list(sell_book.keys()):
-            if self.min_sell_int.get(symbol, math.inf) > ask_int:
+            # 进入视野盲区, 直接跳过
+            if self.min_sell_int.get(symbol, math.inf) > worst_ask_int:
                 break
             # bid 打穿 limit sell order -> 成交
-            if bid_int >= price_int:
+            if price_int <= best_bid_int:
                 for order in list(sell_book[price_int].values()):
                     self._fill_order(order, order.price, is_taker=False)
             # 价格在 bid ask 之间(不含), 排第一
-            elif bid_int < price_int < ask_int:
+            elif best_bid_int < price_int < best_ask_int:
                 for order in list(sell_book[price_int].values()):
                     order.rank = 0
                     order.traded = 0
             # 价格刚好等于 ask, 更新排位
-            elif price_int == ask_int:
+            elif best_ask_int <= price_int <= worst_ask_int:
+                qty = current_asks_map.get(price_int, 0)
                 for order in list(sell_book[price_int].values()):
                     if order.rank is None:
-                        order.rank = line.best_ask_qty
+                        order.rank = qty
                         order.traded = 0
                     else:
                         front_cancel = max(0, order.rank - order.traded - line.best_ask_qty)
@@ -221,9 +267,9 @@ class BinanceMatcher(MatchEngine):
             # --- 2. Market Order (Assumption: Infinite Liquidity) ---
             if order.order_type == OrderType.MARKET_ORDER:
                 if order.quantity > 0:
-                    self._fill_order(order, line.best_ask_price, is_taker=True)
+                    self._fill_order(order, line.ask_price_1, is_taker=True)
                 else:
-                    self._fill_order(order, line.best_bid_price, is_taker=True)
+                    self._fill_order(order, line.bid_price_1, is_taker=True)
                 continue
 
             # --- 3. Tracking -> Limit ---
@@ -231,21 +277,21 @@ class BinanceMatcher(MatchEngine):
                 order = order.derive()
                 order.order_type = OrderType.LIMIT_ORDER
                 if order.quantity > 0:
-                    order.price = line.best_bid_price
+                    order.price = line.bid_price_1
                 else:
-                    order.price = line.best_ask_price
+                    order.price = line.ask_price_1
 
             # --- 4. Limit Order ---
             price_int = order.price_int
             
             # 4.1 Check Taker (Immediate Fill)
             if order.quantity > 0:
-                if price_int >= ask_int:
-                    self._fill_order(order, line.best_ask_price, is_taker=True)
+                if price_int >= best_ask_int:
+                    self._fill_order(order, line.ask_price_1, is_taker=True)
                     continue
             else:
-                if price_int <= bid_int:
-                    self._fill_order(order, line.best_bid_price, is_taker=True)
+                if price_int <= best_bid_int:
+                    self._fill_order(order, line.bid_price_1, is_taker=True)
                     continue
             
             # 4.2 Maker (Add to Book)
@@ -253,20 +299,20 @@ class BinanceMatcher(MatchEngine):
             
             # 初始化 Rank
             if order.quantity > 0:
-                if price_int == bid_int:
-                    order.rank = line.best_bid_qty
+                if price_int >= worst_bid_int:
+                    order.rank = current_bids_map.get(price_int, 0)
                     order.traded = 0
-                elif bid_int < price_int < ask_int:
+                elif best_bid_int < price_int < best_ask_int:
                     order.rank = 0
                     order.traded = 0
                 else:
                     order.rank = None
                     order.traded = None
             else:
-                if price_int == ask_int:
-                    order.rank = line.best_ask_qty
+                if price_int <= worst_ask_int:
+                    order.rank = current_asks_map.get(price_int, 0)
                     order.traded = 0
-                elif bid_int < price_int < ask_int:
+                elif best_bid_int < price_int < best_ask_int:
                     order.rank = 0
                     order.traded = 0
                 else:

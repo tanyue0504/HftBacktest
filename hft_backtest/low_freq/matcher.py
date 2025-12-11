@@ -5,25 +5,36 @@ class BarMatcher(MatchEngine):
     """
     低频/K线撮合引擎 (优化版)
     适用场景：分钟线/小时线/日线回测
+    支持自定义字段名和数据源名称
     """
 
     def __init__(
         self,
+        symbol_field: str,
+        open_field: str,
+        high_field: str,
+        low_field: str,
         taker_fee: float = 2e-4,
         maker_fee: float = 1.1e-4,
+        data_source_name: str = "bars",
     ):
+        self.symbol_field = symbol_field
+        self.open_field = open_field
+        self.high_field = high_field
+        self.low_field = low_field
         self.taker_fee = taker_fee
         self.maker_fee = maker_fee
-        
-        # 优化 1: 按 symbol 分组存储订单
-        # 结构: symbol -> {order_id: Order}
+        self.data_source_name = data_source_name
+
+        # 按 symbol 分组存储订单
         self.active_orders: dict[str, dict[int, Order]] = defaultdict(dict)
-        
+
         # 辅助索引: order_id -> symbol (用于快速撤单)
         self.order_id_map: dict[int, str] = {}
-        
+
+        # 动态构建 data_processors
         self.data_processors = {
-            "bars": self.process_bar_data,
+            data_source_name: self.process_bar_data,
         }
 
     def _fill_order(self, order: Order, filled_price: float, is_taker: bool):
@@ -95,15 +106,14 @@ class BarMatcher(MatchEngine):
 
     def process_bar_data(self, data: Data):
         line = data.data
-        
-        # 优化 2: 鲁棒的字段获取
-        symbol = getattr(line, 'symbol', None)
-        high = getattr(line, 'high', getattr(line, 'h', None))
-        low = getattr(line, 'low', getattr(line, 'l', None))
-        open_px = getattr(line, 'open', getattr(line, 'o', None))
-        # close_px = getattr(line, 'close', getattr(line, 'c', None)) # 暂时没用到 Close
 
-        if symbol is None or high is None or low is None:
+        # 使用配置的字段名获取数据
+        symbol = getattr(line, self.symbol_field, None)
+        high = getattr(line, self.high_field, None)
+        low = getattr(line, self.low_field, None)
+        open_px = getattr(line, self.open_field, None)
+
+        if symbol is None or high is None or low is None or open_px is None:
             return 
         
         # 优化 3: 快速查找该品种的订单

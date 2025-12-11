@@ -2,6 +2,7 @@
 *.zip
 *.csv
 *.parquet
+*.png
 
 # ignore jupyter notebook checkpoints
 .ipynb_checkpoints/

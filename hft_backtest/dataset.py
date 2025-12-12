@@ -1,3 +1,4 @@
+from typing import Type
 from hft_backtest.event_engine import Event
 from abc import ABC, abstractmethod
 import heapq
@@ -123,8 +124,10 @@ class ParquetDataset(Dataset):
         name:str,
         path: str,
         timecol: str,
+        event_type: Type[Data],
         chunksize: int = 10**6,
         symbol: str = None,
+        rename = None, # lambda or dict
     ):
         super().__init__(name)
         self.path = path
@@ -136,10 +139,15 @@ class ParquetDataset(Dataset):
         pq_file = pq.ParquetFile(self.path)
         for batch in pq_file.iter_batches(batch_size=self.chunksize):
             df = batch.to_pandas()
+            if self.rename is not None:
+                df.rename(
+                    columns=self.rename,
+                    inplace=True
+                )
             if self.symbol is not None:
                 df['symbol'] = self.symbol
             for line in df.itertuples(index=False):
-                yield Data(
+                yield self.event_type(
                     timestamp=getattr(line, self.timecol),
                     name=self.name,
                     data=line,
@@ -157,6 +165,7 @@ class CsvDataset(Dataset):
         name:str,
         path: str,
         timecol: str,
+        event_type: Type[Data],
         chunksize: int = 10**6,
         symbol: str = None,
         compression: str = None,
@@ -166,6 +175,8 @@ class CsvDataset(Dataset):
         self.path = path
         self.timecol = timecol
         self.chunksize = chunksize
+        assert issubclass(event_type, Data)
+        self.event_type = event_type
         self.symbol = symbol
         self.compression = compression
         self.rename = rename
@@ -181,7 +192,7 @@ class CsvDataset(Dataset):
             if self.symbol is not None:
                 df['symbol'] = self.symbol
             for line in df.itertuples(index=False):
-                yield Data(
+                yield self.event_type(
                     timestamp=getattr(line, self.timecol),
                     name=self.name,
                     data=line,

@@ -24,6 +24,7 @@ class Account(Component):
         engine.get_orders = self.get_orders
         engine.get_positions = self.get_positions
         engine.get_prices = self.get_prices
+        engine.get_pnl = self.get_pnl
 
     def stop(self):
         pass
@@ -44,3 +45,15 @@ class Account(Component):
 
     def get_prices(self):
         return self.price_dict.copy()
+    
+    def get_pnl(self, symbol:str = None):
+        raise NotImplementedError("Account.get_pnl not implemented")
+    
+    def get_commission_fee(self, symbol:str = None):
+        raise NotImplementedError("Account.get_commission_fee not implemented")
+    
+    def get_funding_fee(self, symbol:str = None):
+        raise NotImplementedError("Account.get_funding_fee not implemented")
+    
+    def get_trade_count(self, symbol:str = None):
+        raise NotImplementedError("Account.get_trade_count not implemented")

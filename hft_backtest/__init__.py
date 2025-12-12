@@ -1,6 +1,6 @@
 from .event_engine import Event, EventEngine, Component
 from .delaybus import DelayBus
-from .dataset import Data, Dataset, MergedDataset
+from .dataset import Data, Dataset, MergedDataset, ParquetDataset, CsvDataset
 from .order import Order, OrderType, OrderState
 from .matcher import MatchEngine
 from .clearer import ClearerEngine

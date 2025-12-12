@@ -2,6 +2,7 @@ from hft_backtest.event_engine import Event
 from abc import ABC, abstractmethod
 import heapq
 from pyarrow import parquet as pq
+import pandas as pd
 
 class Data(Event):
     """
@@ -110,7 +111,7 @@ class MergedDataset(Dataset):
             )
             cur_idx, cur_data = new_idx, new_data
 
-class ParquetData(Dataset):
+class ParquetDataset(Dataset):
     """
     parquet格式df数据集
     要求无索引，自带类型，包含时间列
@@ -135,6 +136,48 @@ class ParquetData(Dataset):
         pq_file = pq.ParquetFile(self.path)
         for batch in pq_file.iter_batches(batch_size=self.chunksize):
             df = batch.to_pandas()
+            if self.symbol is not None:
+                df['symbol'] = self.symbol
+            for line in df.itertuples(index=False):
+                yield Data(
+                    timestamp=getattr(line, self.timecol),
+                    name=self.name,
+                    data=line,
+                )
+
+class CsvDataset(Dataset):
+    """
+    CSV格式df数据集
+    要求无索引，包含时间列
+    分批读取，逐行推送
+    """
+
+    def __init__(
+        self,
+        name:str,
+        path: str,
+        timecol: str,
+        chunksize: int = 10**6,
+        symbol: str = None,
+        compression: str = None,
+        rename = None, # lambda or dict
+    ):
+        super().__init__(name)
+        self.path = path
+        self.timecol = timecol
+        self.chunksize = chunksize
+        self.symbol = symbol
+        self.compression = compression
+        self.rename = rename
+
+    def __iter__(self):
+        for df in pd.read_csv(self.path, chunksize=self.chunksize, compression=self.compression):
+            # 重命名asks/bids[0~24].price/amount为asks_price_0~24/asks_amount_0~24/bids_price_0~24/bids_amount_0~24
+            if self.rename is not None:
+                df.rename(
+                    columns=self.rename,
+                    inplace=True
+                )
             if self.symbol is not None:
                 df['symbol'] = self.symbol
             for line in df.itertuples(index=False):

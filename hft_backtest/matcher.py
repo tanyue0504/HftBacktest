@@ -13,16 +13,10 @@ class MatchEngine(Component, ABC):
     def on_order(self, order: Order):
         """处理订单事件的抽象方法"""
         pass
-    
-    @abstractmethod
-    def on_data(self, data: Data):
-        """处理数据事件的抽象方法"""
-        pass
 
+    @abstractmethod
     def start(self, engine: EventEngine):
-        self.event_engine = engine
-        engine.register(Order, self.on_order)
-        engine.register(Data, self.on_data)
+        raise NotImplementedError()
 
     def stop(self):
         pass

@@ -36,9 +36,6 @@ class Dataset(ABC):
     __iter__方法需要被子类实现
     每次迭代返回Data对象
     """
-
-    def __init__(self, name:str):
-        self.name = name
     
     @abstractmethod
     def __iter__(self):
@@ -121,37 +118,27 @@ class ParquetDataset(Dataset):
 
     def __init__(
         self,
-        name:str,
         path: str,
-        timecol: str,
         event_type: Type[Data],
+        columns: list, # 按这个顺序读取列传递给event_type
         chunksize: int = 10**6,
-        symbol: str = None,
-        rename = None, # lambda or dict
+        tag_dict: dict = None, # 会覆盖dataframe中的同名列
     ):
-        super().__init__(name)
         self.path = path
-        self.timecol = timecol
+        self.event_type = event_type
+        self.columns = columns
         self.chunksize = chunksize
-        self.symbol = symbol
+        self.tag_dict = tag_dict
 
     def __iter__(self):
         pq_file = pq.ParquetFile(self.path)
         for batch in pq_file.iter_batches(batch_size=self.chunksize):
             df = batch.to_pandas()
-            if self.rename is not None:
-                df.rename(
-                    columns=self.rename,
-                    inplace=True
-                )
-            if self.symbol is not None:
-                df['symbol'] = self.symbol
-            for line in df.itertuples(index=False):
-                yield self.event_type(
-                    timestamp=getattr(line, self.timecol),
-                    name=self.name,
-                    data=line,
-                )
+            if self.tag_dict is not None:
+                for k, v in self.tag_dict.items():
+                    df[k] = v
+            cols = [df[col].values for col in self.columns]
+            yield from map(self.event_type, *cols)
 
 class CsvDataset(Dataset):
     """
@@ -166,10 +153,11 @@ class CsvDataset(Dataset):
         path: str,
         timecol: str,
         event_type: Type[Data],
+        columns: list,  # 按这个顺序读取列传递给event_type
         chunksize: int = 10**6,
-        symbol: str = None,
+        tag_dict: dict = None, # 会覆盖dataframe中的同名列
         compression: str = None,
-        rename = None, # lambda or dict
+    
     ):
         super().__init__(name)
         self.path = path
@@ -177,23 +165,14 @@ class CsvDataset(Dataset):
         self.chunksize = chunksize
         assert issubclass(event_type, Data)
         self.event_type = event_type
-        self.symbol = symbol
+        self.columns = columns
         self.compression = compression
-        self.rename = rename
+        self.tag_dict = tag_dict
 
     def __iter__(self):
         for df in pd.read_csv(self.path, chunksize=self.chunksize, compression=self.compression):
-            # 重命名asks/bids[0~24].price/amount为asks_price_0~24/asks_amount_0~24/bids_price_0~24/bids_amount_0~24
-            if self.rename is not None:
-                df.rename(
-                    columns=self.rename,
-                    inplace=True
-                )
-            if self.symbol is not None:
-                df['symbol'] = self.symbol
-            for line in df.itertuples(index=False):
-                yield self.event_type(
-                    timestamp=getattr(line, self.timecol),
-                    name=self.name,
-                    data=line,
-                )
+            if self.tag_dict is not None:
+                for k, v in self.tag_dict.items():
+                    df[k] = v
+            for row in zip(*[df[col].values for col in self.columns]):
+                yield self.event_type(*row)

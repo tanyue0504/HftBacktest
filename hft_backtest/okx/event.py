@@ -44,14 +44,41 @@ class OKXBookticker(Data):
     ):
         super().__init__(timestamp, name, data)
 
-class OKXTrades(Data):
+
+class OKXTrades(Event):
+    """
+    标准扁平数据类定义
+    1. 继承Event类而非Data，弃用Data类
+    2. 使用__slots__定义字段，但不要包含父类的字段
+    3. 在__init__中定义字段的初始化
+    """
+    
+    __slots__ = (
+        "instrument_name",
+        "trade_id",
+        "price",
+        "size",
+        "side",
+    )
     def __init__(
         self,
         timestamp: int,
-        name: str,
-        data,
+        instrument_name: str,
+        trade_id: str,
+        price: float,
+        size: float,
+        side: str,
     ):
-        super().__init__(timestamp, name, data)
+        super().__init__(timestamp)
+        self.instrument_name = instrument_name
+        self.trade_id = trade_id
+        self.price = price
+        self.size = size
+        self.side = side
+
+    # def __repr__(self) -> str:
+    #     return (f"OKXTrades(timestamp={self.timestamp}, instrument_name={self.instrument_name}, "
+    #             f"trade_id={self.trade_id}, price={self.price}, size={self.size}, side={self.side})")
 
 class OKXFundingRate(Data):
     def __init__(

@@ -1,45 +1,12 @@
 from abc import ABC, abstractmethod
-from hmac import new
+
 from typing import Callable, Type, Optional
 from collections import deque
 from itertools import chain
-import copy
 
-class Event:
-    """
-    任何一个事件都需要包含
-    1. 事件发生事件
-    2. 事件来源
-    事件类型可以通过继承来实现
-    事件来源是事件首次被推入事件引擎时由事件引擎标注
-    标注的内容是事件引擎的内存地址
-    """
-
-    # 极致的性能和内存优化
-    __slots__ = ("timestamp", "source", "producer")
-
-    def __init__(
-        self,
-        timestamp: Optional[int] = None,
-        source: Optional[int] = None,
-        producer: Optional[Callable] = None,  # 监听器对象；None 表示外部产生
-    ):
-        self.timestamp = timestamp
-        self.source = source
-        self.producer = producer
-
-    def __repr__(self) -> str:
-        return f"Event(timestamp={self.timestamp}, source={self.source})"
-    
-    def copy(self) -> "Event":
-        return copy.copy(self)
-    
-    def derive(self) -> "Event":
-        new_event = self.copy()
-        new_event.timestamp = None
-        new_event.source = None
-        new_event.producer = None
-        return new_event
+import pyximport
+pyximport.install()
+from hft_backtest.event import Event
 
 class EventEngine:
     """
@@ -52,16 +19,6 @@ class EventEngine:
     事件的来源是事件引擎的内存地址
     监听器只严格监听注册的事件类型, 不含其父类或子类
     """
-    # 不要使用__slots__, 否则无法动态注入接口
-    # 极致的性能和内存优化
-    # __slots__ = (
-    #     "timestamp",
-    #     "listener_dict",
-    #     "_queue",
-    #     "_dispatching",
-    #     "_current_listener",
-    #     "_id",
-    # )
 
     def __init__(self):
         self.timestamp = 0
@@ -107,11 +64,11 @@ class EventEngine:
     def put(self, event: Event):
         assert isinstance(event, Event)
         # 标注来源
-        if event.source is None:
+        if event.source == 0:
             event.source = self._id
         # 自动标注时间戳或更新引擎时间戳
         ts = event.timestamp
-        if ts is None:
+        if ts <= 0:
             event.timestamp = self.timestamp
         elif ts > self.timestamp:
             self.timestamp = ts
@@ -135,11 +92,11 @@ class EventEngine:
             lst_local = listener_dict.get(type(event)) or ()
             # 已经禁止派发期修改监听器集合，因此不拷贝
             for listener, ignore_self in chain(senior_global_lst, lst_local, junior_global_lst):
-                if ignore_self and event.producer is listener:
+                if ignore_self and event.producer == id(listener):
                     continue
-                self._current_listener = listener
+                self._current_listener = id(listener)
                 listener(event)
-                self._current_listener = None
+                self._current_listener = 0
         self._dispatching = False
 
 class Component(ABC):

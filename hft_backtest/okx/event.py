@@ -51,7 +51,7 @@ init_args = ["self", "timestamp"] + base_fields + book_fields
 # 构造赋值语句列表
 assign_lines = [
     "self.timestamp = timestamp",
-    "self.source = 0",
+    "self.source = None",
     "self.producer = None",
 ]
 # 批量添加: self.exchange = exchange ... self.bid_price_1 = bid_price_1 ...

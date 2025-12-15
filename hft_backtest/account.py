@@ -16,44 +16,73 @@ class Account(Component):
         self.position_dict: dict[str, float] = {}
         self.price_dict: dict[str, float] = {}
 
-    def start(self, engine: EventEngine):
-        # 注册监听
-        engine.register(Order, self.on_order)
-        engine.register(Data, self.on_data)
-        # 接口注入
-        engine.get_orders = self.get_orders
-        engine.get_positions = self.get_positions
-        engine.get_prices = self.get_prices
-        engine.get_pnl = self.get_pnl
+    def start(self, event_engine: EventEngine):
+        self.event_engine = event_engine
+        # 注册Order事件监听
+        event_engine.register(Order, self.on_order)
+        # 注册Data:trade事件监听
+        event_engine.register(Data, self.on_data)
+        # 注入接口
+        event_engine.get_orders = self.get_orders
+        event_engine.get_positions = self.get_positions
+        event_engine.get_prices = self.get_prices
+        event_engine.get_equity = self.get_equity
+        event_engine.get_balance = self.get_balance
+        event_engine.get_total_margin = self.get_total_margin
+        event_engine.get_leverage = self.get_leverage
+        event_engine.get_total_turnover = self.get_total_turnover
+        event_engine.get_total_trade_count = self.get_total_trade_count
+        event_engine.get_total_commission = self.get_total_commission
+        event_engine.get_total_funding_fee = self.get_total_funding_fee
+        event_engine.get_total_realized_pnl = self.get_total_realized_pnl
 
-    def stop(self):
-        pass
-    
+    # 提供订单、持仓和价格查询接口
     @abstractmethod
-    def on_order(self, order: Order):
-        pass
-
-    @abstractmethod
-    def on_data(self, data: Data):
-        pass
-
     def get_orders(self):
         return self.order_dict.copy()
     
+    @abstractmethod
     def get_positions(self):
         return self.position_dict.copy()
 
+    @abstractmethod
     def get_prices(self):
         return self.price_dict.copy()
     
-    def get_pnl(self, symbol:str = None):
-        raise NotImplementedError("Account.get_pnl not implemented")
+    # 提供账户瞬时状态查询接口
+    @abstractmethod
+    def get_equity(self):
+        raise NotImplementedError("Account.get_equity not implemented")
     
-    def get_commission_fee(self, symbol:str = None):
-        raise NotImplementedError("Account.get_commission_fee not implemented")
+    @abstractmethod
+    def get_balance(self):
+        raise NotImplementedError("Account.get_balance not implemented")
     
-    def get_funding_fee(self, symbol:str = None):
-        raise NotImplementedError("Account.get_funding_fee not implemented")
+    @abstractmethod
+    def get_total_margin(self):
+        raise NotImplementedError("Account.get_total_margin not implemented")
     
-    def get_trade_count(self, symbol:str = None):
-        raise NotImplementedError("Account.get_trade_count not implemented")
+    @abstractmethod
+    def get_leverage(self):
+        raise NotImplementedError("Account.get_leverage not implemented")
+    
+    # 提供累计字段查询接口
+    @abstractmethod
+    def get_total_turnover(self):
+        raise NotImplementedError("Account.get_turnover not implemented")
+    
+    @abstractmethod
+    def get_total_trade_count(self):
+        raise NotImplementedError("Account.get_total_trade_count not implemented")
+    
+    @abstractmethod
+    def get_total_commission(self):
+        raise NotImplementedError("Account.get_total_commission not implemented")
+    
+    @abstractmethod
+    def get_total_funding_fee(self):
+        raise NotImplementedError("Account.get_total_funding_fee not implemented")
+    
+    @abstractmethod
+    def get_total_realized_pnl(self):
+        raise NotImplementedError("Account.get_total_realized_pnl not implemented")

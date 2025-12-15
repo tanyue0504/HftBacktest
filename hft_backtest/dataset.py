@@ -149,21 +149,15 @@ class CsvDataset(Dataset):
 
     def __init__(
         self,
-        name:str,
         path: str,
-        timecol: str,
         event_type: Type[Data],
         columns: list,  # 按这个顺序读取列传递给event_type
         chunksize: int = 10**6,
         tag_dict: dict = None, # 会覆盖dataframe中的同名列
         compression: str = None,
-    
     ):
-        super().__init__(name)
         self.path = path
-        self.timecol = timecol
         self.chunksize = chunksize
-        assert issubclass(event_type, Data)
         self.event_type = event_type
         self.columns = columns
         self.compression = compression

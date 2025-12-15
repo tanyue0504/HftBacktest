@@ -3,6 +3,7 @@
 *.csv
 *.parquet
 *.png
+*.txt
 
 # ignore jupyter notebook checkpoints
 .ipynb_checkpoints/

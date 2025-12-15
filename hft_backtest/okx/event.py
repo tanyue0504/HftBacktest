@@ -35,14 +35,39 @@ OKXDeliveryData
 - symbol: 交易对名称 (str)
 - price: 交割/强平价格 (float)
 """
-class OKXBookticker(Data):
-    def __init__(
-        self,
-        timestamp: int,
-        name: str,
-        data,
-    ):
-        super().__init__(timestamp, name, data)
+# 模版元编程生成OKXBook类
+# 1. 配置生成规则
+CLASS_NAME = "OKXBookticker"
+DEPTH = 25
+    
+book_fields = []
+for i in range(1, DEPTH + 1):
+    book_fields.extend([f"ask_price_{i}", f"ask_amount_{i}", f"bid_price_{i}", f"bid_amount_{i}",])
+base_fields = ["exchange", "symbol", "local_timestamp"]
+
+# 2. 构造类定义的字符串
+init_args = ["self", "timestamp"] + base_fields + book_fields
+
+# 构造赋值语句列表
+assign_lines = [
+    "self.timestamp = timestamp",
+    "self.source = 0",
+    "self.producer = None",
+]
+# 批量添加: self.exchange = exchange ... self.bid_price_1 = bid_price_1 ...
+assign_lines += [f"self.{f} = {f}" for f in base_fields + book_fields]
+
+# 组装完整的类代码字符串
+class_code = f"""
+class {CLASS_NAME}(Event):
+    # 定义 __slots__ 以极度优化内存和访问速度 (仅包含子类独有的字段)
+    __slots__ = {tuple(base_fields + book_fields)}
+
+    def __init__({', '.join(init_args)}):
+        {'; '.join(assign_lines)}
+"""
+# 3. 动态编译执行
+exec(class_code)
 
 
 class OKXTrades(Event):
@@ -76,24 +101,36 @@ class OKXTrades(Event):
         self.size = size
         self.side = side
 
-    # def __repr__(self) -> str:
-    #     return (f"OKXTrades(timestamp={self.timestamp}, instrument_name={self.instrument_name}, "
-    #             f"trade_id={self.trade_id}, price={self.price}, size={self.size}, side={self.side})")
+    def __repr__(self) -> str:
+        return (f"OKXTrades(timestamp={self.timestamp}, instrument_name={self.instrument_name}, "
+                f"trade_id={self.trade_id}, price={self.price}, size={self.size}, side={self.side})")
 
-class OKXFundingRate(Data):
+class OKXFundingRate(Event):
+    __slots__ = (
+        "symbol",
+        "funding_rate",
+    )
     def __init__(
         self,
         timestamp: int,
-        name: str,
-        data,
+        symbol: str,
+        funding_rate: float,
     ):
-        super().__init__(timestamp, name, data)
+        super().__init__(timestamp)
+        self.symbol = symbol
+        self.funding_rate = funding_rate
 
-class OKXDelivery(Data):
+class OKXDelivery(Event):
+    __slots__ = (
+        "symbol",
+        "price",
+    )
     def __init__(
         self,
         timestamp: int,
-        name: str,
-        data,
+        symbol: str,
+        price: float,
     ):
-        super().__init__(timestamp, name, data)
+        super().__init__(timestamp)
+        self.symbol = symbol
+        self.price = price

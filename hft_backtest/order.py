@@ -83,7 +83,7 @@ class Order(Event):
         filled_price: Optional[float] = None,
         commission_fee: Optional[float] = None,
     ):
-        super().__init__()
+        super().__init__(0)
         self.order_id = order_id
         self.order_type = order_type
         self.symbol = symbol

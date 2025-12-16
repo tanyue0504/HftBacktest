@@ -1,5 +1,4 @@
 from abc import ABC
-from ast import Or
 from hft_backtest import Component, EventEngine, Order, Event, Account
 
 class Recorder(Component, ABC):

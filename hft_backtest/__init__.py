@@ -5,7 +5,7 @@ from .delaybus import DelayBus
 from .order import Order, OrderType, OrderState
 from .matcher import MatchEngine
 from .backtest import BacktestEngine
-from .recorder import Recorder
 from .account import Account
+from .recorder import Recorder
 from .strategy import Strategy
 from .helper import EventPrinter

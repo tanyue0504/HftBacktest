@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from hft_backtest import Order, EventEngine, Component
+from hft_backtest import Order, Component
 
 class Account(Component):
     """

@@ -56,9 +56,9 @@ class MergedDataset(Dataset):
       - 当需要切换数据源时才进行堆操作，单步 O(log k)
     """
     
-    def __init__(self, *datasets: Dataset, name: str = "merged"):
+    def __init__(self, *datasets: Dataset):
         assert all([isinstance(ds, Dataset) for ds in datasets])
-        super().__init__(name)
+        super().__init__()
         self.datasets = datasets
         self.iterators = [iter(ds) for ds in datasets]
 

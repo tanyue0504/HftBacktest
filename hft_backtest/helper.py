@@ -6,7 +6,7 @@ class EventPrinter(Component):
     def __init__(self, tips: str = "", event_types: list = None):
         super().__init__()
         self.tips = tips
-        self.event_types = event_types if event_types is not None else []
+        self.event_types = set(event_types) if event_types is not None else set()
 
     def on_event(self, event):
         if type(event) not in self.event_types:

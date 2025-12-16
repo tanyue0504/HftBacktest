@@ -73,7 +73,7 @@ class EventEngine:
         elif ts > self.timestamp:
             self.timestamp = ts
         # 覆盖 producer（None=外部，非None=当前回调监听器）
-        event.producer = self._current_listener
+        event.producer = id(self._current_listener) if self._current_listener is not None else 0
         # 入队，统一顺序派发
         self._queue.append(event)
         if not self._dispatching:

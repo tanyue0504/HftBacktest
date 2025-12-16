@@ -1,22 +1,23 @@
-from abc import abstractmethod, ABC
+from abc import ABC
 from ast import Or
-from hft_backtest import Component, EventEngine, Order, Event
+from hft_backtest import Component, EventEngine, Order, Event, Account
 
 class Recorder(Component, ABC):
     """
     记录器基类
     负责记录交易流水(Trades)和定期快照(Snapshots)
     """
-    def __init__(self, path: str):
+    def __init__(self, path: str, account: Account):
         self.path = path
+        self.account = account
 
 class TradeRecorder(Recorder):
     """
     交易记录器基类
     负责记录交易流水信息
     """
-    def __init__(self, path: str, buffer_size:int = 1000):
-        super().__init__(path)
+    def __init__(self, path: str, account: Account, buffer_size:int = 1000):
+        super().__init__(path, account)
         self.buffer_size = buffer_size
         self.buffer = []
 
@@ -54,8 +55,8 @@ class AccountRecorder(Recorder):
     6. trade_count: 两次快照间的成交次数
     7. trade_amount: 两次快照间的成交金额
     """
-    def __init__(self, path: str, interval: int, buffer_size: int = 1000):
-        super().__init__(path)
+    def __init__(self, path: str, account: Account, interval: int, buffer_size: int = 1000):
+        super().__init__(path, account)
         self.interval = interval
         self.current_timestamp = 0
         self.last_timestamp = 0
@@ -70,7 +71,6 @@ class AccountRecorder(Recorder):
         }
 
     def start(self, engine: EventEngine):
-        self.engine = engine
         # 注册账户相关事件监听
         engine.global_register(self.on_event)
         # 打开文件
@@ -94,26 +94,26 @@ class AccountRecorder(Recorder):
         self.last_timestamp = self.current_timestamp
 
         # 指标计算
-        equity = self.engine.get_equity()
-        balance = self.engine.get_balance()
+        equity = self.account.get_equity()
+        balance = self.account.get_balance()
 
-        total_commission_fee = self.engine.get_total_commission()
+        total_commission_fee = self.account.get_total_commission()
         commission = total_commission_fee - self.last_state_dict.get("total_commission_fee", 0)
         self.last_state_dict["total_commission_fee"] = total_commission_fee
 
-        total_funding_fee = self.engine.get_total_funding_fee()
+        total_funding_fee = self.account.get_total_funding_fee()
         funding = total_funding_fee - self.last_state_dict.get("total_funding_fee", 0)
         self.last_state_dict["total_funding_fee"] = total_funding_fee
 
-        total_pnl = self.engine.get_total_realized_pnl()
+        total_pnl = self.account.get_total_realized_pnl()
         pnl = total_pnl - self.last_state_dict.get("total_pnl", 0)
         self.last_state_dict["total_pnl"] = total_pnl
 
-        total_trade_count = self.engine.get_total_trade_count()
+        total_trade_count = self.account.get_total_trade_count()
         trade_count = total_trade_count - self.last_state_dict.get("total_trade_count", 0)
         self.last_state_dict["total_trade_count"] = total_trade_count
 
-        total_trade_amount = self.engine.get_total_turnover()
+        total_trade_amount = self.account.get_total_turnover()
         trade_amount = total_trade_amount - self.last_state_dict.get("total_trade_amount", 0)
         self.last_state_dict["total_trade_amount"] = total_trade_amount
 
@@ -125,7 +125,3 @@ class AccountRecorder(Recorder):
         if len(self.buffer) >= self.buffer_size:
             self.file.writelines(self.buffer)
             self.buffer.clear()
-        
-
-
-

@@ -64,5 +64,5 @@ class Account(Component):
         raise NotImplementedError("Account.get_total_funding_fee not implemented")
     
     @abstractmethod
-    def get_total_realized_pnl(self):
-        raise NotImplementedError("Account.get_total_realized_pnl not implemented")
+    def get_total_trade_pnl(self):
+        raise NotImplementedError("Account.get_total_trade_pnl not implemented")

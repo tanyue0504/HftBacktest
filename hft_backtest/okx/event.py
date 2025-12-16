@@ -79,7 +79,7 @@ class OKXTrades(Event):
     """
     
     __slots__ = (
-        "instrument_name",
+        "symbol",
         "trade_id",
         "price",
         "size",
@@ -88,21 +88,21 @@ class OKXTrades(Event):
     def __init__(
         self,
         timestamp: int,
-        instrument_name: str,
+        symbol: str,
         trade_id: str,
         price: float,
         size: float,
         side: str,
     ):
         super().__init__(timestamp)
-        self.instrument_name = instrument_name
+        self.symbol = symbol
         self.trade_id = trade_id
         self.price = price
         self.size = size
         self.side = side
 
     def __repr__(self) -> str:
-        return (f"OKXTrades(timestamp={self.timestamp}, instrument_name={self.instrument_name}, "
+        return (f"OKXTrades(timestamp={self.timestamp}, symbol={self.symbol}, "
                 f"trade_id={self.trade_id}, price={self.price}, size={self.size}, side={self.side})")
 
 class OKXFundingRate(Event):
@@ -134,3 +134,18 @@ class OKXDelivery(Event):
         super().__init__(timestamp)
         self.symbol = symbol
         self.price = price
+
+class OKXPremium(Event):
+    __slots__ = (
+        "symbol",
+        "premium",
+    )
+    def __init__(
+        self,
+        timestamp: int,
+        symbol: str,
+        premium: float,
+    ):
+        super().__init__(timestamp)
+        self.symbol = symbol
+        self.premium = premium

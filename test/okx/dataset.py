@@ -135,8 +135,32 @@ def test_cevent():
     print("Elapsed time:", dt2 - dt1)
     
 
+def test_premium():
+    ds_trades = ParquetDataset(
+        path="./test/okx/data/premium_1m_view.parquet",
+        event_type=Event,
+        columns=[
+            'signal_time',
+            # "instrument_name",
+            # "trade_id",
+            # "price",
+            # "size",
+            # "side",
+        ],
+    )
+    dt1 = datetime.now()
+    for data in ds_trades:
+        # print(data)
+        # break
+        # data.derive()
+        pass
+    dt2 = datetime.now()
+    print("Elapsed time:", dt2 - dt1)
+
+
 if __name__ == "__main__":
-    test_cevent()
+    test_premium()
+    # test_cevent()
     # test_okx_delivery()
     # test_okx_fundingrate()
     # test_okx_trades()

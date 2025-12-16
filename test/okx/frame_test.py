@@ -1,6 +1,6 @@
-from hft_backtest import BacktestEngine, Strategy, Order, EventEngine, ParquetDataset, CsvDataset, EventPrinter
-from hft_backtest.dataset import MergedDataset
+from hft_backtest import BacktestEngine, Strategy, Order, EventEngine, ParquetDataset, CsvDataset, EventPrinter, MergedDataset
 from hft_backtest.okx.event import OKXBookticker, OKXTrades, OKXFundingRate, OKXDelivery
+from hft_backtest.okx.matcher import OKXMatcher
 from datetime import datetime
 
 ds_trades = ParquetDataset(
@@ -29,6 +29,7 @@ ds_bookticker = CsvDataset(
         'local_timestamp',
     ] + book_fields,
     compression='gzip',
+    transform=lambda df: df.assign(timestamp=df['timestamp'] // 1000)
 )
 
 
@@ -56,7 +57,9 @@ ds_delivery = ParquetDataset(
 
 if __name__ == "__main__":
     ds = MergedDataset(ds_trades, ds_bookticker, ds_funding, ds_delivery)
-    backtest_engine = BacktestEngine(datasets=[ds], delay=100,start_timestamp=1754006400000, end_timestamp=1754092800000)
-    event_printer = EventPrinter(event_types=[OKXTrades, OKXBookticker, OKXFundingRate, OKXDelivery], tips="[OKX Event]")
-    backtest_engine.add_component(event_printer, is_server=True)
+    backtest_engine = BacktestEngine(datasets=[ds_trades], delay=100)#,start_timestamp=1754006400000, end_timestamp=1754092800000)
+    # event_printer = EventPrinter(event_types=[OKXTrades, OKXBookticker, OKXFundingRate, OKXDelivery], tips="[OKX Event]")
+    matcher = OKXMatcher()
+    # backtest_engine.add_component(event_printer, is_server=True)
+    backtest_engine.add_component(matcher, is_server=True)
     backtest_engine.run()

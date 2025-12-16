@@ -355,13 +355,12 @@ class OKXMatcher(MatchEngine):
         OKX Data: side='buy' (Aggressor Buy) -> is_buyer_maker=False
         OKX Data: side='sell' (Aggressor Sell) -> is_buyer_maker=True
         """
-        line = event.data
-        symbol = line.symbol
-        trade_price = line.price
+        symbol = event.symbol
+        trade_price = event.price
         trade_price_int = self.to_int_price(trade_price)
         
         # 字段适配
-        is_buyer_maker = (line.side == 'sell') 
+        is_buyer_maker = (event.side == 'sell') 
         
         # === Step 1: 更新 BBO 推断 ===
         if is_buyer_maker: # Seller Taker (砸盘) -> 此价格大概率为 Bid
@@ -392,7 +391,7 @@ class OKXMatcher(MatchEngine):
             else:
                 for order in list(bucket.values()):
                     if order.rank is None: continue
-                    order.traded += line.size # OKX use 'size' or 'qty'? event.py definition says 'size'
+                    order.traded += event.size # OKX use 'size' or 'qty'? event.py definition says 'size'
                     if order.traded > order.rank:
                         self._fill_order(order, order.price, is_taker=False)
 
@@ -412,7 +411,7 @@ class OKXMatcher(MatchEngine):
             else: # Buyer Taker, 消耗 Ask 队列
                 for order in list(bucket.values()):
                     if order.rank is None: continue
-                    order.traded += line.size
+                    order.traded += event.size
                     if order.traded > order.rank:
                         self._fill_order(order, order.price, is_taker=False)
 

@@ -98,12 +98,14 @@ class ParquetDataset(Dataset):
         columns: list, # 按这个顺序读取列传递给event_type
         chunksize: int = 10**6,
         tag_dict: dict = None, # 会覆盖dataframe中的同名列
+        transform: callable = None,
     ):
         self.path = path
         self.event_type = event_type
         self.columns = columns
         self.chunksize = chunksize
         self.tag_dict = tag_dict
+        self.transform = transform
 
     def __iter__(self):
         pq_file = pq.ParquetFile(self.path)
@@ -112,6 +114,8 @@ class ParquetDataset(Dataset):
             if self.tag_dict is not None:
                 for k, v in self.tag_dict.items():
                     df[k] = v
+            if self.transform is not None:
+                df = self.transform(df)
             cols = [df[col].values for col in self.columns]
             yield from map(self.event_type, *cols)
 
@@ -130,6 +134,7 @@ class CsvDataset(Dataset):
         chunksize: int = 10**6,
         tag_dict: dict = None, # 会覆盖dataframe中的同名列
         compression: str = None,
+        transform: callable = None,
     ):
         self.path = path
         self.chunksize = chunksize
@@ -137,11 +142,14 @@ class CsvDataset(Dataset):
         self.columns = columns
         self.compression = compression
         self.tag_dict = tag_dict
+        self.transform = transform
 
     def __iter__(self):
         for df in pd.read_csv(self.path, chunksize=self.chunksize, compression=self.compression):
             if self.tag_dict is not None:
                 for k, v in self.tag_dict.items():
                     df[k] = v
+            if self.transform is not None:
+                df = self.transform(df)
             for row in zip(*[df[col].values for col in self.columns]):
                 yield self.event_type(*row)

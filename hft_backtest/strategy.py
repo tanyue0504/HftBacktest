@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from hft_backtest import EventEngine, Data, Order, OrderState, Component
+from hft_backtest import Order, OrderState, Component
 
 class Strategy(Component, ABC):
     """
@@ -16,20 +16,3 @@ class Strategy(Component, ABC):
         assert order.state == OrderState.CREATED or order.is_cancel
         order.state = OrderState.SUBMITTED
         self.event_engine.put(order)
-
-    @abstractmethod
-    def on_data(self, data: Data):
-        """处理数据事件"""
-        pass
-
-    def on_order(self, order: Order):
-        """处理订单事件，子类可选实现"""
-        pass
-
-    def start(self, engine: EventEngine):
-        self.event_engine = engine
-        engine.register(Data, self.on_data)
-        engine.register(Order, self.on_order)
-
-    def stop(self):
-        pass

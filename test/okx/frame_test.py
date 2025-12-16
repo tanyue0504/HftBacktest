@@ -1,4 +1,4 @@
-from hft_backtest import BacktestEngine, Strategy, Order, EventEngine, Data, ParquetDataset, CsvDataset, EventPrinter
+from hft_backtest import BacktestEngine, Strategy, Order, EventEngine, ParquetDataset, CsvDataset, EventPrinter
 from hft_backtest.dataset import MergedDataset
 from hft_backtest.okx.event import OKXBookticker, OKXTrades, OKXFundingRate, OKXDelivery
 from datetime import datetime
@@ -56,7 +56,7 @@ ds_delivery = ParquetDataset(
 
 if __name__ == "__main__":
     ds = MergedDataset(ds_trades, ds_bookticker, ds_funding, ds_delivery)
-    backtest_engine = BacktestEngine(datasets=[ds], delay=100)
+    backtest_engine = BacktestEngine(datasets=[ds], delay=100,start_timestamp=1754006400000, end_timestamp=1754092800000)
     event_printer = EventPrinter(event_types=[OKXTrades, OKXBookticker, OKXFundingRate, OKXDelivery], tips="[OKX Event]")
     backtest_engine.add_component(event_printer, is_server=True)
     backtest_engine.run()

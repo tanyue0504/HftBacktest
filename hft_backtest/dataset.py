@@ -1,34 +1,9 @@
 from typing import Type
-from hft_backtest.event_engine import Event
+from hft_backtest import Event
 from abc import ABC, abstractmethod
 import heapq
 from pyarrow import parquet as pq
 import pandas as pd
-
-class Data(Event):
-    """
-    数据事件类
-    timestamp: 数据时间戳 (int)
-    data: 数据内容 (pd.DataFrame或其他格式)
-    name: 数据源名称 (str)
-    """
-    __slots__ = (
-        "data",
-        "name",
-    )
-    
-    def __init__(
-        self,
-        timestamp:int,
-        name:str,
-        data,
-    ):
-        super().__init__(timestamp=timestamp)
-        self.data = data
-        self.name = name
-
-    def __repr__(self) -> str:
-        return f"Data(name={self.name}, timestamp={self.timestamp})"
 
 class Dataset(ABC):
     """
@@ -119,7 +94,7 @@ class ParquetDataset(Dataset):
     def __init__(
         self,
         path: str,
-        event_type: Type[Data],
+        event_type: Type[Event],
         columns: list, # 按这个顺序读取列传递给event_type
         chunksize: int = 10**6,
         tag_dict: dict = None, # 会覆盖dataframe中的同名列
@@ -150,7 +125,7 @@ class CsvDataset(Dataset):
     def __init__(
         self,
         path: str,
-        event_type: Type[Data],
+        event_type: Type[Event],
         columns: list,  # 按这个顺序读取列传递给event_type
         chunksize: int = 10**6,
         tag_dict: dict = None, # 会覆盖dataframe中的同名列

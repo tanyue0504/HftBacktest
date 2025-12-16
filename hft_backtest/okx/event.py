@@ -1,4 +1,4 @@
-from hft_backtest import Event, EventEngine, Order, Data
+from hft_backtest import Event, EventEngine, Order
 
 """
 基于数据定义 OKX 相关Data类型

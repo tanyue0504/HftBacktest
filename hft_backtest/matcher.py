@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from hft_backtest import EventEngine, Component, Order, Data
+from hft_backtest import EventEngine, Component, Order
 
 class MatchEngine(Component, ABC):
     """

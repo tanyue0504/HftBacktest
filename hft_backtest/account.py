@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from hft_backtest import Order, EventEngine, Data, Component
+from hft_backtest import Order, EventEngine, Component
 
 class Account(Component):
     """
@@ -15,26 +15,6 @@ class Account(Component):
         self.order_dict: dict[int, Order] = {}
         self.position_dict: dict[str, float] = {}
         self.price_dict: dict[str, float] = {}
-
-    def start(self, event_engine: EventEngine):
-        self.event_engine = event_engine
-        # 注册Order事件监听
-        event_engine.register(Order, self.on_order)
-        # 注册Data:trade事件监听
-        event_engine.register(Data, self.on_data)
-        # 注入接口
-        event_engine.get_orders = self.get_orders
-        event_engine.get_positions = self.get_positions
-        event_engine.get_prices = self.get_prices
-        event_engine.get_equity = self.get_equity
-        event_engine.get_balance = self.get_balance
-        event_engine.get_total_margin = self.get_total_margin
-        event_engine.get_leverage = self.get_leverage
-        event_engine.get_total_turnover = self.get_total_turnover
-        event_engine.get_total_trade_count = self.get_total_trade_count
-        event_engine.get_total_commission = self.get_total_commission
-        event_engine.get_total_funding_fee = self.get_total_funding_fee
-        event_engine.get_total_realized_pnl = self.get_total_realized_pnl
 
     # 提供订单、持仓和价格查询接口
     @abstractmethod

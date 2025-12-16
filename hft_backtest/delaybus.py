@@ -1,7 +1,5 @@
-from hft_backtest import Event, EventEngine
 from collections import deque
 from hft_backtest import Event, EventEngine
-from collections import deque
 import math
 
 class DelayBus:

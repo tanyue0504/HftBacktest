@@ -46,10 +46,10 @@ class OKXMatcher(MatchEngine):
         DEPTH_LEVELS = 25 
         
         bid_price_cols = [f"bid_price_{i}" for i in range(1, DEPTH_LEVELS + 1)]
-        bid_qty_cols   = [f"bid_qty_{i}"   for i in range(1, DEPTH_LEVELS + 1)]
+        bid_qty_cols   = [f"bid_amount_{i}"   for i in range(1, DEPTH_LEVELS + 1)]
         
         ask_price_cols = [f"ask_price_{i}" for i in range(1, DEPTH_LEVELS + 1)]
-        ask_qty_cols   = [f"ask_qty_{i}"   for i in range(1, DEPTH_LEVELS + 1)]
+        ask_qty_cols   = [f"ask_amount_{i}"   for i in range(1, DEPTH_LEVELS + 1)]
 
         self.get_bid_prices = operator.attrgetter(*bid_price_cols)
         self.get_bid_qtys   = operator.attrgetter(*bid_qty_cols)
@@ -176,8 +176,7 @@ class OKXMatcher(MatchEngine):
         当收到交割事件时，意味着该合约已停止交易。
         撮合引擎应清除该品种的所有订单，并通知 Account/Strategy。
         """
-        row = event.data
-        symbol = row.symbol
+        symbol = event.symbol
         
         # 1. 清空 Pending 队列
         if symbol in self.pending_order_dict:
@@ -201,15 +200,14 @@ class OKXMatcher(MatchEngine):
     # ==========================
 
     def on_bookticker(self, event: OKXBookticker):
-        line = event.data
-        symbol = line.symbol
+        symbol = event.symbol
         
         # --- 1. 解析数据 ---
         # 使用预编译的 attrgetter 批量提取
-        raw_bid_prices = self.get_bid_prices(line)
-        raw_bid_qtys   = self.get_bid_qtys(line)
-        raw_ask_prices = self.get_ask_prices(line)
-        raw_ask_qtys   = self.get_ask_qtys(line)
+        raw_bid_prices = self.get_bid_prices(event)
+        raw_bid_qtys   = self.get_bid_qtys(event)
+        raw_ask_prices = self.get_ask_prices(event)
+        raw_ask_qtys   = self.get_ask_qtys(event)
         
         current_bids_map = {
             self.to_int_price(p): q 
@@ -297,18 +295,18 @@ class OKXMatcher(MatchEngine):
 
             if order.order_type == OrderType.MARKET_ORDER:
                 if order.quantity > 0:
-                    self._fill_order(order, line.ask_price_1, is_taker=True)
+                    self._fill_order(order, event.ask_price_1, is_taker=True)
                 else:
-                    self._fill_order(order, line.bid_price_1, is_taker=True)
+                    self._fill_order(order, event.bid_price_1, is_taker=True)
                 continue
 
             if order.order_type == OrderType.TRACKING_ORDER:
                 order = order.derive()
                 order.order_type = OrderType.LIMIT_ORDER
                 if order.quantity > 0:
-                    order.price = line.bid_price_1
+                    order.price = event.bid_price_1
                 else:
-                    order.price = line.ask_price_1
+                    order.price = event.ask_price_1
 
             # Limit Order Logic
             price_int = order.price_int
@@ -316,11 +314,11 @@ class OKXMatcher(MatchEngine):
             # Check Taker
             if order.quantity > 0:
                 if price_int >= best_ask_int:
-                    self._fill_order(order, line.ask_price_1, is_taker=True)
+                    self._fill_order(order, event.ask_price_1, is_taker=True)
                     continue
             else:
                 if price_int <= best_bid_int:
-                    self._fill_order(order, line.bid_price_1, is_taker=True)
+                    self._fill_order(order, event.bid_price_1, is_taker=True)
                     continue
             
             # Maker (Add to Book)

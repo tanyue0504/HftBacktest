@@ -1,5 +1,5 @@
 from collections import deque, defaultdict, OrderedDict
-from curses import raw
+from itertools import chain
 import math
 import operator
 from hft_backtest import MatchEngine, Order, OrderState, OrderType, EventEngine
@@ -131,16 +131,36 @@ class OKXMatcher(MatchEngine):
         self.event_engine.put(new_order)
 
     def _cancel_order(self, order_id: int):
-        if order_id not in self.order_index:
+        # 1. 先尝试从活跃账本中撤单
+        if order_id in self.order_index:
+            symbol, side, price_int = self.order_index[order_id]
+            order = self.order_book[symbol][side][price_int][order_id]
+            
+            new_order = order.derive()
+            new_order.state = OrderState.CANCELED
+            
+            self._remove_order_from_book(order)
+            self.event_engine.put(new_order)
             return
-        symbol, side, price_int = self.order_index[order_id]
-        order = self.order_book[symbol][side][price_int][order_id]
-        
-        new_order = order.derive()
-        new_order.state = OrderState.CANCELED
-        
-        self._remove_order_from_book(order)
-        self.event_engine.put(new_order)
+
+        # 2. [新增] 如果不在账本中，尝试从 Pending 队列中查找并移除
+        # 这也是 O(N) 的操作，但 Pending 队列通常很短
+        # 由于我们不知道 symbol，只能遍历所有 symbol 的 queue (或者让 CancelOrder 携带 symbol)
+        # 假设 Order 对象如果能获取到 symbol 最好，但 cancel_order 工厂方法生成时 symbol=None。
+        # 这是一个架构权衡，这里我们不得不暴力搜索 pending 字典。
+        for symbol, queue in self.pending_order_dict.items():
+            for i, order in enumerate(queue):
+                if order.order_id == order_id:
+                    # 找到了，移除
+                    del queue[i]
+                    
+                    # 推送撤单成功事件
+                    new_order = order.derive()
+                    new_order.state = OrderState.CANCELED
+                    self.event_engine.put(new_order)
+                    return
+
+        # 3. 既不在账本也不在 Pending，说明已成交或已撤销，忽略
 
     def _process_cancel_internal(self, order: Order):
         """处理 Pending 队列中的撤单指令"""

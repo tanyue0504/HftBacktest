@@ -109,12 +109,11 @@ class TestOKXAccount:
         # 持有 1 BTC 多单
         order = self.create_filled_order(1, symbol, 1, 1.0, 50000.0, 0.0)
         account.on_order(order)
-        account.price_dict[symbol] = 50000.0 # 当前市价
 
         # 收到资金费事件
         # 假设: 结算价(Mark Price) = 50000, 费率 = 0.0001 (0.01%)
         # 费用 = 1.0 * 50000 * 0.0001 = 5.0 USDT
-        funding_event = OKXFundingRate(timestamp=200, symbol=symbol, funding_rate=0.0001)
+        funding_event = OKXFundingRate(timestamp=200, symbol=symbol, funding_rate=0.0001, price=50000.0)
         account.on_funding_data(funding_event)
 
         # 验证余额减少

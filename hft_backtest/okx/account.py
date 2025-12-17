@@ -105,7 +105,7 @@ class OKXAccount(Account):
         
         # 计算资金费 (通常: Long 付钱给 Short, 若 rate > 0)
         # 费用 = 持仓 * 价格 * 费率
-        funding_fee = pos_float * self.price_dict[event.symbol] * event.funding_rate
+        funding_fee = pos_float * event.price * event.funding_rate
         
         self.cash_balance -= funding_fee
         self.total_funding_fee[event.symbol] += funding_fee

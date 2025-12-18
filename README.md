@@ -1,78 +1,131 @@
 # HftBacktest
 
-**HftBacktest** 是一个基于 Python 的高性能、事件驱动的高频交易回测框架。
+**HftBacktest** 是一个基于 Python 的简易高频交易回测框架，专为模拟真实市场环境下的延迟和微观结构设计。
 
-它专为模拟真实交易环境而设计，采用了 **Server-Client 双端架构**，通过模拟网络延迟总线（DelayBus）连接策略端与交易所端，能够精确回测高频策略在延迟环境下的表现。核心组件使用 **Cython** 编写以确保极高的事件处理吞吐量。
+## 🎯 设计思路
 
-## ✨ 核心特性
+1.  **事件驱动核心**：框架的最顶层是事件与事件引擎 (`EventEngine`)，负责接收和按时间顺序严格推送事件。
+2.  **组件化架构**：所有功能模块（策略、账户、撮合等）均作为 `Component` 接入引擎，通过监听特定事件进行处理，并广播处理结果（如订单状态更新）。
+3.  **双端延迟模拟**：
+    * **Server 端**：代表交易所，处理撮合、结算、账户资金。
+    * **Client 端**：代表本地策略，处理信号生成、风控。
+    * **零延迟内部通信**：直接监听同一引擎的组件之间无延迟。
+    * **DelayBus 总线**：连接 Server 和 Client 两个引擎，模拟真实的 **网络延迟（Latency）**，实现行情推送和订单回报的异步传输。
+4.  **类型严格**：事件支持继承，但在注册监听时采用严格类型匹配，确保逻辑处理的精确性。
 
-* **双端架构 (Dual-Engine)**: 分离交易所（Server）与策略（Client）的事件循环，真实模拟 C/S 架构。
-* **延迟模拟 (Network Latency)**: 内置 `DelayBus` 组件，支持自定义网络延迟（RTT），模拟行情推送与订单回报的异步延迟。
-* **高性能核心**: 核心事件对象 (`Event`) 和订单对象 (`Order`) 采用 Cython 实现，大幅降低内存占用并提升处理速度。
-* **全功能撮合**: 
-    * **OKX/Binance Matcher**: 支持 Level-2 25档盘口数据的精确撮合，包含 Maker/Taker 费率及排队位置估算 (Rank-based matching)。
-    * **Bar Matcher**: 支持分钟/小时级 K 线数据的低频回测。
-* **混合数据源**: 支持 `Parquet` 和 `CSV` 格式，支持多数据源（如 Trades + BookTicker + FundingRate）按时间戳归并回放。
-* **精确结算**: 内置账户会计核算系统，支持保证金、手续费、资金费率及交割结算逻辑。
+## 🧩 模块详解
 
-## 🛠️ 安装指南
+### 1. 核心组件 (`hft_backtest`)
+* **`event_engine`**: 回测的核心心脏。提供 `register`（注册监听）和 `put`（推送事件）方法，确保事件队列按时间戳顺序执行。组件需先 `derive` 事件再修改状态，避免引用污染。
+* **`delay_bus`**: 高频回测的灵魂组件。它监听 Source 引擎的事件，增加设定的延迟时间（ms）后，再推送到 Target 引擎。
+    * Server -> Client: 模拟行情数据传输延迟、成交回报延迟。
+    * Client -> Server: 模拟订单发送延迟、撤单请求延迟。
+* **`dataset`**: 定义标准 `Data` 事件。支持 **MergedDataset**，可将 Trades、BookTicker、FundingRate 等多源数据按时间戳归并回放。
 
-### 前置条件
-* Python 3.8+
-* C++ 编译器 (用于编译 Cython 扩展)
+### 2. 交易组件
+* **`match_engine`**: 交易所撮合逻辑。
+    * 监听 `SUBMITTED` 状态订单。
+    * 维护 OrderBook，计算限价单的排位（Rank），模拟被动成交。
+    * 支持 OKX 和 Binance 的特定撮合规则。
+* **`account`**: 账户资金管理。
+    * 维护订单状态机（Submitted -> Received -> Filled/Canceled）。
+    * 处理 `Data:trade` 事件更新标记价格。
+    * 提供 `get_positions`、`get_equity` 等查询接口。
+* **`recorder`**: 数据记录。
+    * 监听成交事件记录 `trade.csv`。
+    * 定期快照账户状态（权益、保证金、PnL）到 `snapshots.csv`。
 
-### 安装步骤
+### 3. 策略开发
+* **`strategy`**: 用户策略基类。
+    * 需继承并实现 `on_data` 或注册其他事件回调。
+    * 提供 `send_order` 接口（注：请使用 `Order` 的工厂方法创建实例）。
+    * **注意**：所有回调函数需要开发者手动在 `start` 方法中注册监听。
 
-1.  **克隆仓库**
-    ```bash
-    git clone [https://github.com/your-repo/hft_backtest.git](https://github.com/your-repo/hft_backtest.git)
-    cd hft_backtest
-    ```
+### 4. `backtest_engine`
+组装整个回测系统的入口类，负责：
+1.  创建双端事件引擎 (Server/Client)。
+2.  构建双向 DelayBus。
+3.  载入数据集。
+4.  按顺序添加组件（撮合、账户、策略等）。
 
-2.  **安装依赖**
-    ```bash
-    pip install -r requirements.txt
-    ```
+> **⚠️ 初始化顺序警告**：组件添加顺序非常关键。建议遵循 `Matcher -> ServerAccount -> Recorder -> ClientAccount -> Strategy` 的顺序，防止策略先收到回报而账户尚未更新状态的情况。
 
-3.  **编译 Cython 扩展**
-    这是必须的步骤，用于生成核心的 C 扩展模块。
-    ```bash
-    python setup.py build_ext --inplace
-    ```
+## 🏗️ 架构图解
+
+```mermaid
+graph TD
+    subgraph "交易所端 (Server Engine)"
+        Matcher[撮合引擎]
+        ServerAcc[交易所账户]
+        Settlement[结算引擎]
+    end
+
+    subgraph "策略端 (Client Engine)"
+        Strategy[用户策略]
+        ClientAcc[本地影子账户]
+    end
+
+    Data[数据源 (Dataset)] -->|行情推送| ServerEngine
+    
+    %% 内部交互
+    ServerEngine <--> Matcher
+    ServerEngine <--> ServerAcc
+    
+    ClientEngine <--> Strategy
+    ClientEngine <--> ClientAcc
+
+    %% 延迟交互
+    ServerEngine -->|行情/回报 (Delay)| BusS2C[DelayBus S->C]
+    BusS2C --> ClientEngine
+    
+    ClientEngine -->|下单/撤单 (Delay)| BusC2S[DelayBus C->S]
+    BusC2S --> ServerEngine
+```
 
 ## 🚀 快速开始
 
-以下是一个简单的回测流程示例：
+### 1. 安装
+```bash
+# 1. 安装依赖
+pip install -r requirements.txt
+
+# 2. 编译 Cython 扩展 (必须)
+python setup.py build_ext --inplace
+```
+
+### 2. 运行示例
+参考 `test/binance/demo.py` 或 `test/okx/demo.py`：
 
 ```python
-from hft_backtest import BacktestEngine, Order, Strategy, Data
-from hft_backtest.binance import BinanceAccount, BinanceMatcher, BinanceRecorder
-# 假设你已经定义了 BinanceData 类用于读取 parquet
+from hft_backtest import BacktestEngine, MergedDataset
+from hft_backtest.binance import BinanceMatcher, BinanceAccount, BinanceRecorder
+# ... 导入你的数据类和策略类
 
-class MyStrategy(Strategy):
-    def on_data(self, data: Data):
-        # 简单的策略逻辑
-        if data.name == 'bookTicker':
-             # 打印行情或下单
-             pass
+def main():
+    # 1. 准备数据
+    ds = MergedDataset(bookticker_ds, trades_ds)
+    
+    # 2. 初始化引擎 (设置 10ms 网络延迟)
+    engine = BacktestEngine(datasets=[ds], delay=10)
+    
+    # 3. 添加服务端组件
+    engine.add_component(BinanceMatcher(), is_server=True)
+    engine.add_component(BinanceAccount(), is_server=True)
+    
+    # 4. 添加客户端组件
+    engine.add_component(MyStrategy(), is_server=False)
+    
+    # 5. 运行
+    engine.run()
+```
 
-# 1. 准备数据
-bookticker_ds = BinanceData('bookTicker', "./data/bookTicker.parquet", timecol="transaction_time")
-trades_ds = BinanceData('trades', "./data/trades.parquet", timecol="time")
+## 📊 性能说明
 
-# 2. 初始化回测引擎，设置 10ms 延迟
-backtest_engine = BacktestEngine(datasets=[bookticker_ds, trades_ds], delay=10)
+* **内存优化**: 即使数据量巨大（如单月 BookTicker 80G+），通过 `chunksize` 分块读取和逐行推送，可保持低内存占用。
+* **计算性能**: 
+    * 核心事件对象使用 Cython 优化。
+    * Dataset 读取支持 Parquet，速度显著优于 CSV。
+    * 测试表明，BTCUSDT 单日全量 Tick 数据（2000万行+）空推仅需 1 分钟左右。
 
-# 3. 配置服务端组件 (交易所侧)
-backtest_engine.add_component(BinanceMatcher(), is_server=True)
-backtest_engine.add_component(BinanceAccount(), is_server=True)
-backtest_engine.add_component(BinanceRecorder("./record", snapshot_interval=60000), is_server=True)
-
-# 4. 配置客户端组件 (策略侧)
-local_account = BinanceAccount() # 本地影子账户
-strategy = MyStrategy(local_account)
-backtest_engine.add_component(local_account, is_server=False)
-backtest_engine.add_component(strategy, is_server=False)
-
-# 5. 运行回测
-backtest_engine.run()
+## 📄 License
+MIT License

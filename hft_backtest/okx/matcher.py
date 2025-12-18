@@ -455,12 +455,12 @@ class OKXMatcher(MatchEngine):
         ask_price_float = ask_price_int / self.PRICE_SCALAR
 
         while pending_queue:
-            order = pending_queue[0] # Peek
+            order = pending_queue.popleft()
+            # order = pending_queue[0]
             
             # 只处理那些能立即成交的 (Taker)
             # 复杂的排队逻辑留给 BookTicker
             if order.order_type == OrderType.MARKET_ORDER:
-                pending_queue.popleft()
                 if order.quantity > 0:
                     self._fill_order(order, ask_price_float, is_taker=True)
                 else:
@@ -493,4 +493,4 @@ class OKXMatcher(MatchEngine):
             self._add_order_to_book(order)
             
             # 推送 Order Entered 事件
-            self.event_engine.put(order.derive())
+            # self.event_engine.put(order.derive())

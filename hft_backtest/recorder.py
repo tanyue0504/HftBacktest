@@ -37,7 +37,7 @@ class TradeRecorder(Recorder):
         if order.state != OrderState.FILLED:
             return
         # 记录订单信息到缓冲区
-        line = f"{order.timestamp},{order.order_id},{order.symbol},{order.price},{order.quantity},{order.commission_fee}\n"
+        line = f"{order.timestamp},{order.order_id},{order.symbol},{order.filled_price},{order.quantity},{order.commission_fee}\n"
         self.buffer.append(line)
         # 如果缓冲区满了，写入文件
         if len(self.buffer) >= self.buffer_size:

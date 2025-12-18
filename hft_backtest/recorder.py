@@ -1,5 +1,5 @@
 from abc import ABC
-from hft_backtest import Component, EventEngine, Order, Event, Account
+from hft_backtest import Component, EventEngine, Order, Event, Account, OrderState
 
 class Recorder(Component, ABC):
     """
@@ -30,17 +30,29 @@ class TradeRecorder(Recorder):
         self.buffer.append("timestamp,order_id,symbol,price,quantity,commission\n")
 
     def stop(self):
-        self.file.writelines(self.buffer)
+        self.flush(flush_to_disk=True)
         self.file.close()
 
     def on_order(self, order: Order):
+        if order.state != OrderState.FILLED:
+            return
         # 记录订单信息到缓冲区
-        line = f"{order.timestamp},{order.order_id},{order.symbol},{order.price},{order.quantity},{order.commission_fee},{order.is_maker}\n"
+        line = f"{order.timestamp},{order.order_id},{order.symbol},{order.price},{order.quantity},{order.commission_fee}\n"
         self.buffer.append(line)
         # 如果缓冲区满了，写入文件
         if len(self.buffer) >= self.buffer_size:
-            self.file.writelines(self.buffer)
-            self.buffer.clear()
+            self.flush()
+
+    def flush(self, flush_to_disk: bool = False):
+        # 强制写入缓冲区到文件
+        if not self.buffer:
+            return
+        if not self.file or self.file.closed:
+            return
+        self.file.writelines(self.buffer)
+        if flush_to_disk:
+            self.file.flush()
+        self.buffer.clear()
 
 class AccountRecorder(Recorder):
     """
@@ -78,9 +90,18 @@ class AccountRecorder(Recorder):
         self.buffer.append("timestamp,equity,balance,commission,funding,pnl,trade_count,trade_amount\n")
 
     def stop(self):
-        self.record(force=True)
-        self.file.writelines(self.buffer)
+        self.flush(flush_to_disk=True)
         self.file.close()
+
+    def flush(self, flush_to_disk: bool = False):
+        if not self.buffer:
+            return
+        if not self.file or self.file.closed:
+            return
+        self.file.writelines(self.buffer)
+        if flush_to_disk:
+            self.file.flush()
+        self.buffer.clear()
 
     def on_event(self, event: Event):
         self.current_timestamp = event.timestamp
@@ -104,7 +125,7 @@ class AccountRecorder(Recorder):
         funding = total_funding_fee - self.last_state_dict.get("total_funding_fee", 0)
         self.last_state_dict["total_funding_fee"] = total_funding_fee
 
-        total_pnl = self.account.get_total_realized_pnl()
+        total_pnl = self.account.get_total_trade_pnl()
         pnl = total_pnl - self.last_state_dict.get("total_pnl", 0)
         self.last_state_dict["total_pnl"] = total_pnl
 
@@ -122,5 +143,4 @@ class AccountRecorder(Recorder):
 
         # 如果缓冲区满了，写入文件
         if len(self.buffer) >= self.buffer_size:
-            self.file.writelines(self.buffer)
-            self.buffer.clear()
+            self.flush()

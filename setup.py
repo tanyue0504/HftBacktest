@@ -21,6 +21,12 @@ extensions = [
         "hft_backtest.event_engine", 
         ["hft_backtest/event_engine.pyx"],
     ),
+    Extension(
+        "hft_backtest.delaybus", 
+        ["hft_backtest/delaybus.pyx"],
+        # include_dirs=[numpy.get_include()],
+        language="c++",  # <--- 必须有这一行，因为用了 libcpp.vector
+    ),
 ]
 
 setup(

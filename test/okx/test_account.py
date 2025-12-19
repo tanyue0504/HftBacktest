@@ -30,18 +30,10 @@ class TestOKXAccount:
         # Selling (Short) -> qty < 0 -> cash_flow > 0 (Receive money)
         
         real_qty = qty * side
-        order = Order(
-            order_id=order_id,
-            order_type=OrderType.LIMIT_ORDER,
-            symbol=symbol,
-            quantity=real_qty, 
-            price=price,
-            state=OrderState.FILLED
-        )
+        order = Order.create_limit(symbol, real_qty, price)
+        order.state = Order.ORDER_STATE_FILLED
         order.filled_price = price
         order.commission_fee = fee
-        # 手动触发 property 计算
-        _ = order.quantity_int 
         return order
 
     def test_initial_state(self, account):
@@ -59,6 +51,11 @@ class TestOKXAccount:
 
         # 1. 模拟成交
         order = self.create_filled_order(1, symbol, 1, qty, entry_price, fee)
+        # order = Order.create_limit(symbol, qty, entry_price)
+        # order.filled_price = entry_price
+        # order.commission_fee = fee
+        # order.state = Order.ORDER_STATE_FILLED
+
         account.on_order(order)
         # 更新市场价与成交价一致，以便观察初始权益
         account.price_dict[symbol] = entry_price

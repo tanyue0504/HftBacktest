@@ -54,16 +54,16 @@ class OKXAccount(Account):
     def on_order(self, order: Order):
         """处理订单状态变化"""
         # 1. 过滤撤单
-        if order.is_cancel:
+        if order.is_canceled:
             return
 
         # 2. 维护活跃订单
-        if order.state in (OrderState.SUBMITTED, OrderState.RECEIVED):
+        if order.is_submitted or order.is_received:
             self.order_dict[order.order_id] = order
             return
         
         # 3. 处理成交
-        if order.state == OrderState.FILLED:
+        if order.is_filled:
             symbol = order.symbol
             
             # A. 累计统计更新

@@ -115,7 +115,10 @@ cdef class Order(Event):
         def __get__(self):
             # C 级别的 if check，开销极低
             if not self._price_cache_valid:
-                self._price_int_cache = <long>(self._price * _SCALER + 0.5)
+                if self._price >= 0:
+                    self._price_int_cache = <long>(self._price * _SCALER + 0.5)
+                else:
+                    self._price_int_cache = <long>(self._price * _SCALER - 0.5)
                 self._price_cache_valid = True
             return self._price_int_cache
 
@@ -130,7 +133,10 @@ cdef class Order(Event):
     property quantity_int:
         def __get__(self):
             if not self._quantity_cache_valid:
-                self._quantity_int_cache = <long>(self._quantity * _SCALER + 0.5)
+                if self._quantity >= 0:
+                    self._quantity_int_cache = <long>(self._quantity * _SCALER + 0.5)
+                else:
+                    self._quantity_int_cache = <long>(self._quantity * _SCALER - 0.5)
                 self._quantity_cache_valid = True
             return self._quantity_int_cache
 

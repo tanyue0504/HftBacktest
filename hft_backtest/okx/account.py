@@ -54,7 +54,7 @@ class OKXAccount(Account):
     def on_order(self, order: Order):
         """处理订单状态变化"""
         # 1. 过滤撤单
-        if order.is_canceled:
+        if order.is_cancel_order:
             return
 
         # 2. 维护活跃订单

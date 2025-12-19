@@ -58,11 +58,13 @@ class TestOKXIntegration:
         engine.put(ticker1)
         
         # 2. 策略下限价买单: 买入 1.0 BTC @ 50000 (跟盘口价一致，做 Maker)
-        order = Order(
-            order_id=1, order_type=OrderType.LIMIT_ORDER, 
-            symbol=SYMBOL, quantity=1.0, price=50000.0, 
-            state=OrderState.SUBMITTED # 模拟策略已发出
-        )
+        # order = Order(
+        #     order_id=1, order_type=OrderType.LIMIT_ORDER, 
+        #     symbol=SYMBOL, quantity=1.0, price=50000.0, 
+        #     state=OrderState.SUBMITTED # 模拟策略已发出
+        # )
+        order = Order.create_limit(SYMBOL, 1.0, 50000.0)
+        order.state = Order.ORDER_STATE_SUBMITTED
         engine.put(order)
         
         # 3. 推送下一笔行情 -> 触发 Matcher 入书
@@ -114,11 +116,13 @@ class TestOKXIntegration:
         engine.put(ticker)
         
         # 下市价买单 1.0 BTC (应以 Ask 50001 成交)
-        order = Order(
-            order_id=2, order_type=OrderType.MARKET_ORDER,
-            symbol=SYMBOL, quantity=1.0, price=None,
-            state=OrderState.SUBMITTED
-        )
+        # order = Order(
+        #     order_id=2, order_type=OrderType.MARKET_ORDER,
+        #     symbol=SYMBOL, quantity=1.0, price=None,
+        #     state=OrderState.SUBMITTED
+        # )
+        order = Order.create_market(SYMBOL, 1.0)
+        order.state = Order.ORDER_STATE_SUBMITTED
         engine.put(order)
         
         # 触发撮合 (Pending -> Fill)
@@ -139,11 +143,13 @@ class TestOKXIntegration:
         engine.put(ticker)
         
         # 1. 挂买单 40000 (深价位，不成交)
-        order = Order(
-            order_id=3, order_type=OrderType.LIMIT_ORDER,
-            symbol=SYMBOL, quantity=1.0, price=40000.0,
-            state=OrderState.SUBMITTED
-        )
+        # order = Order(
+        #     order_id=3, order_type=OrderType.LIMIT_ORDER,
+        #     symbol=SYMBOL, quantity=1.0, price=40000.0,
+        #     state=OrderState.SUBMITTED
+        # )
+        order = Order.create_limit(SYMBOL, 1.0, 40000.0)
+        order.state = Order.ORDER_STATE_SUBMITTED
         engine.put(order)
         engine.put(ticker) # 入书
         
@@ -151,7 +157,9 @@ class TestOKXIntegration:
         
         # 2. 发送撤单指令
         # Cancel Order 工厂方法通常不带 Symbol，但 Matcher 需要能在内部索引中找到它
-        cancel = Order.cancel_order(target_order_id=3)
+        # cancel = Order.cancel_order(target_order_id=3)
+        cancel = order.derive()
+        cancel.order_type = Order.ORDER_TYPE_CANCEL
         engine.put(cancel)
         
         # 3. 验证
@@ -171,7 +179,9 @@ class TestOKXIntegration:
         ticker = self.create_ticker(50000.5)
         engine.put(ticker)
         
-        o = Order(4, OrderType.MARKET_ORDER, SYMBOL, 1.0, None, OrderState.SUBMITTED)
+        # o = Order(4, OrderType.MARKET_ORDER, SYMBOL, 1.0, None, OrderState.SUBMITTED)
+        o = Order.create_market(SYMBOL, 1.0)
+        o.state = Order.ORDER_STATE_SUBMITTED
         engine.put(o)
         engine.put(ticker) 
         

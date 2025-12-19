@@ -1,6 +1,26 @@
 from collections import deque
-from hft_backtest import Event, EventEngine
+from hft_backtest import Event, EventEngine, Component
 import math
+from abc import ABC, abstractmethod
+
+from hft_backtest.event_engine import Component
+
+class LatencyModel(ABC):
+    @abstractmethod
+    def get_delay(self) -> int:
+        # 收取事件动态更新延迟，并提供延迟访问接口，不保证幂等，即便没有新的事件也可能不一样
+        pass
+
+class FixedDelayModel(LatencyModel):
+    def __init__(self, delay: int):
+        self.delay = delay
+
+    def get_delay(self) -> int:
+        return self.delay
+    
+class DelayBus(Component):
+    def __init__(self, target_engine: EventEngine, delay_model: LatencyModel) -> None:
+        pass
 
 class DelayBus:
     def __init__(

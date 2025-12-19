@@ -17,6 +17,10 @@ extensions = [
         "hft_backtest.order",
         ["hft_backtest/order.pyx"],
     ),
+    Extension(
+        "hft_backtest.event_engine", 
+        ["hft_backtest/event_engine.pyx"],
+    ),
 ]
 
 setup(

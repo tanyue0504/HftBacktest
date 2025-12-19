@@ -67,14 +67,14 @@ class TestOKXIntegration:
         order.state = Order.ORDER_STATE_SUBMITTED
         engine.put(order)
         
-        # 3. 推送下一笔行情 -> 触发 Matcher 入书
-        # Matcher 会计算 Rank：
-        # 价格 50000 此时是 Bid1，且盘口已有 10.0 的量。
-        # 所以 Order.rank = 10.0 (排在 10 个币后面)
+        # --- 关键修正：捕获动态 ID ---
+        oid = order.order_id  # <--- 获取真实生成的 ID
+        
+        # 3. 推送行情
         engine.put(ticker1)
         
-        # 验证：订单已在账户活跃列表中
-        assert 1 in account.get_orders()
+        # 验证：使用 oid 而不是 1
+        assert oid in account.get_orders()  # ✅ 修复
         assert account.get_positions().get(SYMBOL, 0) == 0
         
         # 4. 模拟成交 A: 有人卖出 5.0 个币 (Trade Side=Sell)
@@ -86,7 +86,7 @@ class TestOKXIntegration:
         engine.put(trade1)
         
         # 验证：尚未成交
-        assert 1 in account.get_orders()
+        assert oid in account.get_orders()
         assert account.get_positions().get(SYMBOL, 0) == 0
         
         # 5. 模拟成交 B: 有人大单砸盘，卖出 6.0 个币
@@ -105,7 +105,7 @@ class TestOKXIntegration:
         # Fee = 50000 * 0.0002 (Maker) = 10.0
         assert account.get_positions()[SYMBOL] == pytest.approx(1.0)
         assert account.get_balance() == pytest.approx(100000.0 - 50000.0 - 10.0)
-        assert 1 not in account.order_dict
+        assert oid not in account.order_dict
 
     def test_market_order_execution(self, setup_system):
         """测试：市价单 (Taker) 立即成交"""
@@ -148,24 +148,23 @@ class TestOKXIntegration:
         #     symbol=SYMBOL, quantity=1.0, price=40000.0,
         #     state=OrderState.SUBMITTED
         # )
+        # 1. 挂买单
         order = Order.create_limit(SYMBOL, 1.0, 40000.0)
         order.state = Order.ORDER_STATE_SUBMITTED
         engine.put(order)
         engine.put(ticker) # 入书
         
-        assert 3 in account.order_dict
+        # --- 关键修正 ---
+        oid = order.order_id
+        assert oid in account.order_dict  # ✅ 修复
         
         # 2. 发送撤单指令
-        # Cancel Order 工厂方法通常不带 Symbol，但 Matcher 需要能在内部索引中找到它
-        # cancel = Order.cancel_order(target_order_id=3)
         cancel = order.derive()
         cancel.order_type = Order.ORDER_TYPE_CANCEL
         engine.put(cancel)
         
         # 3. 验证
-        # Matcher 处理撤单 -> 推送 CANCELED -> Account 移除订单
-        assert 3 not in account.order_dict
-        # 余额无变化
+        assert oid not in account.order_dict  # ✅ 修复
         assert account.get_balance() == 100000.0
 
     def test_funding_and_delivery_lifecycle(self, setup_system):

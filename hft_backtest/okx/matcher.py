@@ -121,7 +121,7 @@ class OKXMatcher(MatchEngine):
 
     def _fill_order(self, order: Order, filled_price: float, is_taker: bool):
         new_order = order.derive()
-        new_order.state = OrderState.FILLED
+        new_order.state = Order.ORDER_STATE_FILLED
         new_order.filled_price = filled_price
         
         raw_fee = abs(filled_price * new_order.quantity)
@@ -137,7 +137,7 @@ class OKXMatcher(MatchEngine):
             order = self.order_book[symbol][side][price_int][order_id]
             
             new_order = order.derive()
-            new_order.state = OrderState.CANCELED
+            new_order.state = Order.ORDER_STATE_CANCELED
             
             self._remove_order_from_book(order)
             self.event_engine.put(new_order)
@@ -156,7 +156,7 @@ class OKXMatcher(MatchEngine):
                     
                     # 推送撤单成功事件
                     new_order = order.derive()
-                    new_order.state = OrderState.CANCELED
+                    new_order.state = Order.ORDER_STATE_CANCELED
                     self.event_engine.put(new_order)
                     return
 
@@ -164,7 +164,7 @@ class OKXMatcher(MatchEngine):
 
     def _process_cancel_internal(self, order: Order):
         """处理 Pending 队列中的撤单指令"""
-        self._cancel_order(order.cancel_target_id)
+        self._cancel_order(order.order_id)
 
     # ==========================
     # Core Event Handlers
@@ -172,11 +172,11 @@ class OKXMatcher(MatchEngine):
 
     def on_order(self, order: Order):
         # 只处理 SUBMITTED 状态的订单或撤单指令
-        if not (order.state == OrderState.SUBMITTED or order.is_cancel):
+        if not (order.is_submitted or order.is_cancel_order):
             return
         
         # 撤单指令立即处理
-        if order.is_cancel:
+        if order.is_cancel_order:
             self._process_cancel_internal(order)
             return
         
@@ -184,7 +184,7 @@ class OKXMatcher(MatchEngine):
         assert order.order_id not in self.order_index
         
         new_order = order.derive()
-        new_order.state = OrderState.RECEIVED
+        new_order.state = Order.ORDER_STATE_RECEIVED
         
         # 放入待处理队列，等待下一个行情事件触发撮合
         self.pending_order_dict[order.symbol].append(new_order)
@@ -313,16 +313,16 @@ class OKXMatcher(MatchEngine):
         while pending_queue:
             order = pending_queue.popleft()
 
-            if order.order_type == OrderType.MARKET_ORDER:
+            if order.is_market_order:
                 if order.quantity > 0:
                     self._fill_order(order, event.ask_price_1, is_taker=True)
                 else:
                     self._fill_order(order, event.bid_price_1, is_taker=True)
                 continue
 
-            if order.order_type == OrderType.TRACKING_ORDER:
+            if order.is_tracking_order:
                 order = order.derive()
-                order.order_type = OrderType.LIMIT_ORDER
+                order.order_type = Order.ORDER_TYPE_LIMIT
                 if order.quantity > 0:
                     order.price = event.bid_price_1
                 else:
@@ -460,7 +460,7 @@ class OKXMatcher(MatchEngine):
             
             # 只处理那些能立即成交的 (Taker)
             # 复杂的排队逻辑留给 BookTicker
-            if order.order_type == OrderType.MARKET_ORDER:
+            if order.is_market_order:
                 if order.quantity > 0:
                     self._fill_order(order, ask_price_float, is_taker=True)
                 else:
@@ -468,9 +468,9 @@ class OKXMatcher(MatchEngine):
                 continue
             
             # --- 3. Tracking -> Limit ---
-            if order.order_type == OrderType.TRACKING_ORDER:
+            if order.is_tracking_order:
                 order = order.derive()
-                order.order_type = OrderType.LIMIT_ORDER
+                order.order_type = Order.ORDER_TYPE_LIMIT
                 if order.quantity > 0:
                     order.price = bid_price_int / self.PRICE_SCALAR
                 else:

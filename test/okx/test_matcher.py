@@ -21,6 +21,38 @@ class TestOKXMatcher:
         matcher = OKXMatcher(taker_fee=0.0005, maker_fee=0.0002)
         matcher.start(engine)
         return matcher
+    
+    def create_order(self, order_id, symbol, direction, qty, price=0.0, type=Order.ORDER_TYPE_LIMIT):
+        """
+        兼容旧测试代码的辅助函数。
+        关键点：必须将 Order 状态设置为 SUBMITTED，否则 Matcher 会忽略它。
+        """
+        # 根据方向决定正负
+        signed_qty = qty if direction > 0 else -qty
+        
+        if type == Order.ORDER_TYPE_MARKET:
+            order = Order.create_market(symbol, signed_qty)
+        elif type == Order.ORDER_TYPE_TRACKING:
+             # 假设有 create_tracking
+             order = Order.create_tracking(symbol, signed_qty)
+        else:
+            order = Order.create_limit(symbol, signed_qty, price)
+        
+        # 模拟设置 Order ID (如果 Order 内部有 setter 或者直接属性赋值)
+        # order.order_id = order_id  # 取决于你的 Order 实现，有些是自动生成的
+        
+        # [CRITICAL FIX] 模拟策略发送订单，将状态改为 SUBMITTED
+        order.state = Order.ORDER_STATE_SUBMITTED
+        
+        # 假如你的 Order.create_* 会自动生成 ID，这里可能需要 hack 一下以匹配测试中的硬编码 ID
+        # 为了让测试里的 cancel_order(target_order_id=1) 生效，我们需要确保这里的 ID 是 1
+        # 这是一个由于 Mock 和硬编码导致的常见测试问题，这里强行赋值演示：
+        try:
+            order.order_id = order_id
+        except AttributeError:
+            pass # 如果 order_id 是只读属性，可能需要其他方式 mock
+            
+        return order
 
     def create_ticker(self, symbol, best_bid, best_ask, qty=1.0):
         """辅助函数：创建扁平的 OKXBookticker 对象"""
@@ -45,10 +77,11 @@ class TestOKXMatcher:
         
         # 1. 初始行情: Bid 100, Ask 105
         ticker = self.create_ticker(symbol, 100.0, 105.0)
-        matcher.on_bookticker(ticker) 
+        matcher.on_bookticker(ticker)
 
         # 2. 下单: 买单 101 (优于当前 Bid 100, 但低于 Ask 105 -> 挂单)
         order = self.create_order(1, symbol, 1, 1.0, 101.0)
+        # order = Order.create_limit(symbol, 1.0, 101.0)
         matcher.on_order(order)
 
         # 3. 再次推送行情触发撮合
@@ -63,7 +96,7 @@ class TestOKXMatcher:
         
         # 检查 engine 调用: 收到 RECEIVED 状态
         args, _ = engine.put.call_args
-        assert args[0].state == OrderState.RECEIVED
+        assert args[0].state == Order.ORDER_STATE_RECEIVED
 
     def test_limit_buy_taker(self, matcher, engine):
         """测试：限价买单吃单 (Taker)"""
@@ -73,6 +106,7 @@ class TestOKXMatcher:
 
         # 2. 下单: 买单 106 (高于 Ask 105 -> 立即成交)
         order = self.create_order(1, symbol, 1, 0.5, 106.0)
+        # order = Order.create_limit(symbol, 0.5, 106.0)
         matcher.on_order(order)
 
         # 3. 触发撮合
@@ -82,7 +116,7 @@ class TestOKXMatcher:
         calls = engine.put.call_args_list
         filled_event = calls[-1][0][0]
         
-        assert filled_event.state == OrderState.FILLED
+        assert filled_event.is_filled
         assert filled_event.filled_price == 105.0
         assert filled_event.commission_fee == (105.0 * 0.5) * matcher.taker_fee
 
@@ -95,6 +129,7 @@ class TestOKXMatcher:
 
         # 2. 下卖单 102 (挂在中间)
         order = self.create_order(1, symbol, -1, 1.0, 102.0)
+        # order = Order.create_limit(symbol, -1.0, 102.0)
         matcher.on_order(order)
         matcher.on_bookticker(ticker1) # 处理入队
 
@@ -107,7 +142,7 @@ class TestOKXMatcher:
 
         # 验证: 被动成交, Maker Fee
         filled_event = engine.put.call_args[0][0]
-        assert filled_event.state == OrderState.FILLED
+        assert filled_event.is_filled
         assert filled_event.filled_price == 102.0
         assert filled_event.commission_fee == (102.0 * 1.0) * matcher.maker_fee
         assert len(matcher.order_book[symbol][matcher.SIDE_SELL]) == 0
@@ -119,13 +154,14 @@ class TestOKXMatcher:
         matcher.on_bookticker(ticker)
 
         # 市价买入
-        order = self.create_order(1, symbol, 1, 1.0, type=OrderType.MARKET_ORDER)
+        order = self.create_order(1, symbol, 1, 1.0, type=Order.ORDER_TYPE_MARKET)
+        # order = Order.create_market(symbol, 1.0)
         matcher.on_order(order)
         matcher.on_bookticker(ticker)
 
         # 验证: 以 Ask 1 (105.0) 成交
         filled_event = engine.put.call_args[0][0]
-        assert filled_event.state == OrderState.FILLED
+        assert filled_event.is_filled
         assert filled_event.filled_price == 105.0
 
     def test_cancel_order(self, matcher, engine):
@@ -136,17 +172,19 @@ class TestOKXMatcher:
 
         # 1. 挂买单 99
         order = self.create_order(1, symbol, 1, 1.0, 99.0)
+        # order = Order.create_limit(symbol, 1.0, 99.0)
         matcher.on_order(order)
         matcher.on_bookticker(ticker)
         assert matcher.to_int_price(99.0) in matcher.order_book[symbol][matcher.SIDE_BUY]
 
         # 2. 发送撤单指令
-        cancel_order = Order.cancel_order(target_order_id=1)
-        matcher.on_order(cancel_order) 
+        cancel_order = order.derive()
+        cancel_order.order_type = Order.ORDER_TYPE_CANCEL
+        matcher.on_order(cancel_order)
 
         # 验证: 收到 CANCELED 事件
         canceled_event = engine.put.call_args[0][0]
-        assert canceled_event.state == OrderState.CANCELED
+        assert canceled_event.is_canceled
         assert canceled_event.order_id == 1
         assert len(matcher.order_book[symbol][matcher.SIDE_BUY][matcher.to_int_price(99.0)]) == 0
 
@@ -155,6 +193,7 @@ class TestOKXMatcher:
         symbol = "BTC-USDT"
         # 1. 挂买单 100
         order = self.create_order(1, symbol, 1, 1.0, 100.0)
+        # order = Order.create_limit(symbol, 1.0, 100.0)
         matcher.on_order(order)
         
         # 先推一个 Bookticker 让订单入书
@@ -168,7 +207,7 @@ class TestOKXMatcher:
 
         # 验证: 订单被成交
         filled_event = engine.put.call_args[0][0]
-        assert filled_event.state == OrderState.FILLED
+        assert filled_event.is_filled
         assert filled_event.filled_price == 100.0
         assert filled_event.commission_fee == (100.0 * 1.0) * matcher.maker_fee
 
@@ -179,7 +218,9 @@ class TestOKXMatcher:
         matcher.on_bookticker(ticker)
 
         # 下一个 Buy Tracking Order (应该挂在 Bid 1 = 100)
-        order = self.create_order(1, symbol, 1, 1.0, type=OrderType.TRACKING_ORDER)
+        order = self.create_order(1, symbol, 1, 1.0, type=Order.ORDER_TYPE_TRACKING)
+        # order = Order.create_tracking(symbol, 1.0)
+        order.state = Order.ORDER_STATE_SUBMITTED
         matcher.on_order(order)
         matcher.on_bookticker(ticker)
 
@@ -189,7 +230,7 @@ class TestOKXMatcher:
         
         stored_order = matcher.order_book[symbol][matcher.SIDE_BUY][price_int][1]
         assert stored_order.price == 100.0
-        assert stored_order.order_type == OrderType.LIMIT_ORDER
+        assert stored_order.is_limit_order
 
 if __name__ == "__main__":
     import sys

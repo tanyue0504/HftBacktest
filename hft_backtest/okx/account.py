@@ -1,5 +1,5 @@
 from collections import defaultdict
-from hft_backtest import EventEngine, Order, OrderState
+from hft_backtest import EventEngine, Order
 from hft_backtest.account import Account
 from .event import OKXTrades, OKXFundingRate, OKXDelivery
 

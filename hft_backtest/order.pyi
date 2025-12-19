@@ -1,0 +1,50 @@
+import hft_backtest.event
+from _typeshed import Incomplete
+from typing import Any, ClassVar
+
+ORDER_STATE_CANCELED: int
+ORDER_STATE_CREATED: int
+ORDER_STATE_FILLED: int
+ORDER_STATE_NONE: int
+ORDER_STATE_RECEIVED: int
+ORDER_STATE_SUBMITTED: int
+ORDER_TYPE_CANCEL: int
+ORDER_TYPE_LIMIT: int
+ORDER_TYPE_MARKET: int
+ORDER_TYPE_TRACKING: int
+__test__: dict
+
+class Order(hft_backtest.event.Event):
+    SCALER: ClassVar[int] = ...
+    __pyx_vtable__: ClassVar[PyCapsule] = ...
+    commission_fee: commission_fee
+    filled_price: filled_price
+    is_cancel_order: Incomplete
+    is_canceled: Incomplete
+    is_created: Incomplete
+    is_filled: Incomplete
+    is_limit_order: Incomplete
+    is_market_order: Incomplete
+    is_received: Incomplete
+    is_submitted: Incomplete
+    is_tracking_order: Incomplete
+    order_id: order_id
+    order_type: order_type
+    price: Incomplete
+    price_int: Incomplete
+    quantity: Incomplete
+    quantity_int: Incomplete
+    rank: rank
+    state: state
+    symbol: symbol
+    traded: traded
+    def __init__(self, longorder_id, intorder_type, strsymbol, doublequantity, doubleprice) -> Any: ...
+    @staticmethod
+    def create_limit(strsymbol, doublequantity, doubleprice) -> Any: ...
+    @staticmethod
+    def create_market(strsymbol, doublequantity) -> Any: ...
+    @staticmethod
+    def create_tracking(strsymbol, doublequantity) -> Any: ...
+    def __reduce__(self): ...
+    def __reduce_cython__(self) -> Any: ...
+    def __setstate_cython__(self, __pyx_state) -> Any: ...

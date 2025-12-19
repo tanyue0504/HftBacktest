@@ -1,9 +1,8 @@
 import pytest
 from unittest.mock import MagicMock
-from hft_backtest import Order, OrderState, EventEngine
+from hft_backtest import Order, EventEngine
 from hft_backtest.okx.account import OKXAccount
 from hft_backtest.okx.event import OKXTrades, OKXFundingRate, OKXDelivery
-from hft_backtest.order import OrderType
 
 # 假设 Order.SCALER 是 1e7 (根据之前的上下文)
 # 如果实际值不同，测试会自动适配引用 Order.SCALER

@@ -1,5 +1,5 @@
 import pytest
-from hft_backtest import EventEngine, Order, OrderType, OrderState
+from hft_backtest import EventEngine, Order
 from hft_backtest.okx.account import OKXAccount
 from hft_backtest.okx.matcher import OKXMatcher
 from hft_backtest.okx.event import OKXBookticker, OKXTrades, OKXFundingRate, OKXDelivery

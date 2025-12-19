@@ -1,5 +1,5 @@
 from abc import ABC
-from hft_backtest import Order, OrderState, Component, Account
+from hft_backtest import Order, Component, Account
 
 class Strategy(Component, ABC):
     """
@@ -12,6 +12,6 @@ class Strategy(Component, ABC):
 
     def send_order(self, order: Order):
         """发送订单到事件引擎"""
-        assert order.state == OrderState.CREATED or order.is_cancel
-        order.state = OrderState.SUBMITTED
+        assert order.is_created() or order.is_cancel_order()
+        order.state = Order.ORDER_STATE_SUBMITTED
         self.event_engine.put(order)

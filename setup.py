@@ -33,6 +33,8 @@ setup(
     ],
     
     # 编译配置
-    ext_modules=cythonize(extensions, compiler_directives={'language_level': "3"}),
+    ext_modules=cythonize(extensions, compiler_directives={'language_level': "3", 'embedsignature': True, 'binding': True,}),
     zip_safe=False,
+
+    
 )

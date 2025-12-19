@@ -1,7 +1,7 @@
 import re
 import pytest
 from unittest.mock import MagicMock, ANY
-from hft_backtest import EventEngine, Order, OrderState, OrderType, Event
+from hft_backtest import EventEngine, Order, Event
 from hft_backtest.account import Account
 from hft_backtest.recorder import TradeRecorder, AccountRecorder
 
@@ -45,7 +45,8 @@ class TestTradeRecorder:
         recorder.start(engine)
         
         # 1. 模拟第一个订单
-        order1 = Order(1, OrderType.LIMIT_ORDER, "BTC-USDT", 1.0, 50000.0, OrderState.FILLED)
+        order1 = Order.create_limit("BTC-USDT", 1.0, 50000.0)
+        order1 = Order(1, Order.ORDER_TYPE_LIMIT, "BTC-USDT", 1.0, 50000.0, Order.ORDER_STATE_FILLED)
         order1.timestamp = 1000
         order1.commission_fee = 5.0
         

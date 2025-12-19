@@ -1,5 +1,6 @@
 from abc import ABC
-from hft_backtest import Component, EventEngine, Order, Event, Account, OrderState
+from operator import is_
+from hft_backtest import Component, EventEngine, Order, Event, Account
 
 class Recorder(Component, ABC):
     """
@@ -34,7 +35,7 @@ class TradeRecorder(Recorder):
         self.file.close()
 
     def on_order(self, order: Order):
-        if order.state != OrderState.FILLED:
+        if not order.is_filled():
             return
         # 记录订单信息到缓冲区
         line = f"{order.timestamp},{order.order_id},{order.symbol},{order.filled_price},{order.quantity},{order.commission_fee}\n"

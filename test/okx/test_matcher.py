@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from hft_backtest import Order, OrderType, OrderState, EventEngine
+from hft_backtest import Order, EventEngine
 from hft_backtest.okx.matcher import OKXMatcher
 from hft_backtest.okx.event import OKXBookticker, OKXTrades, OKXDelivery
 
@@ -38,17 +38,6 @@ class TestOKXMatcher:
             setattr(ticker, f"ask_amount_{i}", qty)
             
         return ticker
-
-    def create_order(self, oid, symbol, side, qty, price=None, type=OrderType.LIMIT_ORDER):
-        """辅助创建订单 (qty>0 Buy, qty<0 Sell)"""
-        return Order(
-            order_id=oid,
-            order_type=type,
-            symbol=symbol,
-            quantity=float(qty * side), # 1=Buy, -1=Sell
-            price=float(price) if price else None,
-            state=OrderState.SUBMITTED
-        )
 
     def test_limit_buy_maker(self, matcher, engine):
         """测试：限价买单挂单 (Maker)"""

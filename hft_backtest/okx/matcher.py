@@ -2,7 +2,7 @@ from collections import deque, defaultdict, OrderedDict
 from itertools import chain
 import math
 import operator
-from hft_backtest import MatchEngine, Order, OrderState, OrderType, EventEngine
+from hft_backtest import MatchEngine, Order, EventEngine
 from .event import OKXBookticker, OKXTrades, OKXDelivery
 
 class OKXMatcher(MatchEngine):

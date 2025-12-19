@@ -3,22 +3,17 @@
 
 from setuptools import setup, find_packages, Extension
 from Cython.Build import cythonize
-import numpy
 
 # 定义扩展模块
 extensions = [
     Extension(
         "hft_backtest.event", 
         ["hft_backtest/event.pyx"],
-        include_dirs=[numpy.get_include()] # 如果未来event涉及numpy交互
     ),
-    # Extension(
-    #     "hft_backtest.order", 
-    #     ["hft_backtest/order.pyx"],
-    #     include_dirs=[numpy.get_include()]
-    # ),
-    # 如果需要编译 okx 下的 event，取消注释
-    # Extension("hft_backtest.okx.event", ["hft_backtest/okx/event.pyx"]),
+    Extension(
+        "hft_backtest.order",
+        ["hft_backtest/order.pyx"],
+    ),
 ]
 
 setup(

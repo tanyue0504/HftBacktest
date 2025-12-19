@@ -60,6 +60,7 @@ class TestTradeRecorder:
         order2 = Order(2, OrderType.LIMIT_ORDER, "BTC-USDT", 0.5, 50001.0, OrderState.FILLED)
         order2.timestamp = 1001
         order2.commission_fee = 2.5
+        order2.filled_price = 50001.0
         
         recorder.on_order(order2)
         assert len(recorder.buffer) == 1  # 1 Records

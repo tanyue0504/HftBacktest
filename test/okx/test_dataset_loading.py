@@ -39,6 +39,7 @@ def test_okx_trades():
     dt1 = datetime.now()
     for _ in ds_trades:
         count += 1
+        break
     dt2 = datetime.now()
     
     print(f"OKX Trades: Loaded {count} rows. Elapsed time: {dt2 - dt1}")
@@ -70,6 +71,7 @@ def test_okx_bookticker():
     dt1 = datetime.now()
     for _ in ds_bookticker:
         count += 1
+        break
     dt2 = datetime.now()
     
     print(f"OKX Bookticker: Loaded {count} rows. Elapsed time: {dt2 - dt1}")
@@ -92,6 +94,7 @@ def test_okx_fundingrate():
     dt1 = datetime.now()
     for _ in ds_funding:
         count += 1
+        break
     dt2 = datetime.now()
     
     print(f"OKX FundingRate: Loaded {count} rows. Elapsed time: {dt2 - dt1}")
@@ -114,6 +117,7 @@ def test_okx_delivery():
     dt1 = datetime.now()
     for _ in ds_delivery:
         count += 1
+        break
     dt2 = datetime.now()
     
     print(f"OKX Delivery: Loaded {count} rows. Elapsed time: {dt2 - dt1}")

@@ -57,7 +57,6 @@ def test_overhead_single_source():
     count_direct = 0
     for _ in ds_direct:
         count_direct += 1
-        break
     direct_time = (datetime.now() - start_t).total_seconds()
     
     # 2. Test: MergedDataset 迭代
@@ -68,7 +67,6 @@ def test_overhead_single_source():
     count_merged = 0
     for _ in ds_merged:
         count_merged += 1
-        break
     merged_time = (datetime.now() - start_t).total_seconds()
     
     # 3. 结果对比
@@ -98,14 +96,12 @@ def test_integration_multi_source():
     count_direct = 0
     for _ in ds_trades:
         count_direct += 1
-        break
     direct_time1 = (datetime.now() - start_t).total_seconds()
 
     start_t = datetime.now()
     count_direct = 0
     for _ in ds_book:
         count_direct += 1
-        break
     direct_time2 = (datetime.now() - start_t).total_seconds()
 
     print(f"\n[Direct Dataset Iteration Results]")

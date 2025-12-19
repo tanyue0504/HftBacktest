@@ -46,9 +46,10 @@ class TestTradeRecorder:
         
         # 1. 模拟第一个订单
         order1 = Order.create_limit("BTC-USDT", 1.0, 50000.0)
-        order1 = Order(1, Order.ORDER_TYPE_LIMIT, "BTC-USDT", 1.0, 50000.0, Order.ORDER_STATE_FILLED)
+        order1.state = Order.ORDER_STATE_FILLED
         order1.timestamp = 1000
         order1.commission_fee = 5.0
+        order1.filled_price = 50000.0
         
         recorder.on_order(order1)
         recorder.file.flush()
@@ -58,7 +59,8 @@ class TestTradeRecorder:
             assert len(lines) == 2
             
         # 2. 模拟第二个订单 -> 触发写入
-        order2 = Order(2, OrderType.LIMIT_ORDER, "BTC-USDT", 0.5, 50001.0, OrderState.FILLED)
+        order2 = Order.create_limit("BTC-USDT", 0.5, 50001.0)
+        order2.state = Order.ORDER_STATE_FILLED
         order2.timestamp = 1001
         order2.commission_fee = 2.5
         order2.filled_price = 50001.0
@@ -86,7 +88,10 @@ class TestTradeRecorder:
         recorder = TradeRecorder(str(file_path), account, buffer_size=100)
         recorder.start(engine)
         
-        order = Order(1, OrderType.MARKET_ORDER, "ETH-USDT", 1.0, 3000.0, OrderState.FILLED)
+        order = Order.create_market("ETH-USDT", 1.0)
+        order.state = Order.ORDER_STATE_FILLED
+        order.filled_price = 3000.0
+        order.order_id = 1
         order.timestamp = 2000
         recorder.on_order(order)
         

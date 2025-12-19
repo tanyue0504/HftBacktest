@@ -1,5 +1,8 @@
 # 运行时执行以下命令以编译 Cython 模块
 # python setup.py build_ext --inplace
+# 生成pyi文件 
+# stubgen -m hft_backtest.order -o .
+# stubgen -m hft_backtest.event -o .
 
 from setuptools import setup, find_packages, Extension
 from Cython.Build import cythonize

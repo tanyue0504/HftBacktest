@@ -18,6 +18,19 @@ cdef class Order(Event):
     内存占用约为普通 Python 对象的 1/3。
     """
     SCALER = _SCALER
+
+    ORDER_TYPE_LIMIT = 0 # 限价单
+    ORDER_TYPE_MARKET = 1 # 市价单
+    ORDER_TYPE_TRACKING = 2 # 跟踪单，自动转换为最优价限价单
+    ORDER_TYPE_CANCEL = 3 # 撤单指令
+    
+    # 订单状态
+    ORDER_STATE_NONE = -1       # 初始或撤单指令
+    ORDER_STATE_CREATED = 0     # 已创建，等待提交
+    ORDER_STATE_SUBMITTED = 1  # 已提交，等待交易所确认
+    ORDER_STATE_RECEIVED = 2    # 交易所已接收，等待成交
+    ORDER_STATE_FILLED = 3      # 已成交
+    ORDER_STATE_CANCELED = 4    # 已撤销 
     
     # --- 2. 初始化 ---
     def __init__(

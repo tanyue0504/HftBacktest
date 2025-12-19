@@ -35,7 +35,7 @@ class TradeRecorder(Recorder):
         self.file.close()
 
     def on_order(self, order: Order):
-        if not order.is_filled():
+        if not order.is_filled:
             return
         # 记录订单信息到缓冲区
         line = f"{order.timestamp},{order.order_id},{order.symbol},{order.filled_price},{order.quantity},{order.commission_fee}\n"

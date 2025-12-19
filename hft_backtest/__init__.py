@@ -4,7 +4,8 @@ from .order import Order
 
 # 再按照依赖顺序导入组件
 from .event_engine import EventEngine, Component
-from .dataset import Dataset, MergedDataset, ParquetDataset, CsvDataset
+from .dataset import Dataset, ParquetDataset, CsvDataset
+from .merged_dataset import MergedDataset
 from .delaybus import DelayBus
 from .matcher import MatchEngine
 from .backtest import BacktestEngine

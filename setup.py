@@ -27,6 +27,11 @@ extensions = [
         # include_dirs=[numpy.get_include()],
         language="c++",  # <--- 必须有这一行，因为用了 libcpp.vector
     ),
+    Extension(
+        "hft_backtest.merged_dataset",
+        ["hft_backtest/merged_dataset.pyx"],
+        language="c++",
+    ),
 ]
 
 setup(

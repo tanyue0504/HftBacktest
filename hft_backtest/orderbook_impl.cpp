@@ -103,14 +103,21 @@ void OrderBook::update_bbo(bool is_buy, int64_t price, int64_t market_qty) {
     }
 }
 
+// hft_backtest/orderbook_impl.cpp
+
 void OrderBook::execute_trade(bool maker_is_buy, int64_t price, int64_t volume) {
-    if (maker_is_buy) { // Buyer is Maker, check Bids
+    if (maker_is_buy) { // Buyer is Maker (Check Bids)
         auto it = bids.begin();
         while (it != bids.end()) {
             int64_t order_price = it->first;
             
-            // 穿价: 买单价 > 成交价
-            if (order_price > price) {
+            // -----------------------------------------------------------
+            // Case 1: 穿价 (Sweep) - 价格优势，完全成交
+            // -----------------------------------------------------------
+            // 逻辑：只要价格比成交价好，不管市场上成交了多少量，
+            // 都意味着对手盘已经吃光了比我差的单子，扫到了比我好的价格。
+            // 所以我是必然全成交的。
+            if (order_price > price) { 
                 for (auto* order : it->second) {
                     fill_queue.push_back({order->id, order->price, order->qty, true});
                     order_map.erase(order->id);
@@ -118,57 +125,80 @@ void OrderBook::execute_trade(bool maker_is_buy, int64_t price, int64_t volume) 
                 }
                 it = bids.erase(it);
             } 
-            // 触价: 买单价 == 成交价
+            // -----------------------------------------------------------
+            // Case 2: 触价 (Touch) - 价格相等，受限于量
+            // -----------------------------------------------------------
             else if (order_price == price) {
-                // 注意：vector 删除元素时迭代器失效问题，这里用索引遍历安全
-                // 或者重新设计数据结构。这里简单处理：
-                // 为了避免 vector erase 的开销和迭代器问题，我们收集要删除的 ID
-                // 但考虑到 HFT 回测同价单不多，且 rank 扣减是顺序的
-                
                 auto& list = it->second;
                 for (auto list_it = list.begin(); list_it != list.end(); ) {
                     Order* order = *list_it;
-                    order->rank -= volume;
+                    
+                    order->rank -= volume; // 消耗排队
                     
                     if (order->rank < 0) {
-                        fill_queue.push_back({order->id, price, order->qty, true});
-                        order_map.erase(order->id);
-                        delete order;
-                        list_it = list.erase(list_it); // 返回下一个有效迭代器
-                    } else {
-                        ++list_it;
+                        // 【核心修正】：不能无脑全成，受限于 Trade 的剩余穿透力
+                        // 你的排队是负数，负多少，就说明 Trade "溢出" 到了你这里多少
+                        int64_t available_vol = -order->rank; 
+                        
+                        // 你的成交量 = min(你想要的, 市场给的)
+                        int64_t fill_qty = std::min(order->qty, available_vol);
+                        
+                        fill_queue.push_back({order->id, price, fill_qty, true});
+                        
+                        order->qty -= fill_qty;
+                        order->rank = 0; // 归零，等待下一笔 Trade
+                        
+                        // 如果吃完了，清理订单
+                        if (order->qty <= 0) {
+                            order_map.erase(order->id);
+                            delete order;
+                            list_it = list.erase(list_it);
+                            continue;
+                        }
                     }
+                    ++list_it;
                 }
-                break; // 触价层处理完即止
+                break; // 触价层处理完，不再继续向下
             } else {
                 break; // 没够着
             }
         }
-    } else { // Seller is Maker, check Asks
+    } else { 
+        // Seller is Maker (Check Asks) - 逻辑同上，方向相反
         auto it = asks.begin();
         while (it != asks.end()) {
             int64_t order_price = it->first;
             
-            if (order_price < price) { // 穿价
+            if (order_price < price) { // Sweep
                 for (auto* order : it->second) {
                     fill_queue.push_back({order->id, order->price, order->qty, true});
                     order_map.erase(order->id);
                     delete order;
                 }
                 it = asks.erase(it);
-            } else if (order_price == price) { // 触价
+            } else if (order_price == price) { // Touch
                 auto& list = it->second;
                 for (auto list_it = list.begin(); list_it != list.end(); ) {
                     Order* order = *list_it;
                     order->rank -= volume;
+                    
                     if (order->rank < 0) {
-                        fill_queue.push_back({order->id, price, order->qty, true});
-                        order_map.erase(order->id);
-                        delete order;
-                        list_it = list.erase(list_it);
-                    } else {
-                        ++list_it;
+                        int64_t available_vol = -order->rank;
+                        int64_t fill_qty = std::min(order->qty, available_vol);
+                        
+                        fill_queue.push_back({order->id, price, fill_qty, true});
+                        
+                        order->qty -= fill_qty;
+                        order->rank = 0;
+                        
+                        if (order->qty <= 0) {
+                            order_map.erase(order->id);
+                            delete order;
+                            list_it = list.erase(list_it);
+                            continue;
+                        }
                     }
+                    ++list_it;
                 }
                 break;
             } else {

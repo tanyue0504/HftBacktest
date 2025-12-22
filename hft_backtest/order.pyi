@@ -1,60 +1,96 @@
-import hft_backtest.event
-from _typeshed import Incomplete
-from typing import Any, ClassVar
+from hft_backtest.event import Event
 
-ORDER_STATE_CANCELED: int
-ORDER_STATE_CREATED: int
-ORDER_STATE_FILLED: int
-ORDER_STATE_NONE: int
-ORDER_STATE_RECEIVED: int
-ORDER_STATE_SUBMITTED: int
-ORDER_TYPE_CANCEL: int
+# 模块级常量 (来自 pxd 中的 cpdef enum)
 ORDER_TYPE_LIMIT: int
 ORDER_TYPE_MARKET: int
 ORDER_TYPE_TRACKING: int
-__test__: dict
+ORDER_TYPE_CANCEL: int
 
-class Order(hft_backtest.event.Event):
-    ORDER_STATE_CANCELED: ClassVar[int] = ...
-    ORDER_STATE_CREATED: ClassVar[int] = ...
-    ORDER_STATE_FILLED: ClassVar[int] = ...
-    ORDER_STATE_NONE: ClassVar[int] = ...
-    ORDER_STATE_RECEIVED: ClassVar[int] = ...
-    ORDER_STATE_SUBMITTED: ClassVar[int] = ...
-    ORDER_TYPE_CANCEL: ClassVar[int] = ...
-    ORDER_TYPE_LIMIT: ClassVar[int] = ...
-    ORDER_TYPE_MARKET: ClassVar[int] = ...
-    ORDER_TYPE_TRACKING: ClassVar[int] = ...
-    SCALER: ClassVar[int] = ...
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    commission_fee: commission_fee
-    filled_price: filled_price
-    is_cancel_order: Incomplete
-    is_canceled: Incomplete
-    is_created: Incomplete
-    is_filled: Incomplete
-    is_limit_order: Incomplete
-    is_market_order: Incomplete
-    is_received: Incomplete
-    is_submitted: Incomplete
-    is_tracking_order: Incomplete
-    order_id: order_id
-    order_type: order_type
-    price: Incomplete
-    price_int: Incomplete
-    quantity: Incomplete
-    quantity_int: Incomplete
-    rank: rank
-    state: state
-    symbol: symbol
-    traded: traded
-    def __init__(self, longorder_id, intorder_type, strsymbol, doublequantity, doubleprice) -> Any: ...
+ORDER_STATE_NONE: int
+ORDER_STATE_CREATED: int
+ORDER_STATE_SUBMITTED: int
+ORDER_STATE_RECEIVED: int
+ORDER_STATE_FILLED: int
+ORDER_STATE_CANCELED: int
+
+class Order(Event):
+    # 类级常量
+    SCALER: int
+    
+    ORDER_TYPE_LIMIT: int
+    ORDER_TYPE_MARKET: int
+    ORDER_TYPE_TRACKING: int
+    ORDER_TYPE_CANCEL: int
+    
+    ORDER_STATE_NONE: int
+    ORDER_STATE_CREATED: int
+    ORDER_STATE_SUBMITTED: int
+    ORDER_STATE_RECEIVED: int
+    ORDER_STATE_FILLED: int
+    ORDER_STATE_CANCELED: int
+
+    # cdef public 属性
+    order_id: int
+    order_type: int
+    state: int
+    symbol: str
+    rank: float
+    traded: float
+    filled_price: float
+    commission_fee: float
+
+    def __init__(
+        self, 
+        order_id: int, 
+        order_type: int,
+        symbol: str,
+        quantity: float,
+        price: float,
+    ) -> None: ...
+
+    # 状态判断属性
+    @property
+    def is_limit_order(self) -> bool: ...
+    @property
+    def is_market_order(self) -> bool: ...
+    @property
+    def is_tracking_order(self) -> bool: ...
+    @property
+    def is_cancel_order(self) -> bool: ...
+    @property
+    def is_created(self) -> bool: ...
+    @property
+    def is_submitted(self) -> bool: ...
+    @property
+    def is_received(self) -> bool: ...
+    @property
+    def is_filled(self) -> bool: ...
+    @property
+    def is_canceled(self) -> bool: ...
+
+    # 价格和数量属性 (带 getter/setter)
+    @property
+    def price(self) -> float: ...
+    @price.setter
+    def price(self, value: float) -> None: ...
+
+    @property
+    def price_int(self) -> int: ...
+
+    @property
+    def quantity(self) -> float: ...
+    @quantity.setter
+    def quantity(self, value: float) -> None: ...
+
+    @property
+    def quantity_int(self) -> int: ...
+
+    # 工厂方法
     @staticmethod
-    def create_limit(strsymbol, doublequantity, doubleprice) -> Any: ...
+    def create_limit(symbol: str, quantity: float, price: float) -> Order: ...
+    
     @staticmethod
-    def create_market(strsymbol, doublequantity) -> Any: ...
+    def create_market(symbol: str, quantity: float) -> Order: ...
+    
     @staticmethod
-    def create_tracking(strsymbol, doublequantity) -> Any: ...
-    def __reduce__(self): ...
-    def __reduce_cython__(self) -> Any: ...
-    def __setstate_cython__(self, __pyx_state) -> Any: ...
+    def create_tracking(symbol: str, quantity: float) -> Order: ...

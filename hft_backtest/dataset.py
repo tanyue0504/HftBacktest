@@ -86,3 +86,30 @@ class CsvDataset(Dataset):
                 df = self.transform(df)
             for row in zip(*[df[col].values for col in self.columns]):
                 yield self.event_type(*row)
+
+class TimerEvent(Event):
+    """
+    定时器事件
+    仅包含时间戳
+    """
+    pass
+
+class TimerDataset(Dataset):
+    """
+    定时器数据集
+    按照指定时间间隔生成TimerEvent
+    """
+
+    def __init__(
+        self,
+        start_timestamp: int,
+        end_timestamp: int,
+        freq: str,
+    ):
+        self.start_timestamp = start_timestamp
+        self.end_timestamp = end_timestamp
+        self.freq = freq
+
+    def __iter__(self):
+        times = range(self.start_timestamp, self.end_timestamp, freq=self.freq)
+        yield from map(TimerEvent, times)

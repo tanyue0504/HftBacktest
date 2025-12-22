@@ -1370,6 +1370,7 @@ static const char* const __pyx_f[] = {
   "<stringsource>",
   "cpython/type.pxd",
   "hft_backtest/event.pxd",
+  "hft_backtest/reader.pxd",
 };
 /* #### Code section: utility_code_proto_before_types ### */
 /* Atomics.proto (used by UnpackUnboundCMethod) */
@@ -1547,10 +1548,12 @@ static const char* const __pyx_f[] = {
 
 /*--- Type declarations ---*/
 struct __pyx_obj_12hft_backtest_5event_Event;
+struct __pyx_obj_12hft_backtest_6reader_DataReader;
+struct __pyx_obj_12hft_backtest_6reader_PyDatasetWrapper;
 struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset;
 struct __pyx_t_12hft_backtest_14merged_dataset_MergeItem;
 
-/* "hft_backtest/merged_dataset.pxd":7
+/* "hft_backtest/merged_dataset.pxd":10
  * 
  * #
  * cdef struct MergeItem:             # <<<<<<<<<<<<<<
@@ -1579,21 +1582,44 @@ struct __pyx_obj_12hft_backtest_5event_Event {
 };
 
 
-/* "hft_backtest/merged_dataset.pxd":12
- *     PyObject* event
+/* "hft_backtest/reader.pxd":6
  * 
- * cdef class MergedDataset:             # <<<<<<<<<<<<<<
- *     #
- *     cdef list _iters
+ * #  (C)
+ * cdef class DataReader:             # <<<<<<<<<<<<<<
+ *     #  C
+ *     cdef Event fetch_next(self)
+*/
+struct __pyx_obj_12hft_backtest_6reader_DataReader {
+  PyObject_HEAD
+  struct __pyx_vtabstruct_12hft_backtest_6reader_DataReader *__pyx_vtab;
+};
+
+
+/* "hft_backtest/reader.pxd":11
+ * 
+ * #  Python  Dataset  C  DataReader
+ * cdef class PyDatasetWrapper(DataReader):             # <<<<<<<<<<<<<<
+ *     cdef object _iter
+*/
+struct __pyx_obj_12hft_backtest_6reader_PyDatasetWrapper {
+  struct __pyx_obj_12hft_backtest_6reader_DataReader __pyx_base;
+  PyObject *_iter;
+};
+
+
+/* "hft_backtest/merged_dataset.pxd":15
+ *     PyObject* event  #
+ * 
+ * cdef class MergedDataset(DataReader):             # <<<<<<<<<<<<<<
+ *     #  Python list  GC
+ *     cdef list _sources
 */
 struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset {
-  PyObject_HEAD
-  struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *__pyx_vtab;
-  PyObject *_iters;
+  struct __pyx_obj_12hft_backtest_6reader_DataReader __pyx_base;
+  PyObject *_sources;
   std::vector<struct __pyx_t_12hft_backtest_14merged_dataset_MergeItem>  _heap;
   struct __pyx_obj_12hft_backtest_5event_Event *_cur_event;
   int _cur_idx;
-  PyObject *_cur_iter;
   int _initialized;
 };
 
@@ -1614,15 +1640,43 @@ struct __pyx_vtabstruct_12hft_backtest_5event_Event {
 static struct __pyx_vtabstruct_12hft_backtest_5event_Event *__pyx_vtabptr_12hft_backtest_5event_Event;
 
 
-/* "hft_backtest/merged_dataset.pyx":9
- * from hft_backtest.event cimport Event
+/* "hft_backtest/reader.pxd":6
  * 
- * cdef class MergedDataset:             # <<<<<<<<<<<<<<
+ * #  (C)
+ * cdef class DataReader:             # <<<<<<<<<<<<<<
+ *     #  C
+ *     cdef Event fetch_next(self)
+*/
+
+struct __pyx_vtabstruct_12hft_backtest_6reader_DataReader {
+  struct __pyx_obj_12hft_backtest_5event_Event *(*fetch_next)(struct __pyx_obj_12hft_backtest_6reader_DataReader *);
+};
+static struct __pyx_vtabstruct_12hft_backtest_6reader_DataReader *__pyx_vtabptr_12hft_backtest_6reader_DataReader;
+
+
+/* "hft_backtest/reader.pxd":11
+ * 
+ * #  Python  Dataset  C  DataReader
+ * cdef class PyDatasetWrapper(DataReader):             # <<<<<<<<<<<<<<
+ *     cdef object _iter
+*/
+
+struct __pyx_vtabstruct_12hft_backtest_6reader_PyDatasetWrapper {
+  struct __pyx_vtabstruct_12hft_backtest_6reader_DataReader __pyx_base;
+};
+static struct __pyx_vtabstruct_12hft_backtest_6reader_PyDatasetWrapper *__pyx_vtabptr_12hft_backtest_6reader_PyDatasetWrapper;
+
+
+/* "hft_backtest/merged_dataset.pyx":11
+ * from hft_backtest.reader cimport DataReader, PyDatasetWrapper
+ * 
+ * cdef class MergedDataset(DataReader):             # <<<<<<<<<<<<<<
  *     """
  *      (Cython )
 */
 
 struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset {
+  struct __pyx_vtabstruct_12hft_backtest_6reader_DataReader __pyx_base;
   void (*_push)(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *, long, int, struct __pyx_obj_12hft_backtest_5event_Event *);
   void (*_sift_up)(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *, size_t);
   void (*_sift_down)(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *, size_t);
@@ -1845,158 +1899,13 @@ static CYTHON_INLINE PyObject* __Pyx_CallUnboundCMethod0(__Pyx_CachedCFunction* 
 /* py_dict_values.proto (used by OwnedDictNext) */
 static CYTHON_INLINE PyObject* __Pyx_PyDict_Values(PyObject* d);
 
-/* OwnedDictNext.proto (used by RejectKeywords) */
+/* OwnedDictNext.proto (used by ParseKeywordsImpl) */
 #if CYTHON_AVOID_BORROWED_REFS
 static int __Pyx_PyDict_NextRef(PyObject *p, PyObject **ppos, PyObject **pkey, PyObject **pvalue);
 #else
 CYTHON_INLINE
 static int __Pyx_PyDict_NextRef(PyObject *p, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue);
 #endif
-
-/* RejectKeywords.export */
-static void __Pyx_RejectKeywords(const char* function_name, PyObject *kwds);
-
-/* ListCompAppend.proto */
-#if CYTHON_USE_PYLIST_INTERNALS && CYTHON_ASSUME_SAFE_MACROS
-static CYTHON_INLINE int __Pyx_ListComp_Append(PyObject* list, PyObject* x) {
-    PyListObject* L = (PyListObject*) list;
-    Py_ssize_t len = Py_SIZE(list);
-    if (likely(L->allocated > len)) {
-        Py_INCREF(x);
-        #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030d0000
-        L->ob_item[len] = x;
-        #else
-        PyList_SET_ITEM(list, len, x);
-        #endif
-        __Pyx_SET_SIZE(list, len + 1);
-        return 0;
-    }
-    return PyList_Append(list, x);
-}
-#else
-#define __Pyx_ListComp_Append(L,x) PyList_Append(L,x)
-#endif
-
-/* PyThreadStateGet.proto (used by PyErrFetchRestore) */
-#if CYTHON_FAST_THREAD_STATE
-#define __Pyx_PyThreadState_declare  PyThreadState *__pyx_tstate;
-#define __Pyx_PyThreadState_assign  __pyx_tstate = __Pyx_PyThreadState_Current;
-#if PY_VERSION_HEX >= 0x030C00A6
-#define __Pyx_PyErr_Occurred()  (__pyx_tstate->current_exception != NULL)
-#define __Pyx_PyErr_CurrentExceptionType()  (__pyx_tstate->current_exception ? (PyObject*) Py_TYPE(__pyx_tstate->current_exception) : (PyObject*) NULL)
-#else
-#define __Pyx_PyErr_Occurred()  (__pyx_tstate->curexc_type != NULL)
-#define __Pyx_PyErr_CurrentExceptionType()  (__pyx_tstate->curexc_type)
-#endif
-#else
-#define __Pyx_PyThreadState_declare
-#define __Pyx_PyThreadState_assign
-#define __Pyx_PyErr_Occurred()  (PyErr_Occurred() != NULL)
-#define __Pyx_PyErr_CurrentExceptionType()  PyErr_Occurred()
-#endif
-
-/* PyErrFetchRestore.proto (used by IterNext) */
-#if CYTHON_FAST_THREAD_STATE
-#define __Pyx_PyErr_Clear() __Pyx_ErrRestore(NULL, NULL, NULL)
-#define __Pyx_ErrRestoreWithState(type, value, tb)  __Pyx_ErrRestoreInState(PyThreadState_GET(), type, value, tb)
-#define __Pyx_ErrFetchWithState(type, value, tb)    __Pyx_ErrFetchInState(PyThreadState_GET(), type, value, tb)
-#define __Pyx_ErrRestore(type, value, tb)  __Pyx_ErrRestoreInState(__pyx_tstate, type, value, tb)
-#define __Pyx_ErrFetch(type, value, tb)    __Pyx_ErrFetchInState(__pyx_tstate, type, value, tb)
-static CYTHON_INLINE void __Pyx_ErrRestoreInState(PyThreadState *tstate, PyObject *type, PyObject *value, PyObject *tb);
-static CYTHON_INLINE void __Pyx_ErrFetchInState(PyThreadState *tstate, PyObject **type, PyObject **value, PyObject **tb);
-#if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX < 0x030C00A6
-#define __Pyx_PyErr_SetNone(exc) (Py_INCREF(exc), __Pyx_ErrRestore((exc), NULL, NULL))
-#else
-#define __Pyx_PyErr_SetNone(exc) PyErr_SetNone(exc)
-#endif
-#else
-#define __Pyx_PyErr_Clear() PyErr_Clear()
-#define __Pyx_PyErr_SetNone(exc) PyErr_SetNone(exc)
-#define __Pyx_ErrRestoreWithState(type, value, tb)  PyErr_Restore(type, value, tb)
-#define __Pyx_ErrFetchWithState(type, value, tb)  PyErr_Fetch(type, value, tb)
-#define __Pyx_ErrRestoreInState(tstate, type, value, tb)  PyErr_Restore(type, value, tb)
-#define __Pyx_ErrFetchInState(tstate, type, value, tb)  PyErr_Fetch(type, value, tb)
-#define __Pyx_ErrRestore(type, value, tb)  PyErr_Restore(type, value, tb)
-#define __Pyx_ErrFetch(type, value, tb)  PyErr_Fetch(type, value, tb)
-#endif
-
-/* PyErrExceptionMatches.proto (used by PyObjectGetAttrStrNoError) */
-#if CYTHON_FAST_THREAD_STATE
-#define __Pyx_PyErr_ExceptionMatches(err) __Pyx_PyErr_ExceptionMatchesInState(__pyx_tstate, err)
-static CYTHON_INLINE int __Pyx_PyErr_ExceptionMatchesInState(PyThreadState* tstate, PyObject* err);
-#else
-#define __Pyx_PyErr_ExceptionMatches(err)  PyErr_ExceptionMatches(err)
-#endif
-
-/* PyObjectGetAttrStrNoError.proto (used by GetBuiltinName) */
-static CYTHON_INLINE PyObject* __Pyx_PyObject_GetAttrStrNoError(PyObject* obj, PyObject* attr_name);
-
-/* GetBuiltinName.proto (used by IterNext) */
-static PyObject *__Pyx_GetBuiltinName(PyObject *name);
-
-/* IterNextPlain.proto (used by IterNext) */
-static CYTHON_INLINE PyObject *__Pyx_PyIter_Next_Plain(PyObject *iterator);
-#if CYTHON_COMPILING_IN_LIMITED_API && __PYX_LIMITED_VERSION_HEX < 0x030A0000
-static PyObject *__Pyx_GetBuiltinNext_LimitedAPI(void);
-#endif
-
-/* IterNext.proto */
-#define __Pyx_PyIter_Next(obj) __Pyx_PyIter_Next2(obj, NULL)
-static CYTHON_INLINE PyObject *__Pyx_PyIter_Next2(PyObject *, PyObject *);
-
-/* GetTopmostException.proto (used by SaveResetException) */
-#if CYTHON_USE_EXC_INFO_STACK && CYTHON_FAST_THREAD_STATE
-static _PyErr_StackItem * __Pyx_PyErr_GetTopmostException(PyThreadState *tstate);
-#endif
-
-/* SaveResetException.proto */
-#if CYTHON_FAST_THREAD_STATE
-#define __Pyx_ExceptionSave(type, value, tb)  __Pyx__ExceptionSave(__pyx_tstate, type, value, tb)
-static CYTHON_INLINE void __Pyx__ExceptionSave(PyThreadState *tstate, PyObject **type, PyObject **value, PyObject **tb);
-#define __Pyx_ExceptionReset(type, value, tb)  __Pyx__ExceptionReset(__pyx_tstate, type, value, tb)
-static CYTHON_INLINE void __Pyx__ExceptionReset(PyThreadState *tstate, PyObject *type, PyObject *value, PyObject *tb);
-#else
-#define __Pyx_ExceptionSave(type, value, tb)   PyErr_GetExcInfo(type, value, tb)
-#define __Pyx_ExceptionReset(type, value, tb)  PyErr_SetExcInfo(type, value, tb)
-#endif
-
-/* PyStopIteration_Check.proto */
-#define __Pyx_PyExc_StopIteration_Check(obj)  __Pyx_TypeCheck(obj, PyExc_StopIteration)
-
-/* GetException.proto */
-#if CYTHON_FAST_THREAD_STATE
-#define __Pyx_GetException(type, value, tb)  __Pyx__GetException(__pyx_tstate, type, value, tb)
-static int __Pyx__GetException(PyThreadState *tstate, PyObject **type, PyObject **value, PyObject **tb);
-#else
-static int __Pyx_GetException(PyObject **type, PyObject **value, PyObject **tb);
-#endif
-
-/* PyTypeError_Check.proto */
-#define __Pyx_PyExc_TypeError_Check(obj)  __Pyx_TypeCheck(obj, PyExc_TypeError)
-
-/* PyObjectFormatSimple.proto */
-#if CYTHON_COMPILING_IN_PYPY
-    #define __Pyx_PyObject_FormatSimple(s, f) (\
-        likely(PyUnicode_CheckExact(s)) ? (Py_INCREF(s), s) :\
-        PyObject_Format(s, f))
-#elif CYTHON_USE_TYPE_SLOTS
-    #define __Pyx_PyObject_FormatSimple(s, f) (\
-        likely(PyUnicode_CheckExact(s)) ? (Py_INCREF(s), s) :\
-        likely(PyLong_CheckExact(s)) ? PyLong_Type.tp_repr(s) :\
-        likely(PyFloat_CheckExact(s)) ? PyFloat_Type.tp_repr(s) :\
-        PyObject_Format(s, f))
-#else
-    #define __Pyx_PyObject_FormatSimple(s, f) (\
-        likely(PyUnicode_CheckExact(s)) ? (Py_INCREF(s), s) :\
-        PyObject_Format(s, f))
-#endif
-
-/* RaiseException.export */
-static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause);
-
-/* RaiseArgTupleInvalid.proto */
-static void __Pyx_RaiseArgtupleInvalid(const char* func_name, int exact,
-    Py_ssize_t num_min, Py_ssize_t num_max, Py_ssize_t num_found);
 
 /* RaiseDoubleKeywords.proto (used by ParseKeywordsImpl) */
 static void __Pyx_RaiseDoubleKeywordsError(const char* func_name, PyObject* kw_name);
@@ -2049,8 +1958,90 @@ static CYTHON_INLINE int __Pyx_ParseKeywords(
     int ignore_unknown_kwargs
 );
 
-/* AllocateExtensionType.proto */
-static PyObject *__Pyx_AllocateExtensionType(PyTypeObject *t, int is_final);
+/* RaiseArgTupleInvalid.proto */
+static void __Pyx_RaiseArgtupleInvalid(const char* func_name, int exact,
+    Py_ssize_t num_min, Py_ssize_t num_max, Py_ssize_t num_found);
+
+/* ArgTypeTestFunc.export */
+static int __Pyx__ArgTypeTest(PyObject *obj, PyTypeObject *type, const char *name, int exact);
+
+/* ArgTypeTest.proto */
+#define __Pyx_ArgTypeTest(obj, type, none_allowed, name, exact)\
+    ((likely(__Pyx_IS_TYPE(obj, type) | (none_allowed && (obj == Py_None)))) ? 1 :\
+        __Pyx__ArgTypeTest(obj, type, name, exact))
+
+/* ListAppend.proto */
+#if CYTHON_USE_PYLIST_INTERNALS && CYTHON_ASSUME_SAFE_MACROS
+static CYTHON_INLINE int __Pyx_PyList_Append(PyObject* list, PyObject* x) {
+    PyListObject* L = (PyListObject*) list;
+    Py_ssize_t len = Py_SIZE(list);
+    if (likely(L->allocated > len) & likely(len > (L->allocated >> 1))) {
+        Py_INCREF(x);
+        #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030d0000
+        L->ob_item[len] = x;
+        #else
+        PyList_SET_ITEM(list, len, x);
+        #endif
+        __Pyx_SET_SIZE(list, len + 1);
+        return 0;
+    }
+    return PyList_Append(list, x);
+}
+#else
+#define __Pyx_PyList_Append(L,x) PyList_Append(L,x)
+#endif
+
+/* RejectKeywords.export */
+static void __Pyx_RejectKeywords(const char* function_name, PyObject *kwds);
+
+/* PyTypeError_Check.proto */
+#define __Pyx_PyExc_TypeError_Check(obj)  __Pyx_TypeCheck(obj, PyExc_TypeError)
+
+/* PyThreadStateGet.proto (used by PyErrFetchRestore) */
+#if CYTHON_FAST_THREAD_STATE
+#define __Pyx_PyThreadState_declare  PyThreadState *__pyx_tstate;
+#define __Pyx_PyThreadState_assign  __pyx_tstate = __Pyx_PyThreadState_Current;
+#if PY_VERSION_HEX >= 0x030C00A6
+#define __Pyx_PyErr_Occurred()  (__pyx_tstate->current_exception != NULL)
+#define __Pyx_PyErr_CurrentExceptionType()  (__pyx_tstate->current_exception ? (PyObject*) Py_TYPE(__pyx_tstate->current_exception) : (PyObject*) NULL)
+#else
+#define __Pyx_PyErr_Occurred()  (__pyx_tstate->curexc_type != NULL)
+#define __Pyx_PyErr_CurrentExceptionType()  (__pyx_tstate->curexc_type)
+#endif
+#else
+#define __Pyx_PyThreadState_declare
+#define __Pyx_PyThreadState_assign
+#define __Pyx_PyErr_Occurred()  (PyErr_Occurred() != NULL)
+#define __Pyx_PyErr_CurrentExceptionType()  PyErr_Occurred()
+#endif
+
+/* PyErrFetchRestore.proto (used by RaiseException) */
+#if CYTHON_FAST_THREAD_STATE
+#define __Pyx_PyErr_Clear() __Pyx_ErrRestore(NULL, NULL, NULL)
+#define __Pyx_ErrRestoreWithState(type, value, tb)  __Pyx_ErrRestoreInState(PyThreadState_GET(), type, value, tb)
+#define __Pyx_ErrFetchWithState(type, value, tb)    __Pyx_ErrFetchInState(PyThreadState_GET(), type, value, tb)
+#define __Pyx_ErrRestore(type, value, tb)  __Pyx_ErrRestoreInState(__pyx_tstate, type, value, tb)
+#define __Pyx_ErrFetch(type, value, tb)    __Pyx_ErrFetchInState(__pyx_tstate, type, value, tb)
+static CYTHON_INLINE void __Pyx_ErrRestoreInState(PyThreadState *tstate, PyObject *type, PyObject *value, PyObject *tb);
+static CYTHON_INLINE void __Pyx_ErrFetchInState(PyThreadState *tstate, PyObject **type, PyObject **value, PyObject **tb);
+#if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX < 0x030C00A6
+#define __Pyx_PyErr_SetNone(exc) (Py_INCREF(exc), __Pyx_ErrRestore((exc), NULL, NULL))
+#else
+#define __Pyx_PyErr_SetNone(exc) PyErr_SetNone(exc)
+#endif
+#else
+#define __Pyx_PyErr_Clear() PyErr_Clear()
+#define __Pyx_PyErr_SetNone(exc) PyErr_SetNone(exc)
+#define __Pyx_ErrRestoreWithState(type, value, tb)  PyErr_Restore(type, value, tb)
+#define __Pyx_ErrFetchWithState(type, value, tb)  PyErr_Fetch(type, value, tb)
+#define __Pyx_ErrRestoreInState(tstate, type, value, tb)  PyErr_Restore(type, value, tb)
+#define __Pyx_ErrFetchInState(tstate, type, value, tb)  PyErr_Fetch(type, value, tb)
+#define __Pyx_ErrRestore(type, value, tb)  PyErr_Restore(type, value, tb)
+#define __Pyx_ErrFetch(type, value, tb)  PyErr_Fetch(type, value, tb)
+#endif
+
+/* RaiseException.export */
+static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause);
 
 /* DefaultPlacementNew.proto */
 #include <new>
@@ -2059,12 +2050,43 @@ void __Pyx_default_placement_construct(T* x) {
     new (static_cast<void*>(x)) T();
 }
 
+/* CallNextTpDealloc.proto */
+static void __Pyx_call_next_tp_dealloc(PyObject* obj, destructor current_tp_dealloc);
+
+/* CallNextTpTraverse.proto */
+static int __Pyx_call_next_tp_traverse(PyObject* obj, visitproc v, void *a, traverseproc current_tp_traverse);
+
 /* CallTypeTraverse.proto */
 #if !CYTHON_USE_TYPE_SPECS || (!CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX < 0x03090000)
 #define __Pyx_call_type_traverse(o, always_call, visit, arg) 0
 #else
 static int __Pyx_call_type_traverse(PyObject *o, int always_call, visitproc visit, void *arg);
 #endif
+
+/* CallNextTpClear.proto */
+static void __Pyx_call_next_tp_clear(PyObject* obj, inquiry current_tp_clear);
+
+/* TypeImport.proto */
+#ifndef __PYX_HAVE_RT_ImportType_proto_3_2_3
+#define __PYX_HAVE_RT_ImportType_proto_3_2_3
+#if defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#include <stdalign.h>
+#endif
+#if (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L) || __cplusplus >= 201103L
+#define __PYX_GET_STRUCT_ALIGNMENT_3_2_3(s) alignof(s)
+#else
+#define __PYX_GET_STRUCT_ALIGNMENT_3_2_3(s) sizeof(void*)
+#endif
+enum __Pyx_ImportType_CheckSize_3_2_3 {
+   __Pyx_ImportType_CheckSize_Error_3_2_3 = 0,
+   __Pyx_ImportType_CheckSize_Warn_3_2_3 = 1,
+   __Pyx_ImportType_CheckSize_Ignore_3_2_3 = 2
+};
+static PyTypeObject *__Pyx_ImportType_3_2_3(PyObject* module, const char *module_name, const char *class_name, size_t size, size_t alignment, enum __Pyx_ImportType_CheckSize_3_2_3 check_size);
+#endif
+
+/* GetVTable.proto */
+static void* __Pyx_GetVtable(PyTypeObject *type);
 
 /* LimitedApiGetTypeDict.proto (used by SetItemOnTypeDict) */
 #if CYTHON_COMPILING_IN_LIMITED_API
@@ -2100,9 +2122,6 @@ CYTHON_UNUSED static int __Pyx_PyType_Ready(PyTypeObject *t);
 /* SetVTable.proto */
 static int __Pyx_SetVtable(PyTypeObject* typeptr , void* vtable);
 
-/* GetVTable.proto (used by MergeVTables) */
-static void* __Pyx_GetVtable(PyTypeObject *type);
-
 /* MergeVTables.proto */
 static int __Pyx_MergeVtables(PyTypeObject *type);
 
@@ -2110,27 +2129,19 @@ static int __Pyx_MergeVtables(PyTypeObject *type);
 static int __Pyx__DelItemOnTypeDict(PyTypeObject *tp, PyObject *k);
 #define __Pyx_DelItemOnTypeDict(tp, k) __Pyx__DelItemOnTypeDict((PyTypeObject*)tp, k)
 
+/* PyErrExceptionMatches.proto (used by PyObjectGetAttrStrNoError) */
+#if CYTHON_FAST_THREAD_STATE
+#define __Pyx_PyErr_ExceptionMatches(err) __Pyx_PyErr_ExceptionMatchesInState(__pyx_tstate, err)
+static CYTHON_INLINE int __Pyx_PyErr_ExceptionMatchesInState(PyThreadState* tstate, PyObject* err);
+#else
+#define __Pyx_PyErr_ExceptionMatches(err)  PyErr_ExceptionMatches(err)
+#endif
+
+/* PyObjectGetAttrStrNoError.proto (used by SetupReduce) */
+static CYTHON_INLINE PyObject* __Pyx_PyObject_GetAttrStrNoError(PyObject* obj, PyObject* attr_name);
+
 /* SetupReduce.proto */
 static int __Pyx_setup_reduce(PyObject* type_obj);
-
-/* TypeImport.proto */
-#ifndef __PYX_HAVE_RT_ImportType_proto_3_2_3
-#define __PYX_HAVE_RT_ImportType_proto_3_2_3
-#if defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-#include <stdalign.h>
-#endif
-#if (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L) || __cplusplus >= 201103L
-#define __PYX_GET_STRUCT_ALIGNMENT_3_2_3(s) alignof(s)
-#else
-#define __PYX_GET_STRUCT_ALIGNMENT_3_2_3(s) sizeof(void*)
-#endif
-enum __Pyx_ImportType_CheckSize_3_2_3 {
-   __Pyx_ImportType_CheckSize_Error_3_2_3 = 0,
-   __Pyx_ImportType_CheckSize_Warn_3_2_3 = 1,
-   __Pyx_ImportType_CheckSize_Ignore_3_2_3 = 2
-};
-static PyTypeObject *__Pyx_ImportType_3_2_3(PyObject* module, const char *module_name, const char *class_name, size_t size, size_t alignment, enum __Pyx_ImportType_CheckSize_3_2_3 check_size);
-#endif
 
 /* dict_setdefault.proto (used by FetchCommonType) */
 static CYTHON_INLINE PyObject *__Pyx_PyDict_SetDefault(PyObject *d, PyObject *key, PyObject *default_value);
@@ -2497,6 +2508,7 @@ static int __Pyx_State_RemoveModule(void*);
 #define __PYX_ABI_MODULE_NAME "_cython_" CYTHON_ABI
 #define __PYX_TYPE_MODULE_PREFIX __PYX_ABI_MODULE_NAME "."
 
+static struct __pyx_obj_12hft_backtest_5event_Event *__pyx_f_12hft_backtest_14merged_dataset_13MergedDataset_fetch_next(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self); /* proto*/
 static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__init_heap(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self); /* proto*/
 static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__pop_heap_to_current(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self); /* proto*/
 static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__push(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self, long __pyx_v_timestamp, int __pyx_v_source_idx, struct __pyx_obj_12hft_backtest_5event_Event *__pyx_v_event); /* proto*/
@@ -2522,6 +2534,8 @@ static int __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(struct 
 
 /* Module declarations from "hft_backtest.event" */
 
+/* Module declarations from "hft_backtest.reader" */
+
 /* Module declarations from "hft_backtest.merged_dataset" */
 /* #### Code section: typeinfo ### */
 /* #### Code section: before_global_var ### */
@@ -2534,10 +2548,8 @@ int __pyx_module_is_main_hft_backtest__merged_dataset = 0;
 /* #### Code section: string_decls ### */
 /* #### Code section: decls ### */
 static int __pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset___init__(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self, PyObject *__pyx_v_datasets); /* proto */
-static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_2__iter__(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__next__(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_6__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_8__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
+static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_2__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
 static PyObject *__pyx_tp_new_12hft_backtest_14merged_dataset_MergedDataset(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 /* #### Code section: late_includes ### */
 /* #### Code section: module_state ### */
@@ -2561,19 +2573,16 @@ typedef struct {
   PyObject *__pyx_empty_unicode;
   PyTypeObject *__pyx_ptype_7cpython_4type_type;
   PyTypeObject *__pyx_ptype_12hft_backtest_5event_Event;
+  PyTypeObject *__pyx_ptype_12hft_backtest_6reader_DataReader;
+  PyTypeObject *__pyx_ptype_12hft_backtest_6reader_PyDatasetWrapper;
   PyObject *__pyx_type_12hft_backtest_14merged_dataset_MergedDataset;
   PyTypeObject *__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset;
   __Pyx_CachedCFunction __pyx_umethod_PyDict_Type_items;
   __Pyx_CachedCFunction __pyx_umethod_PyDict_Type_pop;
   __Pyx_CachedCFunction __pyx_umethod_PyDict_Type_values;
   PyObject *__pyx_codeobj_tab[2];
-  PyObject *__pyx_string_tab[38];
+  PyObject *__pyx_string_tab[39];
 /* #### Code section: module_state_contents ### */
-/* IterNextPlain.module_state_decls */
-#if CYTHON_COMPILING_IN_LIMITED_API && __PYX_LIMITED_VERSION_HEX < 0x030A0000
-PyObject *__Pyx_GetBuiltinNext_LimitedAPI_cache;
-#endif
-
 /* CommonTypesMetaclass.module_state_decls */
 PyTypeObject *__pyx_CommonTypesMetaclassType;
 
@@ -2614,43 +2623,44 @@ static __pyx_mstatetype * const __pyx_mstate_global = &__pyx_mstate_global_stati
 #endif
 /* #### Code section: constant_name_defines ### */
 #define __pyx_kp_u_ __pyx_string_tab[0]
-#define __pyx_kp_u_Dataset_yielded_non_Event_object __pyx_string_tab[1]
-#define __pyx_kp_u_disable __pyx_string_tab[2]
-#define __pyx_kp_u_enable __pyx_string_tab[3]
-#define __pyx_kp_u_gc __pyx_string_tab[4]
-#define __pyx_kp_u_isenabled __pyx_string_tab[5]
-#define __pyx_kp_u_self__heap_cannot_be_converted_t __pyx_string_tab[6]
-#define __pyx_kp_u_stringsource __pyx_string_tab[7]
-#define __pyx_n_u_MergedDataset __pyx_string_tab[8]
-#define __pyx_n_u_MergedDataset___reduce_cython __pyx_string_tab[9]
-#define __pyx_n_u_MergedDataset___setstate_cython __pyx_string_tab[10]
-#define __pyx_n_u_Pyx_PyDict_NextRef __pyx_string_tab[11]
-#define __pyx_n_u_asyncio_coroutines __pyx_string_tab[12]
-#define __pyx_n_u_cline_in_traceback __pyx_string_tab[13]
-#define __pyx_n_u_func __pyx_string_tab[14]
-#define __pyx_n_u_getstate __pyx_string_tab[15]
-#define __pyx_n_u_hft_backtest_merged_dataset __pyx_string_tab[16]
-#define __pyx_n_u_is_coroutine __pyx_string_tab[17]
-#define __pyx_n_u_items __pyx_string_tab[18]
-#define __pyx_n_u_main __pyx_string_tab[19]
-#define __pyx_n_u_module __pyx_string_tab[20]
-#define __pyx_n_u_name __pyx_string_tab[21]
-#define __pyx_n_u_next __pyx_string_tab[22]
-#define __pyx_n_u_pop __pyx_string_tab[23]
-#define __pyx_n_u_pyx_state __pyx_string_tab[24]
-#define __pyx_n_u_pyx_vtable __pyx_string_tab[25]
-#define __pyx_n_u_qualname __pyx_string_tab[26]
-#define __pyx_n_u_reduce __pyx_string_tab[27]
-#define __pyx_n_u_reduce_cython __pyx_string_tab[28]
-#define __pyx_n_u_reduce_ex __pyx_string_tab[29]
-#define __pyx_n_u_self __pyx_string_tab[30]
-#define __pyx_n_u_set_name __pyx_string_tab[31]
-#define __pyx_n_u_setdefault __pyx_string_tab[32]
-#define __pyx_n_u_setstate __pyx_string_tab[33]
-#define __pyx_n_u_setstate_cython __pyx_string_tab[34]
-#define __pyx_n_u_test __pyx_string_tab[35]
-#define __pyx_n_u_values __pyx_string_tab[36]
-#define __pyx_kp_b_iso88591_Q __pyx_string_tab[37]
+#define __pyx_kp_u_Note_that_Cython_is_deliberately __pyx_string_tab[1]
+#define __pyx_kp_u_add_note __pyx_string_tab[2]
+#define __pyx_kp_u_disable __pyx_string_tab[3]
+#define __pyx_kp_u_enable __pyx_string_tab[4]
+#define __pyx_kp_u_gc __pyx_string_tab[5]
+#define __pyx_kp_u_isenabled __pyx_string_tab[6]
+#define __pyx_kp_u_self__heap_cannot_be_converted_t __pyx_string_tab[7]
+#define __pyx_kp_u_stringsource __pyx_string_tab[8]
+#define __pyx_n_u_MergedDataset __pyx_string_tab[9]
+#define __pyx_n_u_MergedDataset___reduce_cython __pyx_string_tab[10]
+#define __pyx_n_u_MergedDataset___setstate_cython __pyx_string_tab[11]
+#define __pyx_n_u_Pyx_PyDict_NextRef __pyx_string_tab[12]
+#define __pyx_n_u_asyncio_coroutines __pyx_string_tab[13]
+#define __pyx_n_u_cline_in_traceback __pyx_string_tab[14]
+#define __pyx_n_u_datasets __pyx_string_tab[15]
+#define __pyx_n_u_func __pyx_string_tab[16]
+#define __pyx_n_u_getstate __pyx_string_tab[17]
+#define __pyx_n_u_hft_backtest_merged_dataset __pyx_string_tab[18]
+#define __pyx_n_u_is_coroutine __pyx_string_tab[19]
+#define __pyx_n_u_items __pyx_string_tab[20]
+#define __pyx_n_u_main __pyx_string_tab[21]
+#define __pyx_n_u_module __pyx_string_tab[22]
+#define __pyx_n_u_name __pyx_string_tab[23]
+#define __pyx_n_u_pop __pyx_string_tab[24]
+#define __pyx_n_u_pyx_state __pyx_string_tab[25]
+#define __pyx_n_u_pyx_vtable __pyx_string_tab[26]
+#define __pyx_n_u_qualname __pyx_string_tab[27]
+#define __pyx_n_u_reduce __pyx_string_tab[28]
+#define __pyx_n_u_reduce_cython __pyx_string_tab[29]
+#define __pyx_n_u_reduce_ex __pyx_string_tab[30]
+#define __pyx_n_u_self __pyx_string_tab[31]
+#define __pyx_n_u_set_name __pyx_string_tab[32]
+#define __pyx_n_u_setdefault __pyx_string_tab[33]
+#define __pyx_n_u_setstate __pyx_string_tab[34]
+#define __pyx_n_u_setstate_cython __pyx_string_tab[35]
+#define __pyx_n_u_test __pyx_string_tab[36]
+#define __pyx_n_u_values __pyx_string_tab[37]
+#define __pyx_kp_b_iso88591_Q __pyx_string_tab[38]
 /* #### Code section: module_state_clear ### */
 #if CYTHON_USE_MODULE_STATE
 static CYTHON_SMALL_CODE int __pyx_m_clear(PyObject *m) {
@@ -2667,10 +2677,12 @@ static CYTHON_SMALL_CODE int __pyx_m_clear(PyObject *m) {
   #endif
   Py_CLEAR(clear_module_state->__pyx_ptype_7cpython_4type_type);
   Py_CLEAR(clear_module_state->__pyx_ptype_12hft_backtest_5event_Event);
+  Py_CLEAR(clear_module_state->__pyx_ptype_12hft_backtest_6reader_DataReader);
+  Py_CLEAR(clear_module_state->__pyx_ptype_12hft_backtest_6reader_PyDatasetWrapper);
   Py_CLEAR(clear_module_state->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset);
   Py_CLEAR(clear_module_state->__pyx_type_12hft_backtest_14merged_dataset_MergedDataset);
   for (int i=0; i<2; ++i) { Py_CLEAR(clear_module_state->__pyx_codeobj_tab[i]); }
-  for (int i=0; i<38; ++i) { Py_CLEAR(clear_module_state->__pyx_string_tab[i]); }
+  for (int i=0; i<39; ++i) { Py_CLEAR(clear_module_state->__pyx_string_tab[i]); }
 /* #### Code section: module_state_clear_contents ### */
 /* CommonTypesMetaclass.module_state_clear */
 Py_CLEAR(clear_module_state->__pyx_CommonTypesMetaclassType);
@@ -2695,10 +2707,12 @@ static CYTHON_SMALL_CODE int __pyx_m_traverse(PyObject *m, visitproc visit, void
   __Pyx_VISIT_CONST(traverse_module_state->__pyx_empty_unicode);
   Py_VISIT(traverse_module_state->__pyx_ptype_7cpython_4type_type);
   Py_VISIT(traverse_module_state->__pyx_ptype_12hft_backtest_5event_Event);
+  Py_VISIT(traverse_module_state->__pyx_ptype_12hft_backtest_6reader_DataReader);
+  Py_VISIT(traverse_module_state->__pyx_ptype_12hft_backtest_6reader_PyDatasetWrapper);
   Py_VISIT(traverse_module_state->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset);
   Py_VISIT(traverse_module_state->__pyx_type_12hft_backtest_14merged_dataset_MergedDataset);
   for (int i=0; i<2; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_codeobj_tab[i]); }
-  for (int i=0; i<38; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_string_tab[i]); }
+  for (int i=0; i<39; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_string_tab[i]); }
 /* #### Code section: module_state_traverse_contents ### */
 /* CommonTypesMetaclass.module_state_traverse */
 Py_VISIT(traverse_module_state->__pyx_CommonTypesMetaclassType);
@@ -2712,12 +2726,12 @@ return 0;
 #endif
 /* #### Code section: module_code ### */
 
-/* "hft_backtest/merged_dataset.pyx":18
+/* "hft_backtest/merged_dataset.pyx":16
  *     """
  * 
- *     def __init__(self, *datasets):             # <<<<<<<<<<<<<<
- *         #
- *         self._iters = [iter(ds) for ds in datasets]
+ *     def __init__(self, list datasets):             # <<<<<<<<<<<<<<
+ *         #  Python list  vector<PyObject*>
+ *         self._sources = []
 */
 
 /* Python wrapper */
@@ -2726,6 +2740,10 @@ static int __pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_1__init__(Py
   PyObject *__pyx_v_datasets = 0;
   CYTHON_UNUSED Py_ssize_t __pyx_nargs;
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject* values[1] = {0};
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__init__ (wrapper)", 0);
@@ -2735,96 +2753,208 @@ static int __pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_1__init__(Py
   __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return -1;
   #endif
   __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  const Py_ssize_t __pyx_kwds_len = unlikely(__pyx_kwds) ? __Pyx_NumKwargs_VARARGS(__pyx_kwds) : 0;
-  if (unlikely(__pyx_kwds_len < 0)) return -1;
-  if (unlikely(__pyx_kwds_len > 0)) {__Pyx_RejectKeywords("__init__", __pyx_kwds); return -1;}
-  __Pyx_INCREF(__pyx_args);
-  __pyx_v_datasets = __pyx_args;
+  {
+    PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_datasets,0};
+    const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_VARARGS(__pyx_kwds) : 0;
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 16, __pyx_L3_error)
+    if (__pyx_kwds_len > 0) {
+      switch (__pyx_nargs) {
+        case  1:
+        values[0] = __Pyx_ArgRef_VARARGS(__pyx_args, 0);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 16, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      const Py_ssize_t kwd_pos_args = __pyx_nargs;
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "__init__", 0) < (0)) __PYX_ERR(0, 16, __pyx_L3_error)
+      for (Py_ssize_t i = __pyx_nargs; i < 1; i++) {
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("__init__", 1, 1, 1, i); __PYX_ERR(0, 16, __pyx_L3_error) }
+      }
+    } else if (unlikely(__pyx_nargs != 1)) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = __Pyx_ArgRef_VARARGS(__pyx_args, 0);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 16, __pyx_L3_error)
+    }
+    __pyx_v_datasets = ((PyObject*)values[0]);
+  }
+  goto __pyx_L6_skip;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("__init__", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 16, __pyx_L3_error)
+  __pyx_L6_skip:;
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L3_error:;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  __Pyx_AddTraceback("hft_backtest.merged_dataset.MergedDataset.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return -1;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_datasets), (&PyList_Type), 1, "datasets", 1))) __PYX_ERR(0, 16, __pyx_L1_error)
   __pyx_r = __pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset___init__(((struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self), __pyx_v_datasets);
 
   /* function exit code */
-  __Pyx_DECREF(__pyx_v_datasets);
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = -1;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  goto __pyx_L7_cleaned_up;
+  __pyx_L0:;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  __pyx_L7_cleaned_up:;
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
 static int __pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset___init__(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self, PyObject *__pyx_v_datasets) {
-  PyObject *__pyx_7genexpr__pyx_v_ds = NULL;
+  PyObject *__pyx_v_ds = NULL;
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  PyObject *__pyx_t_2 = NULL;
-  Py_ssize_t __pyx_t_3;
-  PyObject *__pyx_t_4 = NULL;
+  Py_ssize_t __pyx_t_2;
+  PyObject *__pyx_t_3 = NULL;
+  int __pyx_t_4;
+  int __pyx_t_5;
+  PyObject *__pyx_t_6 = NULL;
+  size_t __pyx_t_7;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__init__", 0);
 
-  /* "hft_backtest/merged_dataset.pyx":20
- *     def __init__(self, *datasets):
- *         #
- *         self._iters = [iter(ds) for ds in datasets]             # <<<<<<<<<<<<<<
- *         self._initialized = False
- *         self._cur_event = None
+  /* "hft_backtest/merged_dataset.pyx":18
+ *     def __init__(self, list datasets):
+ *         #  Python list  vector<PyObject*>
+ *         self._sources = []             # <<<<<<<<<<<<<<
+ * 
+ *         for ds in datasets:
 */
-  { /* enter inner scope */
-    __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 20, __pyx_L5_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_2 = __pyx_v_datasets; __Pyx_INCREF(__pyx_t_2);
-    __pyx_t_3 = 0;
-    for (;;) {
-      {
-        Py_ssize_t __pyx_temp = __Pyx_PyTuple_GET_SIZE(__pyx_t_2);
-        #if !CYTHON_ASSUME_SAFE_SIZE
-        if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 20, __pyx_L5_error)
-        #endif
-        if (__pyx_t_3 >= __pyx_temp) break;
-      }
-      #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-      __pyx_t_4 = __Pyx_NewRef(PyTuple_GET_ITEM(__pyx_t_2, __pyx_t_3));
-      #else
-      __pyx_t_4 = __Pyx_PySequence_ITEM(__pyx_t_2, __pyx_t_3);
-      #endif
-      ++__pyx_t_3;
-      if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 20, __pyx_L5_error)
-      __Pyx_GOTREF(__pyx_t_4);
-      __Pyx_XDECREF_SET(__pyx_7genexpr__pyx_v_ds, __pyx_t_4);
-      __pyx_t_4 = 0;
-      __pyx_t_4 = PyObject_GetIter(__pyx_7genexpr__pyx_v_ds); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 20, __pyx_L5_error)
-      __Pyx_GOTREF(__pyx_t_4);
-      if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_4))) __PYX_ERR(0, 20, __pyx_L5_error)
-      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    }
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __Pyx_XDECREF(__pyx_7genexpr__pyx_v_ds); __pyx_7genexpr__pyx_v_ds = 0;
-    goto __pyx_L9_exit_scope;
-    __pyx_L5_error:;
-    __Pyx_XDECREF(__pyx_7genexpr__pyx_v_ds); __pyx_7genexpr__pyx_v_ds = 0;
-    goto __pyx_L1_error;
-    __pyx_L9_exit_scope:;
-  } /* exit inner scope */
+  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 18, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
-  __Pyx_GOTREF(__pyx_v_self->_iters);
-  __Pyx_DECREF(__pyx_v_self->_iters);
-  __pyx_v_self->_iters = ((PyObject*)__pyx_t_1);
+  __Pyx_GOTREF(__pyx_v_self->_sources);
+  __Pyx_DECREF(__pyx_v_self->_sources);
+  __pyx_v_self->_sources = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "hft_backtest/merged_dataset.pyx":21
- *         #
- *         self._iters = [iter(ds) for ds in datasets]
+  /* "hft_backtest/merged_dataset.pyx":20
+ *         self._sources = []
+ * 
+ *         for ds in datasets:             # <<<<<<<<<<<<<<
+ *             #  Reader
+ *             if isinstance(ds, DataReader):
+*/
+  if (unlikely(__pyx_v_datasets == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
+    __PYX_ERR(0, 20, __pyx_L1_error)
+  }
+  __pyx_t_1 = __pyx_v_datasets; __Pyx_INCREF(__pyx_t_1);
+  __pyx_t_2 = 0;
+  for (;;) {
+    {
+      Py_ssize_t __pyx_temp = __Pyx_PyList_GET_SIZE(__pyx_t_1);
+      #if !CYTHON_ASSUME_SAFE_SIZE
+      if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 20, __pyx_L1_error)
+      #endif
+      if (__pyx_t_2 >= __pyx_temp) break;
+    }
+    __pyx_t_3 = __Pyx_PyList_GetItemRefFast(__pyx_t_1, __pyx_t_2, __Pyx_ReferenceSharing_OwnStrongReference);
+    ++__pyx_t_2;
+    if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 20, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    __Pyx_XDECREF_SET(__pyx_v_ds, __pyx_t_3);
+    __pyx_t_3 = 0;
+
+    /* "hft_backtest/merged_dataset.pyx":22
+ *         for ds in datasets:
+ *             #  Reader
+ *             if isinstance(ds, DataReader):             # <<<<<<<<<<<<<<
+ *                 self._sources.append(ds)
+ *             else:
+*/
+    __pyx_t_4 = __Pyx_TypeCheck(__pyx_v_ds, __pyx_mstate_global->__pyx_ptype_12hft_backtest_6reader_DataReader); 
+    if (__pyx_t_4) {
+
+      /* "hft_backtest/merged_dataset.pyx":23
+ *             #  Reader
+ *             if isinstance(ds, DataReader):
+ *                 self._sources.append(ds)             # <<<<<<<<<<<<<<
+ *             else:
+ *                 #
+*/
+      if (unlikely(__pyx_v_self->_sources == Py_None)) {
+        PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%.30s'", "append");
+        __PYX_ERR(0, 23, __pyx_L1_error)
+      }
+      __pyx_t_5 = __Pyx_PyList_Append(__pyx_v_self->_sources, __pyx_v_ds); if (unlikely(__pyx_t_5 == ((int)-1))) __PYX_ERR(0, 23, __pyx_L1_error)
+
+      /* "hft_backtest/merged_dataset.pyx":22
+ *         for ds in datasets:
+ *             #  Reader
+ *             if isinstance(ds, DataReader):             # <<<<<<<<<<<<<<
+ *                 self._sources.append(ds)
+ *             else:
+*/
+      goto __pyx_L5;
+    }
+
+    /* "hft_backtest/merged_dataset.pyx":26
+ *             else:
+ *                 #
+ *                 self._sources.append(PyDatasetWrapper(ds))             # <<<<<<<<<<<<<<
+ * 
+ *         self._initialized = False
+*/
+    /*else*/ {
+      if (unlikely(__pyx_v_self->_sources == Py_None)) {
+        PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%.30s'", "append");
+        __PYX_ERR(0, 26, __pyx_L1_error)
+      }
+      __pyx_t_6 = NULL;
+      __pyx_t_7 = 1;
+      {
+        PyObject *__pyx_callargs[2] = {__pyx_t_6, __pyx_v_ds};
+        __pyx_t_3 = __Pyx_PyObject_FastCall((PyObject*)__pyx_mstate_global->__pyx_ptype_12hft_backtest_6reader_PyDatasetWrapper, __pyx_callargs+__pyx_t_7, (2-__pyx_t_7) | (__pyx_t_7*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
+        __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
+        if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 26, __pyx_L1_error)
+        __Pyx_GOTREF((PyObject *)__pyx_t_3);
+      }
+      __pyx_t_5 = __Pyx_PyList_Append(__pyx_v_self->_sources, ((PyObject *)__pyx_t_3)); if (unlikely(__pyx_t_5 == ((int)-1))) __PYX_ERR(0, 26, __pyx_L1_error)
+      __Pyx_DECREF((PyObject *)__pyx_t_3); __pyx_t_3 = 0;
+    }
+    __pyx_L5:;
+
+    /* "hft_backtest/merged_dataset.pyx":20
+ *         self._sources = []
+ * 
+ *         for ds in datasets:             # <<<<<<<<<<<<<<
+ *             #  Reader
+ *             if isinstance(ds, DataReader):
+*/
+  }
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "hft_backtest/merged_dataset.pyx":28
+ *                 self._sources.append(PyDatasetWrapper(ds))
+ * 
  *         self._initialized = False             # <<<<<<<<<<<<<<
  *         self._cur_event = None
  *         self._cur_idx = -1
 */
   __pyx_v_self->_initialized = 0;
 
-  /* "hft_backtest/merged_dataset.pyx":22
- *         self._iters = [iter(ds) for ds in datasets]
+  /* "hft_backtest/merged_dataset.pyx":29
+ * 
  *         self._initialized = False
  *         self._cur_event = None             # <<<<<<<<<<<<<<
  *         self._cur_idx = -1
- *         self._cur_iter = None
+ * 
 */
   __Pyx_INCREF(Py_None);
   __Pyx_GIVEREF(Py_None);
@@ -2832,34 +2962,21 @@ static int __pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset___init__(str
   __Pyx_DECREF((PyObject *)__pyx_v_self->_cur_event);
   __pyx_v_self->_cur_event = ((struct __pyx_obj_12hft_backtest_5event_Event *)Py_None);
 
-  /* "hft_backtest/merged_dataset.pyx":23
+  /* "hft_backtest/merged_dataset.pyx":30
  *         self._initialized = False
  *         self._cur_event = None
  *         self._cur_idx = -1             # <<<<<<<<<<<<<<
- *         self._cur_iter = None
  * 
+ *     #  C
 */
   __pyx_v_self->_cur_idx = -1;
 
-  /* "hft_backtest/merged_dataset.pyx":24
- *         self._cur_event = None
- *         self._cur_idx = -1
- *         self._cur_iter = None             # <<<<<<<<<<<<<<
- * 
- *     def __iter__(self):
-*/
-  __Pyx_INCREF(Py_None);
-  __Pyx_GIVEREF(Py_None);
-  __Pyx_GOTREF(__pyx_v_self->_cur_iter);
-  __Pyx_DECREF(__pyx_v_self->_cur_iter);
-  __pyx_v_self->_cur_iter = Py_None;
-
-  /* "hft_backtest/merged_dataset.pyx":18
+  /* "hft_backtest/merged_dataset.pyx":16
  *     """
  * 
- *     def __init__(self, *datasets):             # <<<<<<<<<<<<<<
- *         #
- *         self._iters = [iter(ds) for ds in datasets]
+ *     def __init__(self, list datasets):             # <<<<<<<<<<<<<<
+ *         #  Python list  vector<PyObject*>
+ *         self._sources = []
 */
 
   /* function exit code */
@@ -2867,120 +2984,38 @@ static int __pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset___init__(str
   goto __pyx_L0;
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_6);
   __Pyx_AddTraceback("hft_backtest.merged_dataset.MergedDataset.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = -1;
   __pyx_L0:;
-  __Pyx_XDECREF(__pyx_7genexpr__pyx_v_ds);
+  __Pyx_XDECREF(__pyx_v_ds);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "hft_backtest/merged_dataset.pyx":26
- *         self._cur_iter = None
+/* "hft_backtest/merged_dataset.pyx":33
  * 
- *     def __iter__(self):             # <<<<<<<<<<<<<<
- *         #
- *         return self
-*/
-
-/* Python wrapper */
-static PyObject *__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_3__iter__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_3__iter__(PyObject *__pyx_v_self) {
-  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__iter__ (wrapper)", 0);
-  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  __pyx_r = __pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_2__iter__(((struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_2__iter__(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__iter__", 0);
-
-  /* "hft_backtest/merged_dataset.pyx":28
- *     def __iter__(self):
- *         #
- *         return self             # <<<<<<<<<<<<<<
- * 
- *     def __next__(self):
-*/
-  __Pyx_XDECREF(__pyx_r);
-  __Pyx_INCREF((PyObject *)__pyx_v_self);
-  __pyx_r = ((PyObject *)__pyx_v_self);
-  goto __pyx_L0;
-
-  /* "hft_backtest/merged_dataset.pyx":26
- *         self._cur_iter = None
- * 
- *     def __iter__(self):             # <<<<<<<<<<<<<<
- *         #
- *         return self
-*/
-
-  /* function exit code */
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "hft_backtest/merged_dataset.pyx":30
- *         return self
- * 
- *     def __next__(self):             # <<<<<<<<<<<<<<
+ *     #  C
+ *     cdef Event fetch_next(self):             # <<<<<<<<<<<<<<
  *         # 1.
  *         if not self._initialized:
 */
 
-/* Python wrapper */
-static PyObject *__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_5__next__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_5__next__(PyObject *__pyx_v_self) {
-  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__next__ (wrapper)", 0);
-  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  __pyx_r = __pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__next__(((struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__next__(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self) {
+static struct __pyx_obj_12hft_backtest_5event_Event *__pyx_f_12hft_backtest_14merged_dataset_13MergedDataset_fetch_next(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self) {
   struct __pyx_obj_12hft_backtest_5event_Event *__pyx_v_next_event = 0;
-  PyObject *__pyx_v_iterator = 0;
-  PyObject *__pyx_r = NULL;
+  struct __pyx_obj_12hft_backtest_6reader_DataReader *__pyx_v_current_source = 0;
+  struct __pyx_obj_12hft_backtest_5event_Event *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
-  int __pyx_error_without_exception = 0; /* StopIteration */
   int __pyx_t_1;
   PyObject *__pyx_t_2 = NULL;
-  PyObject *__pyx_t_3 = NULL;
-  PyObject *__pyx_t_4 = NULL;
-  PyObject *__pyx_t_5 = NULL;
-  PyObject *__pyx_t_6 = NULL;
-  int __pyx_t_7;
-  PyObject *__pyx_t_8 = NULL;
-  PyObject *__pyx_t_9 = NULL;
-  PyObject *__pyx_t_10 = NULL;
-  PyObject *__pyx_t_11 = NULL;
-  PyObject *__pyx_t_12 = NULL;
-  size_t __pyx_t_13;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__next__", 0);
+  __Pyx_RefNannySetupContext("fetch_next", 0);
 
-  /* "hft_backtest/merged_dataset.pyx":32
- *     def __next__(self):
+  /* "hft_backtest/merged_dataset.pyx":35
+ *     cdef Event fetch_next(self):
  *         # 1.
  *         if not self._initialized:             # <<<<<<<<<<<<<<
  *             self._init_heap()
@@ -2989,67 +3024,38 @@ static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__nex
   __pyx_t_1 = (!__pyx_v_self->_initialized);
   if (__pyx_t_1) {
 
-    /* "hft_backtest/merged_dataset.pyx":33
+    /* "hft_backtest/merged_dataset.pyx":36
  *         # 1.
  *         if not self._initialized:
  *             self._init_heap()             # <<<<<<<<<<<<<<
  *             self._initialized = True
- * 
+ *             return self._cur_event
 */
-    ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_vtab)->_init_heap(__pyx_v_self); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 33, __pyx_L1_error)
+    ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_base.__pyx_vtab)->_init_heap(__pyx_v_self); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 36, __pyx_L1_error)
 
-    /* "hft_backtest/merged_dataset.pyx":34
+    /* "hft_backtest/merged_dataset.pyx":37
  *         if not self._initialized:
  *             self._init_heap()
  *             self._initialized = True             # <<<<<<<<<<<<<<
+ *             return self._cur_event
  * 
- *             if self._cur_event is None:
 */
     __pyx_v_self->_initialized = 1;
 
-    /* "hft_backtest/merged_dataset.pyx":36
+    /* "hft_backtest/merged_dataset.pyx":38
+ *             self._init_heap()
  *             self._initialized = True
- * 
- *             if self._cur_event is None:             # <<<<<<<<<<<<<<
- *                 raise StopIteration
- * 
-*/
-    __pyx_t_1 = (((PyObject *)__pyx_v_self->_cur_event) == Py_None);
-    if (unlikely(__pyx_t_1)) {
-
-      /* "hft_backtest/merged_dataset.pyx":37
- * 
- *             if self._cur_event is None:
- *                 raise StopIteration             # <<<<<<<<<<<<<<
- * 
- *             return self._cur_event
-*/
-      __pyx_error_without_exception = 1;
-      goto __pyx_L1_error;;
-
-      /* "hft_backtest/merged_dataset.pyx":36
- *             self._initialized = True
- * 
- *             if self._cur_event is None:             # <<<<<<<<<<<<<<
- *                 raise StopIteration
- * 
-*/
-    }
-
-    /* "hft_backtest/merged_dataset.pyx":39
- *                 raise StopIteration
- * 
  *             return self._cur_event             # <<<<<<<<<<<<<<
  * 
  *         # 2.
 */
-    __Pyx_XDECREF(__pyx_r);
+    __Pyx_XDECREF((PyObject *)__pyx_r);
     __Pyx_INCREF((PyObject *)__pyx_v_self->_cur_event);
-    __pyx_r = ((PyObject *)__pyx_v_self->_cur_event);
+    __pyx_r = __pyx_v_self->_cur_event;
     goto __pyx_L0;
 
-    /* "hft_backtest/merged_dataset.pyx":32
- *     def __next__(self):
+    /* "hft_backtest/merged_dataset.pyx":35
+ *     cdef Event fetch_next(self):
  *         # 1.
  *         if not self._initialized:             # <<<<<<<<<<<<<<
  *             self._init_heap()
@@ -3057,227 +3063,132 @@ static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__nex
 */
   }
 
-  /* "hft_backtest/merged_dataset.pyx":42
+  /* "hft_backtest/merged_dataset.pyx":41
  * 
  *         # 2.
  *         cdef Event next_event = None             # <<<<<<<<<<<<<<
- *         cdef object iterator = self._cur_iter
+ *         cdef DataReader current_source
  * 
 */
   __Pyx_INCREF(Py_None);
   __pyx_v_next_event = ((struct __pyx_obj_12hft_backtest_5event_Event *)Py_None);
 
-  /* "hft_backtest/merged_dataset.pyx":43
- *         # 2.
- *         cdef Event next_event = None
- *         cdef object iterator = self._cur_iter             # <<<<<<<<<<<<<<
+  /* "hft_backtest/merged_dataset.pyx":46
+ *         #  list  C
+ *         #
+ *         current_source = <DataReader>self._sources[self._cur_idx]             # <<<<<<<<<<<<<<
  * 
- *         try:
+ *         #
 */
-  __pyx_t_2 = __pyx_v_self->_cur_iter;
+  if (unlikely(__pyx_v_self->_sources == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+    __PYX_ERR(0, 46, __pyx_L1_error)
+  }
+  __pyx_t_2 = __Pyx_PyList_GET_ITEM(__pyx_v_self->_sources, __pyx_v_self->_cur_idx);
   __Pyx_INCREF(__pyx_t_2);
-  __pyx_v_iterator = __pyx_t_2;
+  __pyx_v_current_source = ((struct __pyx_obj_12hft_backtest_6reader_DataReader *)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "hft_backtest/merged_dataset.pyx":45
- *         cdef object iterator = self._cur_iter
+  /* "hft_backtest/merged_dataset.pyx":49
  * 
- *         try:             # <<<<<<<<<<<<<<
- *             next_event = <Event>next(iterator)
- *         except StopIteration:
+ *         #
+ *         next_event = current_source.fetch_next()             # <<<<<<<<<<<<<<
+ * 
+ *         if next_event is None:
 */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_5);
-    /*try:*/ {
+  __pyx_t_2 = ((PyObject *)((struct __pyx_vtabstruct_12hft_backtest_6reader_DataReader *)__pyx_v_current_source->__pyx_vtab)->fetch_next(__pyx_v_current_source)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 49, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF_SET(__pyx_v_next_event, ((struct __pyx_obj_12hft_backtest_5event_Event *)__pyx_t_2));
+  __pyx_t_2 = 0;
 
-      /* "hft_backtest/merged_dataset.pyx":46
+  /* "hft_backtest/merged_dataset.pyx":51
+ *         next_event = current_source.fetch_next()
  * 
- *         try:
- *             next_event = <Event>next(iterator)             # <<<<<<<<<<<<<<
- *         except StopIteration:
+ *         if next_event is None:             # <<<<<<<<<<<<<<
+ *             #
  *             if self._heap.empty():
 */
-      __pyx_t_2 = __Pyx_PyIter_Next(__pyx_v_iterator); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 46, __pyx_L5_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_6 = __pyx_t_2;
-      __Pyx_INCREF(__pyx_t_6);
-      __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-      __Pyx_DECREF_SET(__pyx_v_next_event, ((struct __pyx_obj_12hft_backtest_5event_Event *)__pyx_t_6));
-      __pyx_t_6 = 0;
+  __pyx_t_1 = (((PyObject *)__pyx_v_next_event) == Py_None);
+  if (__pyx_t_1) {
 
-      /* "hft_backtest/merged_dataset.pyx":45
- *         cdef object iterator = self._cur_iter
- * 
- *         try:             # <<<<<<<<<<<<<<
- *             next_event = <Event>next(iterator)
- *         except StopIteration:
-*/
-    }
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    goto __pyx_L10_try_end;
-    __pyx_L5_error:;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
-
-    /* "hft_backtest/merged_dataset.pyx":47
- *         try:
- *             next_event = <Event>next(iterator)
- *         except StopIteration:             # <<<<<<<<<<<<<<
- *             if self._heap.empty():
- *                 self._cur_event = None
-*/
-    __pyx_t_7 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(((PyTypeObject*)PyExc_StopIteration))));
-    if (__pyx_t_7) {
-      __Pyx_AddTraceback("hft_backtest.merged_dataset.MergedDataset.__next__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_6, &__pyx_t_2, &__pyx_t_8) < 0) __PYX_ERR(0, 47, __pyx_L7_except_error)
-      __Pyx_XGOTREF(__pyx_t_6);
-      __Pyx_XGOTREF(__pyx_t_2);
-      __Pyx_XGOTREF(__pyx_t_8);
-
-      /* "hft_backtest/merged_dataset.pyx":48
- *             next_event = <Event>next(iterator)
- *         except StopIteration:
+    /* "hft_backtest/merged_dataset.pyx":53
+ *         if next_event is None:
+ *             #
  *             if self._heap.empty():             # <<<<<<<<<<<<<<
  *                 self._cur_event = None
- *                 raise StopIteration
+ *                 return None
 */
-      __pyx_t_1 = __pyx_v_self->_heap.empty();
-      if (unlikely(__pyx_t_1)) {
+    __pyx_t_1 = __pyx_v_self->_heap.empty();
+    if (__pyx_t_1) {
 
-        /* "hft_backtest/merged_dataset.pyx":49
- *         except StopIteration:
+      /* "hft_backtest/merged_dataset.pyx":54
+ *             #
  *             if self._heap.empty():
  *                 self._cur_event = None             # <<<<<<<<<<<<<<
- *                 raise StopIteration
+ *                 return None
  *             else:
 */
-        __Pyx_INCREF(Py_None);
-        __Pyx_GIVEREF(Py_None);
-        __Pyx_GOTREF((PyObject *)__pyx_v_self->_cur_event);
-        __Pyx_DECREF((PyObject *)__pyx_v_self->_cur_event);
-        __pyx_v_self->_cur_event = ((struct __pyx_obj_12hft_backtest_5event_Event *)Py_None);
+      __Pyx_INCREF(Py_None);
+      __Pyx_GIVEREF(Py_None);
+      __Pyx_GOTREF((PyObject *)__pyx_v_self->_cur_event);
+      __Pyx_DECREF((PyObject *)__pyx_v_self->_cur_event);
+      __pyx_v_self->_cur_event = ((struct __pyx_obj_12hft_backtest_5event_Event *)Py_None);
 
-        /* "hft_backtest/merged_dataset.pyx":50
+      /* "hft_backtest/merged_dataset.pyx":55
  *             if self._heap.empty():
  *                 self._cur_event = None
- *                 raise StopIteration             # <<<<<<<<<<<<<<
+ *                 return None             # <<<<<<<<<<<<<<
  *             else:
  *                 self._pop_heap_to_current()
 */
-        __pyx_error_without_exception = 1;
-        goto __pyx_L7_except_error;;
+      __Pyx_XDECREF((PyObject *)__pyx_r);
+      __pyx_r = ((struct __pyx_obj_12hft_backtest_5event_Event *)Py_None); __Pyx_INCREF(Py_None);
+      goto __pyx_L0;
 
-        /* "hft_backtest/merged_dataset.pyx":48
- *             next_event = <Event>next(iterator)
- *         except StopIteration:
+      /* "hft_backtest/merged_dataset.pyx":53
+ *         if next_event is None:
+ *             #
  *             if self._heap.empty():             # <<<<<<<<<<<<<<
  *                 self._cur_event = None
- *                 raise StopIteration
+ *                 return None
 */
-      }
+    }
 
-      /* "hft_backtest/merged_dataset.pyx":52
- *                 raise StopIteration
+    /* "hft_backtest/merged_dataset.pyx":57
+ *                 return None
  *             else:
  *                 self._pop_heap_to_current()             # <<<<<<<<<<<<<<
  *                 return self._cur_event
- *         except TypeError:
+ * 
 */
-      /*else*/ {
-        ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_vtab)->_pop_heap_to_current(__pyx_v_self); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 52, __pyx_L7_except_error)
+    /*else*/ {
+      ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_base.__pyx_vtab)->_pop_heap_to_current(__pyx_v_self); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 57, __pyx_L1_error)
 
-        /* "hft_backtest/merged_dataset.pyx":53
+      /* "hft_backtest/merged_dataset.pyx":58
  *             else:
  *                 self._pop_heap_to_current()
  *                 return self._cur_event             # <<<<<<<<<<<<<<
- *         except TypeError:
- *             raise TypeError(f"Dataset yielded non-Event object: {type(next_event)}")
+ * 
+ *         # 3.  ()
 */
-        __Pyx_XDECREF(__pyx_r);
-        __Pyx_INCREF((PyObject *)__pyx_v_self->_cur_event);
-        __pyx_r = ((PyObject *)__pyx_v_self->_cur_event);
-        __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-        __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-        __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-        goto __pyx_L8_except_return;
-      }
+      __Pyx_XDECREF((PyObject *)__pyx_r);
+      __Pyx_INCREF((PyObject *)__pyx_v_self->_cur_event);
+      __pyx_r = __pyx_v_self->_cur_event;
+      goto __pyx_L0;
     }
 
-    /* "hft_backtest/merged_dataset.pyx":54
- *                 self._pop_heap_to_current()
- *                 return self._cur_event
- *         except TypeError:             # <<<<<<<<<<<<<<
- *             raise TypeError(f"Dataset yielded non-Event object: {type(next_event)}")
+    /* "hft_backtest/merged_dataset.pyx":51
+ *         next_event = current_source.fetch_next()
  * 
+ *         if next_event is None:             # <<<<<<<<<<<<<<
+ *             #
+ *             if self._heap.empty():
 */
-    __pyx_t_7 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(((PyTypeObject*)PyExc_TypeError))));
-    if (__pyx_t_7) {
-      __Pyx_AddTraceback("hft_backtest.merged_dataset.MergedDataset.__next__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_2, &__pyx_t_6) < 0) __PYX_ERR(0, 54, __pyx_L7_except_error)
-      __Pyx_XGOTREF(__pyx_t_8);
-      __Pyx_XGOTREF(__pyx_t_2);
-      __Pyx_XGOTREF(__pyx_t_6);
-
-      /* "hft_backtest/merged_dataset.pyx":55
- *                 return self._cur_event
- *         except TypeError:
- *             raise TypeError(f"Dataset yielded non-Event object: {type(next_event)}")             # <<<<<<<<<<<<<<
- * 
- *         # 3.  vs
-*/
-      __pyx_t_10 = NULL;
-      __pyx_t_11 = __Pyx_PyObject_FormatSimple(((PyObject *)Py_TYPE(((PyObject *)__pyx_v_next_event))), __pyx_mstate_global->__pyx_empty_unicode); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 55, __pyx_L7_except_error)
-      __Pyx_GOTREF(__pyx_t_11);
-      __pyx_t_12 = __Pyx_PyUnicode_Concat(__pyx_mstate_global->__pyx_kp_u_Dataset_yielded_non_Event_object, __pyx_t_11); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 55, __pyx_L7_except_error)
-      __Pyx_GOTREF(__pyx_t_12);
-      __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
-      __pyx_t_13 = 1;
-      {
-        PyObject *__pyx_callargs[2] = {__pyx_t_10, __pyx_t_12};
-        __pyx_t_9 = __Pyx_PyObject_FastCall((PyObject*)(((PyTypeObject*)PyExc_TypeError)), __pyx_callargs+__pyx_t_13, (2-__pyx_t_13) | (__pyx_t_13*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
-        __Pyx_XDECREF(__pyx_t_10); __pyx_t_10 = 0;
-        __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
-        if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 55, __pyx_L7_except_error)
-        __Pyx_GOTREF(__pyx_t_9);
-      }
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(0, 55, __pyx_L7_except_error)
-    }
-    goto __pyx_L7_except_error;
-
-    /* "hft_backtest/merged_dataset.pyx":45
- *         cdef object iterator = self._cur_iter
- * 
- *         try:             # <<<<<<<<<<<<<<
- *             next_event = <Event>next(iterator)
- *         except StopIteration:
-*/
-    __pyx_L7_except_error:;
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
-    goto __pyx_L1_error;
-    __pyx_L8_except_return:;
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
-    goto __pyx_L0;
-    __pyx_L10_try_end:;
   }
 
-  /* "hft_backtest/merged_dataset.pyx":58
+  /* "hft_backtest/merged_dataset.pyx":61
  * 
- *         # 3.  vs
+ *         # 3.  ()
  *         if self._heap.empty():             # <<<<<<<<<<<<<<
  *             self._cur_event = next_event
  *         else:
@@ -3285,12 +3196,12 @@ static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__nex
   __pyx_t_1 = __pyx_v_self->_heap.empty();
   if (__pyx_t_1) {
 
-    /* "hft_backtest/merged_dataset.pyx":59
- *         # 3.  vs
+    /* "hft_backtest/merged_dataset.pyx":62
+ *         # 3.  ()
  *         if self._heap.empty():
  *             self._cur_event = next_event             # <<<<<<<<<<<<<<
  *         else:
- *             # []
+ *             #
 */
     __Pyx_INCREF((PyObject *)__pyx_v_next_event);
     __Pyx_GIVEREF((PyObject *)__pyx_v_next_event);
@@ -3298,19 +3209,19 @@ static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__nex
     __Pyx_DECREF((PyObject *)__pyx_v_self->_cur_event);
     __pyx_v_self->_cur_event = __pyx_v_next_event;
 
-    /* "hft_backtest/merged_dataset.pyx":58
+    /* "hft_backtest/merged_dataset.pyx":61
  * 
- *         # 3.  vs
+ *         # 3.  ()
  *         if self._heap.empty():             # <<<<<<<<<<<<<<
  *             self._cur_event = next_event
  *         else:
 */
-    goto __pyx_L16;
+    goto __pyx_L6;
   }
 
-  /* "hft_backtest/merged_dataset.pyx":66
+  /* "hft_backtest/merged_dataset.pyx":65
+ *         else:
  *             #
- * 
  *             if next_event.timestamp < self._heap.front().timestamp:             # <<<<<<<<<<<<<<
  *                 self._cur_event = next_event
  *             elif next_event.timestamp == self._heap.front().timestamp:
@@ -3319,8 +3230,8 @@ static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__nex
     __pyx_t_1 = (__pyx_v_next_event->timestamp < __pyx_v_self->_heap.front().timestamp);
     if (__pyx_t_1) {
 
-      /* "hft_backtest/merged_dataset.pyx":67
- * 
+      /* "hft_backtest/merged_dataset.pyx":66
+ *             #
  *             if next_event.timestamp < self._heap.front().timestamp:
  *                 self._cur_event = next_event             # <<<<<<<<<<<<<<
  *             elif next_event.timestamp == self._heap.front().timestamp:
@@ -3332,17 +3243,17 @@ static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__nex
       __Pyx_DECREF((PyObject *)__pyx_v_self->_cur_event);
       __pyx_v_self->_cur_event = __pyx_v_next_event;
 
-      /* "hft_backtest/merged_dataset.pyx":66
+      /* "hft_backtest/merged_dataset.pyx":65
+ *         else:
  *             #
- * 
  *             if next_event.timestamp < self._heap.front().timestamp:             # <<<<<<<<<<<<<<
  *                 self._cur_event = next_event
  *             elif next_event.timestamp == self._heap.front().timestamp:
 */
-      goto __pyx_L17;
+      goto __pyx_L7;
     }
 
-    /* "hft_backtest/merged_dataset.pyx":68
+    /* "hft_backtest/merged_dataset.pyx":67
  *             if next_event.timestamp < self._heap.front().timestamp:
  *                 self._cur_event = next_event
  *             elif next_event.timestamp == self._heap.front().timestamp:             # <<<<<<<<<<<<<<
@@ -3352,7 +3263,7 @@ static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__nex
     __pyx_t_1 = (__pyx_v_next_event->timestamp == __pyx_v_self->_heap.front().timestamp);
     if (__pyx_t_1) {
 
-      /* "hft_backtest/merged_dataset.pyx":70
+      /* "hft_backtest/merged_dataset.pyx":69
  *             elif next_event.timestamp == self._heap.front().timestamp:
  *                 #
  *                 if self._cur_idx < self._heap.front().source_idx:             # <<<<<<<<<<<<<<
@@ -3362,12 +3273,12 @@ static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__nex
       __pyx_t_1 = (__pyx_v_self->_cur_idx < __pyx_v_self->_heap.front().source_idx);
       if (__pyx_t_1) {
 
-        /* "hft_backtest/merged_dataset.pyx":71
+        /* "hft_backtest/merged_dataset.pyx":70
  *                 #
  *                 if self._cur_idx < self._heap.front().source_idx:
  *                     self._cur_event = next_event             # <<<<<<<<<<<<<<
  *                 else:
- *                     #
+ *                     self._push(next_event.timestamp, self._cur_idx, next_event)
 */
         __Pyx_INCREF((PyObject *)__pyx_v_next_event);
         __Pyx_GIVEREF((PyObject *)__pyx_v_next_event);
@@ -3375,48 +3286,48 @@ static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__nex
         __Pyx_DECREF((PyObject *)__pyx_v_self->_cur_event);
         __pyx_v_self->_cur_event = __pyx_v_next_event;
 
-        /* "hft_backtest/merged_dataset.pyx":70
+        /* "hft_backtest/merged_dataset.pyx":69
  *             elif next_event.timestamp == self._heap.front().timestamp:
  *                 #
  *                 if self._cur_idx < self._heap.front().source_idx:             # <<<<<<<<<<<<<<
  *                     self._cur_event = next_event
  *                 else:
 */
-        goto __pyx_L18;
+        goto __pyx_L8;
       }
 
-      /* "hft_backtest/merged_dataset.pyx":74
+      /* "hft_backtest/merged_dataset.pyx":72
+ *                     self._cur_event = next_event
  *                 else:
- *                     #
  *                     self._push(next_event.timestamp, self._cur_idx, next_event)             # <<<<<<<<<<<<<<
  *                     self._pop_heap_to_current()
  *             else:
 */
       /*else*/ {
-        ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_vtab)->_push(__pyx_v_self, __pyx_v_next_event->timestamp, __pyx_v_self->_cur_idx, __pyx_v_next_event); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 74, __pyx_L1_error)
+        ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_base.__pyx_vtab)->_push(__pyx_v_self, __pyx_v_next_event->timestamp, __pyx_v_self->_cur_idx, __pyx_v_next_event); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 72, __pyx_L1_error)
 
-        /* "hft_backtest/merged_dataset.pyx":75
- *                     #
+        /* "hft_backtest/merged_dataset.pyx":73
+ *                 else:
  *                     self._push(next_event.timestamp, self._cur_idx, next_event)
  *                     self._pop_heap_to_current()             # <<<<<<<<<<<<<<
  *             else:
  *                 #
 */
-        ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_vtab)->_pop_heap_to_current(__pyx_v_self); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 75, __pyx_L1_error)
+        ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_base.__pyx_vtab)->_pop_heap_to_current(__pyx_v_self); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 73, __pyx_L1_error)
       }
-      __pyx_L18:;
+      __pyx_L8:;
 
-      /* "hft_backtest/merged_dataset.pyx":68
+      /* "hft_backtest/merged_dataset.pyx":67
  *             if next_event.timestamp < self._heap.front().timestamp:
  *                 self._cur_event = next_event
  *             elif next_event.timestamp == self._heap.front().timestamp:             # <<<<<<<<<<<<<<
  *                 #
  *                 if self._cur_idx < self._heap.front().source_idx:
 */
-      goto __pyx_L17;
+      goto __pyx_L7;
     }
 
-    /* "hft_backtest/merged_dataset.pyx":78
+    /* "hft_backtest/merged_dataset.pyx":76
  *             else:
  *                 #
  *                 self._push(next_event.timestamp, self._cur_idx, next_event)             # <<<<<<<<<<<<<<
@@ -3424,37 +3335,37 @@ static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__nex
  * 
 */
     /*else*/ {
-      ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_vtab)->_push(__pyx_v_self, __pyx_v_next_event->timestamp, __pyx_v_self->_cur_idx, __pyx_v_next_event); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 78, __pyx_L1_error)
+      ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_base.__pyx_vtab)->_push(__pyx_v_self, __pyx_v_next_event->timestamp, __pyx_v_self->_cur_idx, __pyx_v_next_event); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 76, __pyx_L1_error)
 
-      /* "hft_backtest/merged_dataset.pyx":79
+      /* "hft_backtest/merged_dataset.pyx":77
  *                 #
  *                 self._push(next_event.timestamp, self._cur_idx, next_event)
  *                 self._pop_heap_to_current()             # <<<<<<<<<<<<<<
  * 
  *         return self._cur_event
 */
-      ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_vtab)->_pop_heap_to_current(__pyx_v_self); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 79, __pyx_L1_error)
+      ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_base.__pyx_vtab)->_pop_heap_to_current(__pyx_v_self); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 77, __pyx_L1_error)
     }
-    __pyx_L17:;
+    __pyx_L7:;
   }
-  __pyx_L16:;
+  __pyx_L6:;
 
-  /* "hft_backtest/merged_dataset.pyx":81
+  /* "hft_backtest/merged_dataset.pyx":79
  *                 self._pop_heap_to_current()
  * 
  *         return self._cur_event             # <<<<<<<<<<<<<<
  * 
  *     cdef void _init_heap(self):
 */
-  __Pyx_XDECREF(__pyx_r);
+  __Pyx_XDECREF((PyObject *)__pyx_r);
   __Pyx_INCREF((PyObject *)__pyx_v_self->_cur_event);
-  __pyx_r = ((PyObject *)__pyx_v_self->_cur_event);
+  __pyx_r = __pyx_v_self->_cur_event;
   goto __pyx_L0;
 
-  /* "hft_backtest/merged_dataset.pyx":30
- *         return self
+  /* "hft_backtest/merged_dataset.pyx":33
  * 
- *     def __next__(self):             # <<<<<<<<<<<<<<
+ *     #  C
+ *     cdef Event fetch_next(self):             # <<<<<<<<<<<<<<
  *         # 1.
  *         if not self._initialized:
 */
@@ -3462,30 +3373,22 @@ static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__nex
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_6);
-  __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_XDECREF(__pyx_t_9);
-  __Pyx_XDECREF(__pyx_t_10);
-  __Pyx_XDECREF(__pyx_t_11);
-  __Pyx_XDECREF(__pyx_t_12);
-  if (!__pyx_error_without_exception) {
-    __Pyx_AddTraceback("hft_backtest.merged_dataset.MergedDataset.__next__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  }
-  __pyx_r = NULL;
+  __Pyx_AddTraceback("hft_backtest.merged_dataset.MergedDataset.fetch_next", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XDECREF((PyObject *)__pyx_v_next_event);
-  __Pyx_XDECREF(__pyx_v_iterator);
-  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_XDECREF((PyObject *)__pyx_v_current_source);
+  __Pyx_XGIVEREF((PyObject *)__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "hft_backtest/merged_dataset.pyx":83
+/* "hft_backtest/merged_dataset.pyx":81
  *         return self._cur_event
  * 
  *     cdef void _init_heap(self):             # <<<<<<<<<<<<<<
- *         """"""
  *         cdef int i
+ *         cdef int n = len(self._sources)
 */
 
 static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__init_heap(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self) {
@@ -3494,6 +3397,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__init_heap(s
   struct __pyx_obj_12hft_backtest_5event_Event *__pyx_v_evt = 0;
   std::vector<struct __pyx_t_12hft_backtest_14merged_dataset_MergeItem>  __pyx_v_temp_candidates;
   struct __pyx_t_12hft_backtest_14merged_dataset_MergeItem __pyx_v_item;
+  struct __pyx_obj_12hft_backtest_6reader_DataReader *__pyx_v_dr = 0;
   int __pyx_v_best_idx;
   long __pyx_v_min_ts;
   int __pyx_v_min_src_idx;
@@ -3505,222 +3409,155 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__init_heap(s
   int __pyx_t_3;
   int __pyx_t_4;
   int __pyx_t_5;
-  PyObject *__pyx_t_6 = NULL;
-  PyObject *__pyx_t_7 = NULL;
-  PyObject *__pyx_t_8 = NULL;
-  PyObject *__pyx_t_9 = NULL;
-  PY_LONG_LONG __pyx_t_10;
-  int __pyx_t_11;
-  PyObject *__pyx_t_12 = NULL;
-  int __pyx_t_13;
-  long __pyx_t_14;
-  std::vector<struct __pyx_t_12hft_backtest_14merged_dataset_MergeItem> ::size_type __pyx_t_15;
-  std::vector<struct __pyx_t_12hft_backtest_14merged_dataset_MergeItem> ::size_type __pyx_t_16;
+  int __pyx_t_6;
+  PY_LONG_LONG __pyx_t_7;
+  long __pyx_t_8;
+  std::vector<struct __pyx_t_12hft_backtest_14merged_dataset_MergeItem> ::size_type __pyx_t_9;
+  std::vector<struct __pyx_t_12hft_backtest_14merged_dataset_MergeItem> ::size_type __pyx_t_10;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_init_heap", 0);
 
-  /* "hft_backtest/merged_dataset.pyx":86
- *         """"""
+  /* "hft_backtest/merged_dataset.pyx":83
+ *     cdef void _init_heap(self):
  *         cdef int i
- *         cdef int n = len(self._iters)             # <<<<<<<<<<<<<<
+ *         cdef int n = len(self._sources)             # <<<<<<<<<<<<<<
  *         cdef Event evt
- * 
+ *         cdef vector[MergeItem] temp_candidates
 */
-  __pyx_t_1 = __pyx_v_self->_iters;
+  __pyx_t_1 = __pyx_v_self->_sources;
   __Pyx_INCREF(__pyx_t_1);
   if (unlikely(__pyx_t_1 == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "object of type 'NoneType' has no len()");
-    __PYX_ERR(0, 86, __pyx_L1_error)
+    __PYX_ERR(0, 83, __pyx_L1_error)
   }
-  __pyx_t_2 = __Pyx_PyList_GET_SIZE(__pyx_t_1); if (unlikely(__pyx_t_2 == ((Py_ssize_t)-1))) __PYX_ERR(0, 86, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyList_GET_SIZE(__pyx_t_1); if (unlikely(__pyx_t_2 == ((Py_ssize_t)-1))) __PYX_ERR(0, 83, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_n = __pyx_t_2;
 
-  /* "hft_backtest/merged_dataset.pyx":96
- *         cdef MergeItem item
+  /* "hft_backtest/merged_dataset.pyx":89
+ *         cdef DataReader dr
  * 
  *         for i in range(n):             # <<<<<<<<<<<<<<
- *             try:
- *                 evt = <Event>next(self._iters[i])
+ *             #
+ *             dr = <DataReader>self._sources[i]
 */
   __pyx_t_3 = __pyx_v_n;
   __pyx_t_4 = __pyx_t_3;
   for (__pyx_t_5 = 0; __pyx_t_5 < __pyx_t_4; __pyx_t_5+=1) {
     __pyx_v_i = __pyx_t_5;
 
-    /* "hft_backtest/merged_dataset.pyx":97
+    /* "hft_backtest/merged_dataset.pyx":91
+ *         for i in range(n):
+ *             #
+ *             dr = <DataReader>self._sources[i]             # <<<<<<<<<<<<<<
+ *             evt = dr.fetch_next()
  * 
- *         for i in range(n):
- *             try:             # <<<<<<<<<<<<<<
- *                 evt = <Event>next(self._iters[i])
- *                 item.timestamp = evt.timestamp
 */
-    {
-      __Pyx_PyThreadState_declare
-      __Pyx_PyThreadState_assign
-      __Pyx_ExceptionSave(&__pyx_t_6, &__pyx_t_7, &__pyx_t_8);
-      __Pyx_XGOTREF(__pyx_t_6);
-      __Pyx_XGOTREF(__pyx_t_7);
-      __Pyx_XGOTREF(__pyx_t_8);
-      /*try:*/ {
+    if (unlikely(__pyx_v_self->_sources == Py_None)) {
+      PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+      __PYX_ERR(0, 91, __pyx_L1_error)
+    }
+    __pyx_t_1 = __Pyx_PyList_GET_ITEM(__pyx_v_self->_sources, __pyx_v_i);
+    __Pyx_INCREF(__pyx_t_1);
+    __Pyx_XDECREF_SET(__pyx_v_dr, ((struct __pyx_obj_12hft_backtest_6reader_DataReader *)__pyx_t_1));
+    __pyx_t_1 = 0;
 
-        /* "hft_backtest/merged_dataset.pyx":98
- *         for i in range(n):
- *             try:
- *                 evt = <Event>next(self._iters[i])             # <<<<<<<<<<<<<<
+    /* "hft_backtest/merged_dataset.pyx":92
+ *             #
+ *             dr = <DataReader>self._sources[i]
+ *             evt = dr.fetch_next()             # <<<<<<<<<<<<<<
+ * 
+ *             if evt is not None:
+*/
+    __pyx_t_1 = ((PyObject *)((struct __pyx_vtabstruct_12hft_backtest_6reader_DataReader *)__pyx_v_dr->__pyx_vtab)->fetch_next(__pyx_v_dr)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 92, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_XDECREF_SET(__pyx_v_evt, ((struct __pyx_obj_12hft_backtest_5event_Event *)__pyx_t_1));
+    __pyx_t_1 = 0;
+
+    /* "hft_backtest/merged_dataset.pyx":94
+ *             evt = dr.fetch_next()
+ * 
+ *             if evt is not None:             # <<<<<<<<<<<<<<
  *                 item.timestamp = evt.timestamp
  *                 item.source_idx = i
 */
-        if (unlikely(__pyx_v_self->_iters == Py_None)) {
-          PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-          __PYX_ERR(0, 98, __pyx_L5_error)
-        }
-        __pyx_t_1 = __Pyx_PyList_GET_ITEM(__pyx_v_self->_iters, __pyx_v_i);
-        __Pyx_INCREF(__pyx_t_1);
-        __pyx_t_9 = __Pyx_PyIter_Next(__pyx_t_1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 98, __pyx_L5_error)
-        __Pyx_GOTREF(__pyx_t_9);
-        __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-        __pyx_t_1 = __pyx_t_9;
-        __Pyx_INCREF(__pyx_t_1);
-        __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-        __Pyx_XDECREF_SET(__pyx_v_evt, ((struct __pyx_obj_12hft_backtest_5event_Event *)__pyx_t_1));
-        __pyx_t_1 = 0;
+    __pyx_t_6 = (((PyObject *)__pyx_v_evt) != Py_None);
+    if (__pyx_t_6) {
 
-        /* "hft_backtest/merged_dataset.pyx":99
- *             try:
- *                 evt = <Event>next(self._iters[i])
+      /* "hft_backtest/merged_dataset.pyx":95
+ * 
+ *             if evt is not None:
  *                 item.timestamp = evt.timestamp             # <<<<<<<<<<<<<<
  *                 item.source_idx = i
  *                 item.event = <PyObject*>evt
 */
-        __pyx_t_10 = __pyx_v_evt->timestamp;
-        __pyx_v_item.timestamp = __pyx_t_10;
+      __pyx_t_7 = __pyx_v_evt->timestamp;
+      __pyx_v_item.timestamp = __pyx_t_7;
 
-        /* "hft_backtest/merged_dataset.pyx":100
- *                 evt = <Event>next(self._iters[i])
+      /* "hft_backtest/merged_dataset.pyx":96
+ *             if evt is not None:
  *                 item.timestamp = evt.timestamp
  *                 item.source_idx = i             # <<<<<<<<<<<<<<
  *                 item.event = <PyObject*>evt
- *                 Py_INCREF(evt) #
+ *                 Py_INCREF(evt) # vector
 */
-        __pyx_v_item.source_idx = __pyx_v_i;
+      __pyx_v_item.source_idx = __pyx_v_i;
 
-        /* "hft_backtest/merged_dataset.pyx":101
+      /* "hft_backtest/merged_dataset.pyx":97
  *                 item.timestamp = evt.timestamp
  *                 item.source_idx = i
  *                 item.event = <PyObject*>evt             # <<<<<<<<<<<<<<
- *                 Py_INCREF(evt) #
+ *                 Py_INCREF(evt) # vector
  *                 temp_candidates.push_back(item)
 */
-        __pyx_v_item.event = ((PyObject *)__pyx_v_evt);
+      __pyx_v_item.event = ((PyObject *)__pyx_v_evt);
 
-        /* "hft_backtest/merged_dataset.pyx":102
+      /* "hft_backtest/merged_dataset.pyx":98
  *                 item.source_idx = i
  *                 item.event = <PyObject*>evt
- *                 Py_INCREF(evt) #             # <<<<<<<<<<<<<<
+ *                 Py_INCREF(evt) # vector             # <<<<<<<<<<<<<<
  *                 temp_candidates.push_back(item)
- *             except StopIteration:
+ * 
 */
-        Py_INCREF(((PyObject *)__pyx_v_evt));
+      Py_INCREF(((PyObject *)__pyx_v_evt));
 
-        /* "hft_backtest/merged_dataset.pyx":103
+      /* "hft_backtest/merged_dataset.pyx":99
  *                 item.event = <PyObject*>evt
- *                 Py_INCREF(evt) #
+ *                 Py_INCREF(evt) # vector
  *                 temp_candidates.push_back(item)             # <<<<<<<<<<<<<<
- *             except StopIteration:
- *                 continue
-*/
-        try {
-          __pyx_v_temp_candidates.push_back(__pyx_v_item);
-        } catch(...) {
-          __Pyx_CppExn2PyErr();
-          __PYX_ERR(0, 103, __pyx_L5_error)
-        }
-
-        /* "hft_backtest/merged_dataset.pyx":97
- * 
- *         for i in range(n):
- *             try:             # <<<<<<<<<<<<<<
- *                 evt = <Event>next(self._iters[i])
- *                 item.timestamp = evt.timestamp
-*/
-      }
-      __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
-      __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-      goto __pyx_L12_try_end;
-      __pyx_L5_error:;
-      __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
-      __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-
-      /* "hft_backtest/merged_dataset.pyx":104
- *                 Py_INCREF(evt) #
- *                 temp_candidates.push_back(item)
- *             except StopIteration:             # <<<<<<<<<<<<<<
- *                 continue
- * 
-*/
-      __pyx_t_11 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(((PyTypeObject*)PyExc_StopIteration))));
-      if (__pyx_t_11) {
-        __Pyx_AddTraceback("hft_backtest.merged_dataset.MergedDataset._init_heap", __pyx_clineno, __pyx_lineno, __pyx_filename);
-        if (__Pyx_GetException(&__pyx_t_1, &__pyx_t_9, &__pyx_t_12) < 0) __PYX_ERR(0, 104, __pyx_L7_except_error)
-        __Pyx_XGOTREF(__pyx_t_1);
-        __Pyx_XGOTREF(__pyx_t_9);
-        __Pyx_XGOTREF(__pyx_t_12);
-
-        /* "hft_backtest/merged_dataset.pyx":105
- *                 temp_candidates.push_back(item)
- *             except StopIteration:
- *                 continue             # <<<<<<<<<<<<<<
  * 
  *         if temp_candidates.empty():
 */
-        goto __pyx_L13_except_continue;
-        __pyx_L13_except_continue:;
-        __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-        __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-        __Pyx_XDECREF(__pyx_t_12); __pyx_t_12 = 0;
-        goto __pyx_L11_try_continue;
+      try {
+        __pyx_v_temp_candidates.push_back(__pyx_v_item);
+      } catch(...) {
+        __Pyx_CppExn2PyErr();
+        __PYX_ERR(0, 99, __pyx_L1_error)
       }
-      goto __pyx_L7_except_error;
 
-      /* "hft_backtest/merged_dataset.pyx":97
+      /* "hft_backtest/merged_dataset.pyx":94
+ *             evt = dr.fetch_next()
  * 
- *         for i in range(n):
- *             try:             # <<<<<<<<<<<<<<
- *                 evt = <Event>next(self._iters[i])
+ *             if evt is not None:             # <<<<<<<<<<<<<<
  *                 item.timestamp = evt.timestamp
+ *                 item.source_idx = i
 */
-      __pyx_L7_except_error:;
-      __Pyx_XGIVEREF(__pyx_t_6);
-      __Pyx_XGIVEREF(__pyx_t_7);
-      __Pyx_XGIVEREF(__pyx_t_8);
-      __Pyx_ExceptionReset(__pyx_t_6, __pyx_t_7, __pyx_t_8);
-      goto __pyx_L1_error;
-      __pyx_L11_try_continue:;
-      __Pyx_XGIVEREF(__pyx_t_6);
-      __Pyx_XGIVEREF(__pyx_t_7);
-      __Pyx_XGIVEREF(__pyx_t_8);
-      __Pyx_ExceptionReset(__pyx_t_6, __pyx_t_7, __pyx_t_8);
-      goto __pyx_L3_continue;
-      __pyx_L12_try_end:;
     }
-    __pyx_L3_continue:;
   }
 
-  /* "hft_backtest/merged_dataset.pyx":107
- *                 continue
+  /* "hft_backtest/merged_dataset.pyx":101
+ *                 temp_candidates.push_back(item)
  * 
  *         if temp_candidates.empty():             # <<<<<<<<<<<<<<
  *             self._cur_event = None
  *             return
 */
-  __pyx_t_13 = __pyx_v_temp_candidates.empty();
-  if (__pyx_t_13) {
+  __pyx_t_6 = __pyx_v_temp_candidates.empty();
+  if (__pyx_t_6) {
 
-    /* "hft_backtest/merged_dataset.pyx":108
+    /* "hft_backtest/merged_dataset.pyx":102
  * 
  *         if temp_candidates.empty():
  *             self._cur_event = None             # <<<<<<<<<<<<<<
@@ -3733,7 +3570,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__init_heap(s
     __Pyx_DECREF((PyObject *)__pyx_v_self->_cur_event);
     __pyx_v_self->_cur_event = ((struct __pyx_obj_12hft_backtest_5event_Event *)Py_None);
 
-    /* "hft_backtest/merged_dataset.pyx":109
+    /* "hft_backtest/merged_dataset.pyx":103
  *         if temp_candidates.empty():
  *             self._cur_event = None
  *             return             # <<<<<<<<<<<<<<
@@ -3742,8 +3579,8 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__init_heap(s
 */
     goto __pyx_L0;
 
-    /* "hft_backtest/merged_dataset.pyx":107
- *                 continue
+    /* "hft_backtest/merged_dataset.pyx":101
+ *                 temp_candidates.push_back(item)
  * 
  *         if temp_candidates.empty():             # <<<<<<<<<<<<<<
  *             self._cur_event = None
@@ -3751,68 +3588,68 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__init_heap(s
 */
   }
 
-  /* "hft_backtest/merged_dataset.pyx":112
+  /* "hft_backtest/merged_dataset.pyx":106
  * 
  *         #
  *         cdef int best_idx = 0             # <<<<<<<<<<<<<<
  *         cdef long min_ts = temp_candidates[0].timestamp
- *         cdef int min_src_idx = temp_candidates[0].source_idx #
+ *         cdef int min_src_idx = temp_candidates[0].source_idx
 */
   __pyx_v_best_idx = 0;
 
-  /* "hft_backtest/merged_dataset.pyx":113
+  /* "hft_backtest/merged_dataset.pyx":107
  *         #
  *         cdef int best_idx = 0
  *         cdef long min_ts = temp_candidates[0].timestamp             # <<<<<<<<<<<<<<
- *         cdef int min_src_idx = temp_candidates[0].source_idx #
+ *         cdef int min_src_idx = temp_candidates[0].source_idx
  * 
 */
-  __pyx_t_14 = (__pyx_v_temp_candidates[0]).timestamp;
-  __pyx_v_min_ts = __pyx_t_14;
+  __pyx_t_8 = (__pyx_v_temp_candidates[0]).timestamp;
+  __pyx_v_min_ts = __pyx_t_8;
 
-  /* "hft_backtest/merged_dataset.pyx":114
+  /* "hft_backtest/merged_dataset.pyx":108
  *         cdef int best_idx = 0
  *         cdef long min_ts = temp_candidates[0].timestamp
- *         cdef int min_src_idx = temp_candidates[0].source_idx #             # <<<<<<<<<<<<<<
+ *         cdef int min_src_idx = temp_candidates[0].source_idx             # <<<<<<<<<<<<<<
  * 
  *         for i in range(1, temp_candidates.size()):
 */
   __pyx_t_3 = (__pyx_v_temp_candidates[0]).source_idx;
   __pyx_v_min_src_idx = __pyx_t_3;
 
-  /* "hft_backtest/merged_dataset.pyx":116
- *         cdef int min_src_idx = temp_candidates[0].source_idx #
+  /* "hft_backtest/merged_dataset.pyx":110
+ *         cdef int min_src_idx = temp_candidates[0].source_idx
  * 
  *         for i in range(1, temp_candidates.size()):             # <<<<<<<<<<<<<<
  *             if temp_candidates[i].timestamp < min_ts:
  *                 min_ts = temp_candidates[i].timestamp
 */
-  __pyx_t_15 = __pyx_v_temp_candidates.size();
-  __pyx_t_16 = __pyx_t_15;
-  for (__pyx_t_3 = 1; __pyx_t_3 < __pyx_t_16; __pyx_t_3+=1) {
+  __pyx_t_9 = __pyx_v_temp_candidates.size();
+  __pyx_t_10 = __pyx_t_9;
+  for (__pyx_t_3 = 1; __pyx_t_3 < __pyx_t_10; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "hft_backtest/merged_dataset.pyx":117
+    /* "hft_backtest/merged_dataset.pyx":111
  * 
  *         for i in range(1, temp_candidates.size()):
  *             if temp_candidates[i].timestamp < min_ts:             # <<<<<<<<<<<<<<
  *                 min_ts = temp_candidates[i].timestamp
  *                 best_idx = i
 */
-    __pyx_t_13 = ((__pyx_v_temp_candidates[__pyx_v_i]).timestamp < __pyx_v_min_ts);
-    if (__pyx_t_13) {
+    __pyx_t_6 = ((__pyx_v_temp_candidates[__pyx_v_i]).timestamp < __pyx_v_min_ts);
+    if (__pyx_t_6) {
 
-      /* "hft_backtest/merged_dataset.pyx":118
+      /* "hft_backtest/merged_dataset.pyx":112
  *         for i in range(1, temp_candidates.size()):
  *             if temp_candidates[i].timestamp < min_ts:
  *                 min_ts = temp_candidates[i].timestamp             # <<<<<<<<<<<<<<
  *                 best_idx = i
  *                 min_src_idx = temp_candidates[i].source_idx
 */
-      __pyx_t_14 = (__pyx_v_temp_candidates[__pyx_v_i]).timestamp;
-      __pyx_v_min_ts = __pyx_t_14;
+      __pyx_t_8 = (__pyx_v_temp_candidates[__pyx_v_i]).timestamp;
+      __pyx_v_min_ts = __pyx_t_8;
 
-      /* "hft_backtest/merged_dataset.pyx":119
+      /* "hft_backtest/merged_dataset.pyx":113
  *             if temp_candidates[i].timestamp < min_ts:
  *                 min_ts = temp_candidates[i].timestamp
  *                 best_idx = i             # <<<<<<<<<<<<<<
@@ -3821,48 +3658,48 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__init_heap(s
 */
       __pyx_v_best_idx = __pyx_v_i;
 
-      /* "hft_backtest/merged_dataset.pyx":120
+      /* "hft_backtest/merged_dataset.pyx":114
  *                 min_ts = temp_candidates[i].timestamp
  *                 best_idx = i
  *                 min_src_idx = temp_candidates[i].source_idx             # <<<<<<<<<<<<<<
  *             elif temp_candidates[i].timestamp == min_ts:
- *                 #
+ *                 if temp_candidates[i].source_idx < min_src_idx:
 */
       __pyx_t_4 = (__pyx_v_temp_candidates[__pyx_v_i]).source_idx;
       __pyx_v_min_src_idx = __pyx_t_4;
 
-      /* "hft_backtest/merged_dataset.pyx":117
+      /* "hft_backtest/merged_dataset.pyx":111
  * 
  *         for i in range(1, temp_candidates.size()):
  *             if temp_candidates[i].timestamp < min_ts:             # <<<<<<<<<<<<<<
  *                 min_ts = temp_candidates[i].timestamp
  *                 best_idx = i
 */
-      goto __pyx_L18;
+      goto __pyx_L9;
     }
 
-    /* "hft_backtest/merged_dataset.pyx":121
+    /* "hft_backtest/merged_dataset.pyx":115
  *                 best_idx = i
  *                 min_src_idx = temp_candidates[i].source_idx
  *             elif temp_candidates[i].timestamp == min_ts:             # <<<<<<<<<<<<<<
- *                 #
  *                 if temp_candidates[i].source_idx < min_src_idx:
+ *                     best_idx = i
 */
-    __pyx_t_13 = ((__pyx_v_temp_candidates[__pyx_v_i]).timestamp == __pyx_v_min_ts);
-    if (__pyx_t_13) {
+    __pyx_t_6 = ((__pyx_v_temp_candidates[__pyx_v_i]).timestamp == __pyx_v_min_ts);
+    if (__pyx_t_6) {
 
-      /* "hft_backtest/merged_dataset.pyx":123
+      /* "hft_backtest/merged_dataset.pyx":116
+ *                 min_src_idx = temp_candidates[i].source_idx
  *             elif temp_candidates[i].timestamp == min_ts:
- *                 #
  *                 if temp_candidates[i].source_idx < min_src_idx:             # <<<<<<<<<<<<<<
  *                     best_idx = i
  *                     min_src_idx = temp_candidates[i].source_idx
 */
-      __pyx_t_13 = ((__pyx_v_temp_candidates[__pyx_v_i]).source_idx < __pyx_v_min_src_idx);
-      if (__pyx_t_13) {
+      __pyx_t_6 = ((__pyx_v_temp_candidates[__pyx_v_i]).source_idx < __pyx_v_min_src_idx);
+      if (__pyx_t_6) {
 
-        /* "hft_backtest/merged_dataset.pyx":124
- *                 #
+        /* "hft_backtest/merged_dataset.pyx":117
+ *             elif temp_candidates[i].timestamp == min_ts:
  *                 if temp_candidates[i].source_idx < min_src_idx:
  *                     best_idx = i             # <<<<<<<<<<<<<<
  *                     min_src_idx = temp_candidates[i].source_idx
@@ -3870,144 +3707,125 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__init_heap(s
 */
         __pyx_v_best_idx = __pyx_v_i;
 
-        /* "hft_backtest/merged_dataset.pyx":125
+        /* "hft_backtest/merged_dataset.pyx":118
  *                 if temp_candidates[i].source_idx < min_src_idx:
  *                     best_idx = i
  *                     min_src_idx = temp_candidates[i].source_idx             # <<<<<<<<<<<<<<
  * 
- *         #
+ *         cdef MergeItem winner = temp_candidates[best_idx]
 */
         __pyx_t_4 = (__pyx_v_temp_candidates[__pyx_v_i]).source_idx;
         __pyx_v_min_src_idx = __pyx_t_4;
 
-        /* "hft_backtest/merged_dataset.pyx":123
+        /* "hft_backtest/merged_dataset.pyx":116
+ *                 min_src_idx = temp_candidates[i].source_idx
  *             elif temp_candidates[i].timestamp == min_ts:
- *                 #
  *                 if temp_candidates[i].source_idx < min_src_idx:             # <<<<<<<<<<<<<<
  *                     best_idx = i
  *                     min_src_idx = temp_candidates[i].source_idx
 */
       }
 
-      /* "hft_backtest/merged_dataset.pyx":121
+      /* "hft_backtest/merged_dataset.pyx":115
  *                 best_idx = i
  *                 min_src_idx = temp_candidates[i].source_idx
  *             elif temp_candidates[i].timestamp == min_ts:             # <<<<<<<<<<<<<<
- *                 #
  *                 if temp_candidates[i].source_idx < min_src_idx:
+ *                     best_idx = i
 */
     }
-    __pyx_L18:;
+    __pyx_L9:;
   }
 
-  /* "hft_backtest/merged_dataset.pyx":128
+  /* "hft_backtest/merged_dataset.pyx":120
+ *                     min_src_idx = temp_candidates[i].source_idx
  * 
- *         #
  *         cdef MergeItem winner = temp_candidates[best_idx]             # <<<<<<<<<<<<<<
- *         self._cur_event = <Event>winner.event
- *         self._cur_idx = winner.source_idx
+ * 
+ *         #  _cur_event (Python )
 */
   __pyx_v_winner = (__pyx_v_temp_candidates[__pyx_v_best_idx]);
 
-  /* "hft_backtest/merged_dataset.pyx":129
- *         #
- *         cdef MergeItem winner = temp_candidates[best_idx]
+  /* "hft_backtest/merged_dataset.pyx":123
+ * 
+ *         #  _cur_event (Python )
  *         self._cur_event = <Event>winner.event             # <<<<<<<<<<<<<<
  *         self._cur_idx = winner.source_idx
- *         self._cur_iter = self._iters[self._cur_idx]
+ * 
 */
-  __pyx_t_12 = ((PyObject *)__pyx_v_winner.event);
-  __Pyx_INCREF(__pyx_t_12);
-  __Pyx_GIVEREF(__pyx_t_12);
+  __pyx_t_1 = ((PyObject *)__pyx_v_winner.event);
+  __Pyx_INCREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF((PyObject *)__pyx_v_self->_cur_event);
   __Pyx_DECREF((PyObject *)__pyx_v_self->_cur_event);
-  __pyx_v_self->_cur_event = ((struct __pyx_obj_12hft_backtest_5event_Event *)__pyx_t_12);
-  __pyx_t_12 = 0;
+  __pyx_v_self->_cur_event = ((struct __pyx_obj_12hft_backtest_5event_Event *)__pyx_t_1);
+  __pyx_t_1 = 0;
 
-  /* "hft_backtest/merged_dataset.pyx":130
- *         cdef MergeItem winner = temp_candidates[best_idx]
+  /* "hft_backtest/merged_dataset.pyx":124
+ *         #  _cur_event (Python )
  *         self._cur_event = <Event>winner.event
  *         self._cur_idx = winner.source_idx             # <<<<<<<<<<<<<<
- *         self._cur_iter = self._iters[self._cur_idx]
  * 
+ *         #  push_back  INCREF
 */
   __pyx_t_3 = __pyx_v_winner.source_idx;
   __pyx_v_self->_cur_idx = __pyx_t_3;
 
-  /* "hft_backtest/merged_dataset.pyx":131
- *         self._cur_event = <Event>winner.event
- *         self._cur_idx = winner.source_idx
- *         self._cur_iter = self._iters[self._cur_idx]             # <<<<<<<<<<<<<<
+  /* "hft_backtest/merged_dataset.pyx":127
  * 
- *         #  self._cur_event ( Python )
-*/
-  if (unlikely(__pyx_v_self->_iters == Py_None)) {
-    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 131, __pyx_L1_error)
-  }
-  __pyx_t_12 = __Pyx_PyList_GET_ITEM(__pyx_v_self->_iters, __pyx_v_self->_cur_idx);
-  __Pyx_INCREF(__pyx_t_12);
-  __Pyx_GIVEREF(__pyx_t_12);
-  __Pyx_GOTREF(__pyx_v_self->_cur_iter);
-  __Pyx_DECREF(__pyx_v_self->_cur_iter);
-  __pyx_v_self->_cur_iter = __pyx_t_12;
-  __pyx_t_12 = 0;
-
-  /* "hft_backtest/merged_dataset.pyx":135
- *         #  self._cur_event ( Python )
- *         #  DECREF  push  INCREF
+ *         #  push_back  INCREF
  *         Py_DECREF(self._cur_event)             # <<<<<<<<<<<<<<
  * 
  *         #
 */
-  __pyx_t_12 = ((PyObject *)__pyx_v_self->_cur_event);
-  __Pyx_INCREF(__pyx_t_12);
-  Py_DECREF(__pyx_t_12);
-  __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
+  __pyx_t_1 = ((PyObject *)__pyx_v_self->_cur_event);
+  __Pyx_INCREF(__pyx_t_1);
+  Py_DECREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "hft_backtest/merged_dataset.pyx":138
+  /* "hft_backtest/merged_dataset.pyx":130
  * 
  *         #
  *         for i in range(temp_candidates.size()):             # <<<<<<<<<<<<<<
  *             if i == best_idx:
  *                 continue
 */
-  __pyx_t_15 = __pyx_v_temp_candidates.size();
-  __pyx_t_16 = __pyx_t_15;
-  for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_16; __pyx_t_3+=1) {
+  __pyx_t_9 = __pyx_v_temp_candidates.size();
+  __pyx_t_10 = __pyx_t_9;
+  for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_10; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "hft_backtest/merged_dataset.pyx":139
+    /* "hft_backtest/merged_dataset.pyx":131
  *         #
  *         for i in range(temp_candidates.size()):
  *             if i == best_idx:             # <<<<<<<<<<<<<<
  *                 continue
- * 
+ *             self._heap.push_back(temp_candidates[i])
 */
-    __pyx_t_13 = (__pyx_v_i == __pyx_v_best_idx);
-    if (__pyx_t_13) {
+    __pyx_t_6 = (__pyx_v_i == __pyx_v_best_idx);
+    if (__pyx_t_6) {
 
-      /* "hft_backtest/merged_dataset.pyx":140
+      /* "hft_backtest/merged_dataset.pyx":132
  *         for i in range(temp_candidates.size()):
  *             if i == best_idx:
  *                 continue             # <<<<<<<<<<<<<<
+ *             self._heap.push_back(temp_candidates[i])
  * 
- *             #  push  _heap ()
 */
-      goto __pyx_L20_continue;
+      goto __pyx_L11_continue;
 
-      /* "hft_backtest/merged_dataset.pyx":139
+      /* "hft_backtest/merged_dataset.pyx":131
  *         #
  *         for i in range(temp_candidates.size()):
  *             if i == best_idx:             # <<<<<<<<<<<<<<
  *                 continue
- * 
+ *             self._heap.push_back(temp_candidates[i])
 */
     }
 
-    /* "hft_backtest/merged_dataset.pyx":143
- * 
- *             #  push  _heap ()
+    /* "hft_backtest/merged_dataset.pyx":133
+ *             if i == best_idx:
+ *                 continue
  *             self._heap.push_back(temp_candidates[i])             # <<<<<<<<<<<<<<
  * 
  *         #
@@ -4016,13 +3834,13 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__init_heap(s
       __pyx_v_self->_heap.push_back((__pyx_v_temp_candidates[__pyx_v_i]));
     } catch(...) {
       __Pyx_CppExn2PyErr();
-      __PYX_ERR(0, 143, __pyx_L1_error)
+      __PYX_ERR(0, 133, __pyx_L1_error)
     }
-    __pyx_L20_continue:;
+    __pyx_L11_continue:;
   }
 
-  /* "hft_backtest/merged_dataset.pyx":151
- *         #  size/2  sift_down
+  /* "hft_backtest/merged_dataset.pyx":137
+ *         #
  *         cdef int j
  *         for j in range(self._heap.size() // 2, -1, -1):             # <<<<<<<<<<<<<<
  *             self._sift_down(j)
@@ -4031,42 +3849,41 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__init_heap(s
   for (__pyx_t_3 = (__pyx_v_self->_heap.size() / 2); __pyx_t_3 > -1; __pyx_t_3-=1) {
     __pyx_v_j = __pyx_t_3;
 
-    /* "hft_backtest/merged_dataset.pyx":152
+    /* "hft_backtest/merged_dataset.pyx":138
  *         cdef int j
  *         for j in range(self._heap.size() // 2, -1, -1):
  *             self._sift_down(j)             # <<<<<<<<<<<<<<
  * 
  *     cdef void _pop_heap_to_current(self):
 */
-    ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_vtab)->_sift_down(__pyx_v_self, __pyx_v_j); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 152, __pyx_L1_error)
+    ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_base.__pyx_vtab)->_sift_down(__pyx_v_self, __pyx_v_j); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 138, __pyx_L1_error)
   }
 
-  /* "hft_backtest/merged_dataset.pyx":83
+  /* "hft_backtest/merged_dataset.pyx":81
  *         return self._cur_event
  * 
  *     cdef void _init_heap(self):             # <<<<<<<<<<<<<<
- *         """"""
  *         cdef int i
+ *         cdef int n = len(self._sources)
 */
 
   /* function exit code */
   goto __pyx_L0;
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_XDECREF(__pyx_t_9);
-  __Pyx_XDECREF(__pyx_t_12);
   __Pyx_AddTraceback("hft_backtest.merged_dataset.MergedDataset._init_heap", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_L0:;
   __Pyx_XDECREF((PyObject *)__pyx_v_evt);
+  __Pyx_XDECREF((PyObject *)__pyx_v_dr);
   __Pyx_RefNannyFinishContext();
 }
 
-/* "hft_backtest/merged_dataset.pyx":154
+/* "hft_backtest/merged_dataset.pyx":140
  *             self._sift_down(j)
  * 
  *     cdef void _pop_heap_to_current(self):             # <<<<<<<<<<<<<<
- *         """"""
  *         cdef MergeItem top = self._heap.front()
+ * 
 */
 
 static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__pop_heap_to_current(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self) {
@@ -4081,21 +3898,21 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__pop_heap_to
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_pop_heap_to_current", 0);
 
-  /* "hft_backtest/merged_dataset.pyx":156
+  /* "hft_backtest/merged_dataset.pyx":141
+ * 
  *     cdef void _pop_heap_to_current(self):
- *         """"""
  *         cdef MergeItem top = self._heap.front()             # <<<<<<<<<<<<<<
  * 
- *         #  -> _cur_event
+ *         self._cur_event = <Event>top.event
 */
   __pyx_v_top = __pyx_v_self->_heap.front();
 
-  /* "hft_backtest/merged_dataset.pyx":159
+  /* "hft_backtest/merged_dataset.pyx":143
+ *         cdef MergeItem top = self._heap.front()
  * 
- *         #  -> _cur_event
  *         self._cur_event = <Event>top.event             # <<<<<<<<<<<<<<
  *         self._cur_idx = top.source_idx
- *         self._cur_iter = self._iters[self._cur_idx]
+ * 
 */
   __pyx_t_1 = ((PyObject *)__pyx_v_top.event);
   __Pyx_INCREF(__pyx_t_1);
@@ -4105,46 +3922,27 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__pop_heap_to
   __pyx_v_self->_cur_event = ((struct __pyx_obj_12hft_backtest_5event_Event *)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "hft_backtest/merged_dataset.pyx":160
- *         #  -> _cur_event
+  /* "hft_backtest/merged_dataset.pyx":144
+ * 
  *         self._cur_event = <Event>top.event
  *         self._cur_idx = top.source_idx             # <<<<<<<<<<<<<<
- *         self._cur_iter = self._iters[self._cur_idx]
  * 
+ *         cdef MergeItem last = self._heap.back()
 */
   __pyx_t_2 = __pyx_v_top.source_idx;
   __pyx_v_self->_cur_idx = __pyx_t_2;
 
-  /* "hft_backtest/merged_dataset.pyx":161
- *         self._cur_event = <Event>top.event
+  /* "hft_backtest/merged_dataset.pyx":146
  *         self._cur_idx = top.source_idx
- *         self._cur_iter = self._iters[self._cur_idx]             # <<<<<<<<<<<<<<
  * 
- *         #
-*/
-  if (unlikely(__pyx_v_self->_iters == Py_None)) {
-    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 161, __pyx_L1_error)
-  }
-  __pyx_t_1 = __Pyx_PyList_GET_ITEM(__pyx_v_self->_iters, __pyx_v_self->_cur_idx);
-  __Pyx_INCREF(__pyx_t_1);
-  __Pyx_GIVEREF(__pyx_t_1);
-  __Pyx_GOTREF(__pyx_v_self->_cur_iter);
-  __Pyx_DECREF(__pyx_v_self->_cur_iter);
-  __pyx_v_self->_cur_iter = __pyx_t_1;
-  __pyx_t_1 = 0;
-
-  /* "hft_backtest/merged_dataset.pyx":164
- * 
- *         #
  *         cdef MergeItem last = self._heap.back()             # <<<<<<<<<<<<<<
  *         self._heap.pop_back()
  * 
 */
   __pyx_v_last = __pyx_v_self->_heap.back();
 
-  /* "hft_backtest/merged_dataset.pyx":165
- *         #
+  /* "hft_backtest/merged_dataset.pyx":147
+ * 
  *         cdef MergeItem last = self._heap.back()
  *         self._heap.pop_back()             # <<<<<<<<<<<<<<
  * 
@@ -4152,7 +3950,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__pop_heap_to
 */
   __pyx_v_self->_heap.pop_back();
 
-  /* "hft_backtest/merged_dataset.pyx":167
+  /* "hft_backtest/merged_dataset.pyx":149
  *         self._heap.pop_back()
  * 
  *         if not self._heap.empty():             # <<<<<<<<<<<<<<
@@ -4162,7 +3960,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__pop_heap_to
   __pyx_t_3 = (!__pyx_v_self->_heap.empty());
   if (__pyx_t_3) {
 
-    /* "hft_backtest/merged_dataset.pyx":168
+    /* "hft_backtest/merged_dataset.pyx":150
  * 
  *         if not self._heap.empty():
  *             self._heap[0] = last             # <<<<<<<<<<<<<<
@@ -4171,16 +3969,16 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__pop_heap_to
 */
     (__pyx_v_self->_heap[0]) = __pyx_v_last;
 
-    /* "hft_backtest/merged_dataset.pyx":169
+    /* "hft_backtest/merged_dataset.pyx":151
  *         if not self._heap.empty():
  *             self._heap[0] = last
  *             self._sift_down(0)             # <<<<<<<<<<<<<<
  * 
- *         #  Py_DECREF(top.event) self._cur_event
+ *         #  _cur_event
 */
-    ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_vtab)->_sift_down(__pyx_v_self, 0); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 169, __pyx_L1_error)
+    ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_base.__pyx_vtab)->_sift_down(__pyx_v_self, 0); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 151, __pyx_L1_error)
 
-    /* "hft_backtest/merged_dataset.pyx":167
+    /* "hft_backtest/merged_dataset.pyx":149
  *         self._heap.pop_back()
  * 
  *         if not self._heap.empty():             # <<<<<<<<<<<<<<
@@ -4189,24 +3987,24 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__pop_heap_to
 */
   }
 
-  /* "hft_backtest/merged_dataset.pyx":175
- *         #  Cython  casting <Event>ptr  (INCREF)
- *         #
+  /* "hft_backtest/merged_dataset.pyx":154
+ * 
+ *         #  _cur_event
  *         Py_DECREF(self._cur_event)             # <<<<<<<<<<<<<<
  * 
- *     # ---  ( DelayBus ) ---
+ *     # ---  () ---
 */
   __pyx_t_1 = ((PyObject *)__pyx_v_self->_cur_event);
   __Pyx_INCREF(__pyx_t_1);
   Py_DECREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "hft_backtest/merged_dataset.pyx":154
+  /* "hft_backtest/merged_dataset.pyx":140
  *             self._sift_down(j)
  * 
  *     cdef void _pop_heap_to_current(self):             # <<<<<<<<<<<<<<
- *         """"""
  *         cdef MergeItem top = self._heap.front()
+ * 
 */
 
   /* function exit code */
@@ -4218,8 +4016,8 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__pop_heap_to
   __Pyx_RefNannyFinishContext();
 }
 
-/* "hft_backtest/merged_dataset.pyx":179
- *     # ---  ( DelayBus ) ---
+/* "hft_backtest/merged_dataset.pyx":158
+ *     # ---  () ---
  * 
  *     cdef void _push(self, long timestamp, int source_idx, Event event):             # <<<<<<<<<<<<<<
  *         cdef MergeItem item
@@ -4232,7 +4030,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__push(struct
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
 
-  /* "hft_backtest/merged_dataset.pyx":181
+  /* "hft_backtest/merged_dataset.pyx":160
  *     cdef void _push(self, long timestamp, int source_idx, Event event):
  *         cdef MergeItem item
  *         item.timestamp = timestamp             # <<<<<<<<<<<<<<
@@ -4241,7 +4039,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__push(struct
 */
   __pyx_v_item.timestamp = __pyx_v_timestamp;
 
-  /* "hft_backtest/merged_dataset.pyx":182
+  /* "hft_backtest/merged_dataset.pyx":161
  *         cdef MergeItem item
  *         item.timestamp = timestamp
  *         item.source_idx = source_idx             # <<<<<<<<<<<<<<
@@ -4250,27 +4048,27 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__push(struct
 */
   __pyx_v_item.source_idx = __pyx_v_source_idx;
 
-  /* "hft_backtest/merged_dataset.pyx":183
+  /* "hft_backtest/merged_dataset.pyx":162
  *         item.timestamp = timestamp
  *         item.source_idx = source_idx
  *         item.event = <PyObject*>event             # <<<<<<<<<<<<<<
  * 
- *         Py_INCREF(event) #
+ *         Py_INCREF(event) #  INCREF
 */
   __pyx_v_item.event = ((PyObject *)__pyx_v_event);
 
-  /* "hft_backtest/merged_dataset.pyx":185
+  /* "hft_backtest/merged_dataset.pyx":164
  *         item.event = <PyObject*>event
  * 
- *         Py_INCREF(event) #             # <<<<<<<<<<<<<<
+ *         Py_INCREF(event) #  INCREF             # <<<<<<<<<<<<<<
  *         self._heap.push_back(item)
  *         self._sift_up(self._heap.size() - 1)
 */
   Py_INCREF(((PyObject *)__pyx_v_event));
 
-  /* "hft_backtest/merged_dataset.pyx":186
+  /* "hft_backtest/merged_dataset.pyx":165
  * 
- *         Py_INCREF(event) #
+ *         Py_INCREF(event) #  INCREF
  *         self._heap.push_back(item)             # <<<<<<<<<<<<<<
  *         self._sift_up(self._heap.size() - 1)
  * 
@@ -4279,20 +4077,20 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__push(struct
     __pyx_v_self->_heap.push_back(__pyx_v_item);
   } catch(...) {
     __Pyx_CppExn2PyErr();
-    __PYX_ERR(0, 186, __pyx_L1_error)
+    __PYX_ERR(0, 165, __pyx_L1_error)
   }
 
-  /* "hft_backtest/merged_dataset.pyx":187
- *         Py_INCREF(event) #
+  /* "hft_backtest/merged_dataset.pyx":166
+ *         Py_INCREF(event) #  INCREF
  *         self._heap.push_back(item)
  *         self._sift_up(self._heap.size() - 1)             # <<<<<<<<<<<<<<
  * 
  *     cdef void _sift_up(self, size_t idx):
 */
-  ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_vtab)->_sift_up(__pyx_v_self, (__pyx_v_self->_heap.size() - 1)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 187, __pyx_L1_error)
+  ((struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self->__pyx_base.__pyx_vtab)->_sift_up(__pyx_v_self, (__pyx_v_self->_heap.size() - 1)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 166, __pyx_L1_error)
 
-  /* "hft_backtest/merged_dataset.pyx":179
- *     # ---  ( DelayBus ) ---
+  /* "hft_backtest/merged_dataset.pyx":158
+ *     # ---  () ---
  * 
  *     cdef void _push(self, long timestamp, int source_idx, Event event):             # <<<<<<<<<<<<<<
  *         cdef MergeItem item
@@ -4306,7 +4104,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__push(struct
   __pyx_L0:;
 }
 
-/* "hft_backtest/merged_dataset.pyx":189
+/* "hft_backtest/merged_dataset.pyx":168
  *         self._sift_up(self._heap.size() - 1)
  * 
  *     cdef void _sift_up(self, size_t idx):             # <<<<<<<<<<<<<<
@@ -4322,38 +4120,38 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_up(str
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
 
-  /* "hft_backtest/merged_dataset.pyx":192
+  /* "hft_backtest/merged_dataset.pyx":171
  *         cdef size_t parent
  *         cdef MergeItem temp
  *         while idx > 0:             # <<<<<<<<<<<<<<
  *             parent = (idx - 1) >> 1
- *             #  ()
+ *             if self._less(idx, parent):
 */
   while (1) {
     __pyx_t_1 = (__pyx_v_idx > 0);
     if (!__pyx_t_1) break;
 
-    /* "hft_backtest/merged_dataset.pyx":193
+    /* "hft_backtest/merged_dataset.pyx":172
  *         cdef MergeItem temp
  *         while idx > 0:
  *             parent = (idx - 1) >> 1             # <<<<<<<<<<<<<<
- *             #  ()
  *             if self._less(idx, parent):
+ *                 temp = self._heap[idx]
 */
     __pyx_v_parent = ((__pyx_v_idx - 1) >> 1);
 
-    /* "hft_backtest/merged_dataset.pyx":195
+    /* "hft_backtest/merged_dataset.pyx":173
+ *         while idx > 0:
  *             parent = (idx - 1) >> 1
- *             #  ()
  *             if self._less(idx, parent):             # <<<<<<<<<<<<<<
  *                 temp = self._heap[idx]
  *                 self._heap[idx] = self._heap[parent]
 */
-    __pyx_t_1 = __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(__pyx_v_self, __pyx_v_idx, __pyx_v_parent); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 195, __pyx_L1_error)
+    __pyx_t_1 = __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(__pyx_v_self, __pyx_v_idx, __pyx_v_parent); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 173, __pyx_L1_error)
     if (__pyx_t_1) {
 
-      /* "hft_backtest/merged_dataset.pyx":196
- *             #  ()
+      /* "hft_backtest/merged_dataset.pyx":174
+ *             parent = (idx - 1) >> 1
  *             if self._less(idx, parent):
  *                 temp = self._heap[idx]             # <<<<<<<<<<<<<<
  *                 self._heap[idx] = self._heap[parent]
@@ -4361,7 +4159,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_up(str
 */
       __pyx_v_temp = (__pyx_v_self->_heap[__pyx_v_idx]);
 
-      /* "hft_backtest/merged_dataset.pyx":197
+      /* "hft_backtest/merged_dataset.pyx":175
  *             if self._less(idx, parent):
  *                 temp = self._heap[idx]
  *                 self._heap[idx] = self._heap[parent]             # <<<<<<<<<<<<<<
@@ -4370,7 +4168,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_up(str
 */
       (__pyx_v_self->_heap[__pyx_v_idx]) = (__pyx_v_self->_heap[__pyx_v_parent]);
 
-      /* "hft_backtest/merged_dataset.pyx":198
+      /* "hft_backtest/merged_dataset.pyx":176
  *                 temp = self._heap[idx]
  *                 self._heap[idx] = self._heap[parent]
  *                 self._heap[parent] = temp             # <<<<<<<<<<<<<<
@@ -4379,7 +4177,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_up(str
 */
       (__pyx_v_self->_heap[__pyx_v_parent]) = __pyx_v_temp;
 
-      /* "hft_backtest/merged_dataset.pyx":199
+      /* "hft_backtest/merged_dataset.pyx":177
  *                 self._heap[idx] = self._heap[parent]
  *                 self._heap[parent] = temp
  *                 idx = parent             # <<<<<<<<<<<<<<
@@ -4388,9 +4186,9 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_up(str
 */
       __pyx_v_idx = __pyx_v_parent;
 
-      /* "hft_backtest/merged_dataset.pyx":195
+      /* "hft_backtest/merged_dataset.pyx":173
+ *         while idx > 0:
  *             parent = (idx - 1) >> 1
- *             #  ()
  *             if self._less(idx, parent):             # <<<<<<<<<<<<<<
  *                 temp = self._heap[idx]
  *                 self._heap[idx] = self._heap[parent]
@@ -4398,7 +4196,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_up(str
       goto __pyx_L5;
     }
 
-    /* "hft_backtest/merged_dataset.pyx":201
+    /* "hft_backtest/merged_dataset.pyx":179
  *                 idx = parent
  *             else:
  *                 break             # <<<<<<<<<<<<<<
@@ -4412,7 +4210,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_up(str
   }
   __pyx_L4_break:;
 
-  /* "hft_backtest/merged_dataset.pyx":189
+  /* "hft_backtest/merged_dataset.pyx":168
  *         self._sift_up(self._heap.size() - 1)
  * 
  *     cdef void _sift_up(self, size_t idx):             # <<<<<<<<<<<<<<
@@ -4427,7 +4225,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_up(str
   __pyx_L0:;
 }
 
-/* "hft_backtest/merged_dataset.pyx":203
+/* "hft_backtest/merged_dataset.pyx":181
  *                 break
  * 
  *     cdef void _sift_down(self, size_t idx):             # <<<<<<<<<<<<<<
@@ -4447,26 +4245,26 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_down(s
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
 
-  /* "hft_backtest/merged_dataset.pyx":205
+  /* "hft_backtest/merged_dataset.pyx":183
  *     cdef void _sift_down(self, size_t idx):
  *         cdef size_t left, right, smallest
  *         cdef size_t size = self._heap.size()             # <<<<<<<<<<<<<<
  *         cdef MergeItem temp
- * 
+ *         while True:
 */
   __pyx_v_size = __pyx_v_self->_heap.size();
 
-  /* "hft_backtest/merged_dataset.pyx":208
+  /* "hft_backtest/merged_dataset.pyx":185
+ *         cdef size_t size = self._heap.size()
  *         cdef MergeItem temp
- * 
  *         while True:             # <<<<<<<<<<<<<<
  *             left = (idx << 1) + 1
  *             right = left + 1
 */
   while (1) {
 
-    /* "hft_backtest/merged_dataset.pyx":209
- * 
+    /* "hft_backtest/merged_dataset.pyx":186
+ *         cdef MergeItem temp
  *         while True:
  *             left = (idx << 1) + 1             # <<<<<<<<<<<<<<
  *             right = left + 1
@@ -4474,27 +4272,27 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_down(s
 */
     __pyx_v_left = ((__pyx_v_idx << 1) + 1);
 
-    /* "hft_backtest/merged_dataset.pyx":210
+    /* "hft_backtest/merged_dataset.pyx":187
  *         while True:
  *             left = (idx << 1) + 1
  *             right = left + 1             # <<<<<<<<<<<<<<
  *             smallest = idx
- * 
+ *             if left < size and self._less(left, smallest):
 */
     __pyx_v_right = (__pyx_v_left + 1);
 
-    /* "hft_backtest/merged_dataset.pyx":211
+    /* "hft_backtest/merged_dataset.pyx":188
  *             left = (idx << 1) + 1
  *             right = left + 1
  *             smallest = idx             # <<<<<<<<<<<<<<
- * 
  *             if left < size and self._less(left, smallest):
+ *                 smallest = left
 */
     __pyx_v_smallest = __pyx_v_idx;
 
-    /* "hft_backtest/merged_dataset.pyx":213
+    /* "hft_backtest/merged_dataset.pyx":189
+ *             right = left + 1
  *             smallest = idx
- * 
  *             if left < size and self._less(left, smallest):             # <<<<<<<<<<<<<<
  *                 smallest = left
  *             if right < size and self._less(right, smallest):
@@ -4505,13 +4303,13 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_down(s
       __pyx_t_1 = __pyx_t_2;
       goto __pyx_L6_bool_binop_done;
     }
-    __pyx_t_2 = __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(__pyx_v_self, __pyx_v_left, __pyx_v_smallest); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 213, __pyx_L1_error)
+    __pyx_t_2 = __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(__pyx_v_self, __pyx_v_left, __pyx_v_smallest); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 189, __pyx_L1_error)
     __pyx_t_1 = __pyx_t_2;
     __pyx_L6_bool_binop_done:;
     if (__pyx_t_1) {
 
-      /* "hft_backtest/merged_dataset.pyx":214
- * 
+      /* "hft_backtest/merged_dataset.pyx":190
+ *             smallest = idx
  *             if left < size and self._less(left, smallest):
  *                 smallest = left             # <<<<<<<<<<<<<<
  *             if right < size and self._less(right, smallest):
@@ -4519,21 +4317,21 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_down(s
 */
       __pyx_v_smallest = __pyx_v_left;
 
-      /* "hft_backtest/merged_dataset.pyx":213
+      /* "hft_backtest/merged_dataset.pyx":189
+ *             right = left + 1
  *             smallest = idx
- * 
  *             if left < size and self._less(left, smallest):             # <<<<<<<<<<<<<<
  *                 smallest = left
  *             if right < size and self._less(right, smallest):
 */
     }
 
-    /* "hft_backtest/merged_dataset.pyx":215
+    /* "hft_backtest/merged_dataset.pyx":191
  *             if left < size and self._less(left, smallest):
  *                 smallest = left
  *             if right < size and self._less(right, smallest):             # <<<<<<<<<<<<<<
  *                 smallest = right
- * 
+ *             if smallest != idx:
 */
     __pyx_t_2 = (__pyx_v_right < __pyx_v_size);
     if (__pyx_t_2) {
@@ -4541,32 +4339,32 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_down(s
       __pyx_t_1 = __pyx_t_2;
       goto __pyx_L9_bool_binop_done;
     }
-    __pyx_t_2 = __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(__pyx_v_self, __pyx_v_right, __pyx_v_smallest); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 215, __pyx_L1_error)
+    __pyx_t_2 = __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(__pyx_v_self, __pyx_v_right, __pyx_v_smallest); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 191, __pyx_L1_error)
     __pyx_t_1 = __pyx_t_2;
     __pyx_L9_bool_binop_done:;
     if (__pyx_t_1) {
 
-      /* "hft_backtest/merged_dataset.pyx":216
+      /* "hft_backtest/merged_dataset.pyx":192
  *                 smallest = left
  *             if right < size and self._less(right, smallest):
  *                 smallest = right             # <<<<<<<<<<<<<<
- * 
  *             if smallest != idx:
+ *                 temp = self._heap[idx]
 */
       __pyx_v_smallest = __pyx_v_right;
 
-      /* "hft_backtest/merged_dataset.pyx":215
+      /* "hft_backtest/merged_dataset.pyx":191
  *             if left < size and self._less(left, smallest):
  *                 smallest = left
  *             if right < size and self._less(right, smallest):             # <<<<<<<<<<<<<<
  *                 smallest = right
- * 
+ *             if smallest != idx:
 */
     }
 
-    /* "hft_backtest/merged_dataset.pyx":218
+    /* "hft_backtest/merged_dataset.pyx":193
+ *             if right < size and self._less(right, smallest):
  *                 smallest = right
- * 
  *             if smallest != idx:             # <<<<<<<<<<<<<<
  *                 temp = self._heap[idx]
  *                 self._heap[idx] = self._heap[smallest]
@@ -4574,8 +4372,8 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_down(s
     __pyx_t_1 = (__pyx_v_smallest != __pyx_v_idx);
     if (__pyx_t_1) {
 
-      /* "hft_backtest/merged_dataset.pyx":219
- * 
+      /* "hft_backtest/merged_dataset.pyx":194
+ *                 smallest = right
  *             if smallest != idx:
  *                 temp = self._heap[idx]             # <<<<<<<<<<<<<<
  *                 self._heap[idx] = self._heap[smallest]
@@ -4583,7 +4381,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_down(s
 */
       __pyx_v_temp = (__pyx_v_self->_heap[__pyx_v_idx]);
 
-      /* "hft_backtest/merged_dataset.pyx":220
+      /* "hft_backtest/merged_dataset.pyx":195
  *             if smallest != idx:
  *                 temp = self._heap[idx]
  *                 self._heap[idx] = self._heap[smallest]             # <<<<<<<<<<<<<<
@@ -4592,7 +4390,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_down(s
 */
       (__pyx_v_self->_heap[__pyx_v_idx]) = (__pyx_v_self->_heap[__pyx_v_smallest]);
 
-      /* "hft_backtest/merged_dataset.pyx":221
+      /* "hft_backtest/merged_dataset.pyx":196
  *                 temp = self._heap[idx]
  *                 self._heap[idx] = self._heap[smallest]
  *                 self._heap[smallest] = temp             # <<<<<<<<<<<<<<
@@ -4601,7 +4399,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_down(s
 */
       (__pyx_v_self->_heap[__pyx_v_smallest]) = __pyx_v_temp;
 
-      /* "hft_backtest/merged_dataset.pyx":222
+      /* "hft_backtest/merged_dataset.pyx":197
  *                 self._heap[idx] = self._heap[smallest]
  *                 self._heap[smallest] = temp
  *                 idx = smallest             # <<<<<<<<<<<<<<
@@ -4610,9 +4408,9 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_down(s
 */
       __pyx_v_idx = __pyx_v_smallest;
 
-      /* "hft_backtest/merged_dataset.pyx":218
+      /* "hft_backtest/merged_dataset.pyx":193
+ *             if right < size and self._less(right, smallest):
  *                 smallest = right
- * 
  *             if smallest != idx:             # <<<<<<<<<<<<<<
  *                 temp = self._heap[idx]
  *                 self._heap[idx] = self._heap[smallest]
@@ -4620,7 +4418,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_down(s
       goto __pyx_L11;
     }
 
-    /* "hft_backtest/merged_dataset.pyx":224
+    /* "hft_backtest/merged_dataset.pyx":199
  *                 idx = smallest
  *             else:
  *                 break             # <<<<<<<<<<<<<<
@@ -4634,7 +4432,7 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_down(s
   }
   __pyx_L4_break:;
 
-  /* "hft_backtest/merged_dataset.pyx":203
+  /* "hft_backtest/merged_dataset.pyx":181
  *                 break
  * 
  *     cdef void _sift_down(self, size_t idx):             # <<<<<<<<<<<<<<
@@ -4649,21 +4447,21 @@ static void __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_down(s
   __pyx_L0:;
 }
 
-/* "hft_backtest/merged_dataset.pyx":226
+/* "hft_backtest/merged_dataset.pyx":201
  *                 break
  * 
  *     cdef inline bint _less(self, size_t i, size_t j):             # <<<<<<<<<<<<<<
- *         """ (timestamp, source_idx)"""
  *         if self._heap[i].timestamp < self._heap[j].timestamp:
+ *             return True
 */
 
 static int __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self, size_t __pyx_v_i, size_t __pyx_v_j) {
   int __pyx_r;
   int __pyx_t_1;
 
-  /* "hft_backtest/merged_dataset.pyx":228
+  /* "hft_backtest/merged_dataset.pyx":202
+ * 
  *     cdef inline bint _less(self, size_t i, size_t j):
- *         """ (timestamp, source_idx)"""
  *         if self._heap[i].timestamp < self._heap[j].timestamp:             # <<<<<<<<<<<<<<
  *             return True
  *         elif self._heap[i].timestamp == self._heap[j].timestamp:
@@ -4671,8 +4469,8 @@ static int __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(struct 
   __pyx_t_1 = ((__pyx_v_self->_heap[__pyx_v_i]).timestamp < (__pyx_v_self->_heap[__pyx_v_j]).timestamp);
   if (__pyx_t_1) {
 
-    /* "hft_backtest/merged_dataset.pyx":229
- *         """ (timestamp, source_idx)"""
+    /* "hft_backtest/merged_dataset.pyx":203
+ *     cdef inline bint _less(self, size_t i, size_t j):
  *         if self._heap[i].timestamp < self._heap[j].timestamp:
  *             return True             # <<<<<<<<<<<<<<
  *         elif self._heap[i].timestamp == self._heap[j].timestamp:
@@ -4681,16 +4479,16 @@ static int __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(struct 
     __pyx_r = 1;
     goto __pyx_L0;
 
-    /* "hft_backtest/merged_dataset.pyx":228
+    /* "hft_backtest/merged_dataset.pyx":202
+ * 
  *     cdef inline bint _less(self, size_t i, size_t j):
- *         """ (timestamp, source_idx)"""
  *         if self._heap[i].timestamp < self._heap[j].timestamp:             # <<<<<<<<<<<<<<
  *             return True
  *         elif self._heap[i].timestamp == self._heap[j].timestamp:
 */
   }
 
-  /* "hft_backtest/merged_dataset.pyx":230
+  /* "hft_backtest/merged_dataset.pyx":204
  *         if self._heap[i].timestamp < self._heap[j].timestamp:
  *             return True
  *         elif self._heap[i].timestamp == self._heap[j].timestamp:             # <<<<<<<<<<<<<<
@@ -4700,7 +4498,7 @@ static int __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(struct 
   __pyx_t_1 = ((__pyx_v_self->_heap[__pyx_v_i]).timestamp == (__pyx_v_self->_heap[__pyx_v_j]).timestamp);
   if (__pyx_t_1) {
 
-    /* "hft_backtest/merged_dataset.pyx":231
+    /* "hft_backtest/merged_dataset.pyx":205
  *             return True
  *         elif self._heap[i].timestamp == self._heap[j].timestamp:
  *             return self._heap[i].source_idx < self._heap[j].source_idx             # <<<<<<<<<<<<<<
@@ -4709,7 +4507,7 @@ static int __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(struct 
     __pyx_r = ((__pyx_v_self->_heap[__pyx_v_i]).source_idx < (__pyx_v_self->_heap[__pyx_v_j]).source_idx);
     goto __pyx_L0;
 
-    /* "hft_backtest/merged_dataset.pyx":230
+    /* "hft_backtest/merged_dataset.pyx":204
  *         if self._heap[i].timestamp < self._heap[j].timestamp:
  *             return True
  *         elif self._heap[i].timestamp == self._heap[j].timestamp:             # <<<<<<<<<<<<<<
@@ -4718,7 +4516,7 @@ static int __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(struct 
 */
   }
 
-  /* "hft_backtest/merged_dataset.pyx":232
+  /* "hft_backtest/merged_dataset.pyx":206
  *         elif self._heap[i].timestamp == self._heap[j].timestamp:
  *             return self._heap[i].source_idx < self._heap[j].source_idx
  *         return False             # <<<<<<<<<<<<<<
@@ -4726,12 +4524,12 @@ static int __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(struct 
   __pyx_r = 0;
   goto __pyx_L0;
 
-  /* "hft_backtest/merged_dataset.pyx":226
+  /* "hft_backtest/merged_dataset.pyx":201
  *                 break
  * 
  *     cdef inline bint _less(self, size_t i, size_t j):             # <<<<<<<<<<<<<<
- *         """ (timestamp, source_idx)"""
  *         if self._heap[i].timestamp < self._heap[j].timestamp:
+ *             return True
 */
 
   /* function exit code */
@@ -4746,16 +4544,16 @@ static int __pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__less(struct 
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_7__reduce_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_3__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_12hft_backtest_14merged_dataset_13MergedDataset_6__reduce_cython__, "MergedDataset.__reduce_cython__(self)");
-static PyMethodDef __pyx_mdef_12hft_backtest_14merged_dataset_13MergedDataset_7__reduce_cython__ = {"__reduce_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_7__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_12hft_backtest_14merged_dataset_13MergedDataset_6__reduce_cython__};
-static PyObject *__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_7__reduce_cython__(PyObject *__pyx_v_self, 
+PyDoc_STRVAR(__pyx_doc_12hft_backtest_14merged_dataset_13MergedDataset_2__reduce_cython__, "MergedDataset.__reduce_cython__(self)");
+static PyMethodDef __pyx_mdef_12hft_backtest_14merged_dataset_13MergedDataset_3__reduce_cython__ = {"__reduce_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_3__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_12hft_backtest_14merged_dataset_13MergedDataset_2__reduce_cython__};
+static PyObject *__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_3__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -4781,14 +4579,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   const Py_ssize_t __pyx_kwds_len = unlikely(__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
   if (unlikely(__pyx_kwds_len < 0)) return NULL;
   if (unlikely(__pyx_kwds_len > 0)) {__Pyx_RejectKeywords("__reduce_cython__", __pyx_kwds); return NULL;}
-  __pyx_r = __pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_6__reduce_cython__(((struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self));
+  __pyx_r = __pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_2__reduce_cython__(((struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_6__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self) {
+static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_2__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -4828,16 +4626,16 @@ static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_6__red
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_9__setstate_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_5__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_12hft_backtest_14merged_dataset_13MergedDataset_8__setstate_cython__, "MergedDataset.__setstate_cython__(self, __pyx_state)");
-static PyMethodDef __pyx_mdef_12hft_backtest_14merged_dataset_13MergedDataset_9__setstate_cython__ = {"__setstate_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_9__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_12hft_backtest_14merged_dataset_13MergedDataset_8__setstate_cython__};
-static PyObject *__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_9__setstate_cython__(PyObject *__pyx_v_self, 
+PyDoc_STRVAR(__pyx_doc_12hft_backtest_14merged_dataset_13MergedDataset_4__setstate_cython__, "MergedDataset.__setstate_cython__(self, __pyx_state)");
+static PyMethodDef __pyx_mdef_12hft_backtest_14merged_dataset_13MergedDataset_5__setstate_cython__ = {"__setstate_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_5__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_12hft_backtest_14merged_dataset_13MergedDataset_4__setstate_cython__};
+static PyObject *__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_5__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -4903,7 +4701,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_8__setstate_cython__(((struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self), __pyx_v___pyx_state);
+  __pyx_r = __pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__setstate_cython__(((struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *)__pyx_v_self), __pyx_v___pyx_state);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -4913,7 +4711,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_8__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_4__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -4947,17 +4745,15 @@ static PyObject *__pyx_pf_12hft_backtest_14merged_dataset_13MergedDataset_8__set
 /* #### Code section: module_exttypes ### */
 static struct __pyx_vtabstruct_12hft_backtest_14merged_dataset_MergedDataset __pyx_vtable_12hft_backtest_14merged_dataset_MergedDataset;
 
-static PyObject *__pyx_tp_new_12hft_backtest_14merged_dataset_MergedDataset(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
+static PyObject *__pyx_tp_new_12hft_backtest_14merged_dataset_MergedDataset(PyTypeObject *t, PyObject *a, PyObject *k) {
   struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *p;
-  PyObject *o;
-  o = __Pyx_AllocateExtensionType(t, 0);
+  PyObject *o = __Pyx_PyType_GetSlot(__pyx_mstate_global->__pyx_ptype_12hft_backtest_6reader_DataReader, tp_new, newfunc)(t, a, k);
   if (unlikely(!o)) return 0;
   p = ((struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *)o);
-  p->__pyx_vtab = __pyx_vtabptr_12hft_backtest_14merged_dataset_MergedDataset;
+  p->__pyx_base.__pyx_vtab = (struct __pyx_vtabstruct_12hft_backtest_6reader_DataReader*)__pyx_vtabptr_12hft_backtest_14merged_dataset_MergedDataset;
   __Pyx_default_placement_construct(&(p->_heap));
-  p->_iters = ((PyObject*)Py_None); Py_INCREF(Py_None);
+  p->_sources = ((PyObject*)Py_None); Py_INCREF(Py_None);
   p->_cur_event = ((struct __pyx_obj_12hft_backtest_5event_Event *)Py_None); Py_INCREF(Py_None);
-  p->_cur_iter = Py_None; Py_INCREF(Py_None);
   return o;
 }
 
@@ -4972,38 +4768,36 @@ static void __pyx_tp_dealloc_12hft_backtest_14merged_dataset_MergedDataset(PyObj
   #endif
   PyObject_GC_UnTrack(o);
   __Pyx_call_destructor(p->_heap);
-  Py_CLEAR(p->_iters);
+  Py_CLEAR(p->_sources);
   Py_CLEAR(p->_cur_event);
-  Py_CLEAR(p->_cur_iter);
-  PyTypeObject *tp = Py_TYPE(o);
-  #if CYTHON_USE_TYPE_SLOTS
-  (*tp->tp_free)(o);
-  #else
-  {
-    freefunc tp_free = (freefunc)PyType_GetSlot(tp, Py_tp_free);
-    if (tp_free) tp_free(o);
-  }
+  if (PyType_IS_GC(__pyx_mstate_global->__pyx_ptype_12hft_backtest_6reader_DataReader)) PyObject_GC_Track(o);
+  #if !CYTHON_USE_MODULE_STATE
+  if (likely(__pyx_mstate_global->__pyx_ptype_12hft_backtest_6reader_DataReader)) __Pyx_PyType_GetSlot(__pyx_mstate_global->__pyx_ptype_12hft_backtest_6reader_DataReader, tp_dealloc, destructor)(o); else
   #endif
-  #if CYTHON_USE_TYPE_SPECS
-  Py_DECREF(tp);
-  #endif
+  __Pyx_call_next_tp_dealloc(o, __pyx_tp_dealloc_12hft_backtest_14merged_dataset_MergedDataset);
 }
 
 static int __pyx_tp_traverse_12hft_backtest_14merged_dataset_MergedDataset(PyObject *o, visitproc v, void *a) {
   int e;
   struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *p = (struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *)o;
+  #if !CYTHON_USE_MODULE_STATE
+  e = 0;
+  if (likely(__pyx_mstate_global->__pyx_ptype_12hft_backtest_6reader_DataReader)) {
+    traverseproc traverse = __Pyx_PyType_GetSlot(__pyx_mstate_global->__pyx_ptype_12hft_backtest_6reader_DataReader, tp_traverse, traverseproc);
+    if (traverse) { e = traverse(o, v, a); }
+  } else
+  #endif
+  { e = __Pyx_call_next_tp_traverse(o, v, a, __pyx_tp_traverse_12hft_backtest_14merged_dataset_MergedDataset); }
+  if (e) return e;
   {
-    e = __Pyx_call_type_traverse(o, 1, v, a);
+    e = __Pyx_call_type_traverse(o, 0, v, a);
     if (e) return e;
   }
-  if (p->_iters) {
-    e = (*v)(p->_iters, a); if (e) return e;
+  if (p->_sources) {
+    e = (*v)(p->_sources, a); if (e) return e;
   }
   if (p->_cur_event) {
     e = (*v)(((PyObject *)p->_cur_event), a); if (e) return e;
-  }
-  if (p->_cur_iter) {
-    e = (*v)(p->_cur_iter, a); if (e) return e;
   }
   return 0;
 }
@@ -5011,38 +4805,33 @@ static int __pyx_tp_traverse_12hft_backtest_14merged_dataset_MergedDataset(PyObj
 static int __pyx_tp_clear_12hft_backtest_14merged_dataset_MergedDataset(PyObject *o) {
   PyObject* tmp;
   struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *p = (struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *)o;
-  tmp = ((PyObject*)p->_iters);
-  p->_iters = ((PyObject*)Py_None); Py_INCREF(Py_None);
+  #if !CYTHON_USE_MODULE_STATE
+  if (likely(__pyx_mstate_global->__pyx_ptype_12hft_backtest_6reader_DataReader)) {
+    inquiry clear = __Pyx_PyType_GetSlot(__pyx_mstate_global->__pyx_ptype_12hft_backtest_6reader_DataReader, tp_clear, inquiry);
+    if (clear) clear(o);
+  } else
+  #endif
+  { __Pyx_call_next_tp_clear(o, __pyx_tp_clear_12hft_backtest_14merged_dataset_MergedDataset); }
+  tmp = ((PyObject*)p->_sources);
+  p->_sources = ((PyObject*)Py_None); Py_INCREF(Py_None);
   Py_XDECREF(tmp);
   tmp = ((PyObject*)p->_cur_event);
   p->_cur_event = ((struct __pyx_obj_12hft_backtest_5event_Event *)Py_None); Py_INCREF(Py_None);
   Py_XDECREF(tmp);
-  tmp = ((PyObject*)p->_cur_iter);
-  p->_cur_iter = Py_None; Py_INCREF(Py_None);
-  Py_XDECREF(tmp);
   return 0;
 }
 
-static PyObject *__pyx_specialmethod___pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_5__next__(PyObject *self, CYTHON_UNUSED PyObject *arg) {
-  PyObject *res = __pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_5__next__(self);
-  if (!res && !PyErr_Occurred()) { PyErr_SetNone(PyExc_StopIteration); }
-  return res;
-}
-
 static PyMethodDef __pyx_methods_12hft_backtest_14merged_dataset_MergedDataset[] = {
-  {"__next__", (PyCFunction)__pyx_specialmethod___pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_5__next__, METH_NOARGS|METH_COEXIST, 0},
-  {"__reduce_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_7__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_12hft_backtest_14merged_dataset_13MergedDataset_6__reduce_cython__},
-  {"__setstate_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_9__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_12hft_backtest_14merged_dataset_13MergedDataset_8__setstate_cython__},
+  {"__reduce_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_3__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_12hft_backtest_14merged_dataset_13MergedDataset_2__reduce_cython__},
+  {"__setstate_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_5__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_12hft_backtest_14merged_dataset_13MergedDataset_4__setstate_cython__},
   {0, 0, 0, 0}
 };
 #if CYTHON_USE_TYPE_SPECS
 static PyType_Slot __pyx_type_12hft_backtest_14merged_dataset_MergedDataset_slots[] = {
   {Py_tp_dealloc, (void *)__pyx_tp_dealloc_12hft_backtest_14merged_dataset_MergedDataset},
-  {Py_tp_doc, (void *)PyDoc_STR("MergedDataset(*datasets)\n\n\351\253\230\346\200\247\350\203\275\345\244\232\350\267\257\345\275\222\345\271\266\346\225\260\346\215\256\351\233\206 (Cython \347\211\210)\n\n\345\256\236\347\216\260\351\200\273\350\276\221\357\274\232\n\347\273\264\346\212\244\344\270\200\344\270\252\342\200\234\345\275\223\345\211\215\350\203\234\350\200\205\342\200\235(Current Winner) \345\222\214\344\270\200\344\270\252\342\200\234\346\214\221\346\210\230\350\200\205\345\240\206\342\200\235(Challenger Heap)\343\200\202\n\345\217\252\346\234\211\345\275\223\345\275\223\345\211\215\350\203\234\350\200\205\350\200\227\345\260\275\346\210\226\350\242\253\345\240\206\344\270\255\346\233\264\345\260\217\347\232\204\346\227\266\351\227\264\346\210\263\346\214\221\346\210\230\346\210\220\345\212\237\346\227\266\357\274\214\346\211\215\350\277\233\350\241\214\345\240\206\346\223\215\344\275\234\343\200\202")},
+  {Py_tp_doc, (void *)PyDoc_STR("MergedDataset(list datasets)\n\n\351\253\230\346\200\247\350\203\275\345\244\232\350\267\257\345\275\222\345\271\266\346\225\260\346\215\256\351\233\206 (Cython \347\256\200\345\214\226\347\211\210)")},
   {Py_tp_traverse, (void *)__pyx_tp_traverse_12hft_backtest_14merged_dataset_MergedDataset},
   {Py_tp_clear, (void *)__pyx_tp_clear_12hft_backtest_14merged_dataset_MergedDataset},
-  {Py_tp_iter, (void *)__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_3__iter__},
-  {Py_tp_iternext, (void *)__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_5__next__},
   {Py_tp_methods, (void *)__pyx_methods_12hft_backtest_14merged_dataset_MergedDataset},
   {Py_tp_init, (void *)__pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_1__init__},
   {Py_tp_new, (void *)__pyx_tp_new_12hft_backtest_14merged_dataset_MergedDataset},
@@ -5078,13 +4867,13 @@ static PyTypeObject __pyx_type_12hft_backtest_14merged_dataset_MergedDataset = {
   0, /*tp_setattro*/
   0, /*tp_as_buffer*/
   Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE|Py_TPFLAGS_HAVE_GC, /*tp_flags*/
-  PyDoc_STR("MergedDataset(*datasets)\n\n\351\253\230\346\200\247\350\203\275\345\244\232\350\267\257\345\275\222\345\271\266\346\225\260\346\215\256\351\233\206 (Cython \347\211\210)\n\n\345\256\236\347\216\260\351\200\273\350\276\221\357\274\232\n\347\273\264\346\212\244\344\270\200\344\270\252\342\200\234\345\275\223\345\211\215\350\203\234\350\200\205\342\200\235(Current Winner) \345\222\214\344\270\200\344\270\252\342\200\234\346\214\221\346\210\230\350\200\205\345\240\206\342\200\235(Challenger Heap)\343\200\202\n\345\217\252\346\234\211\345\275\223\345\275\223\345\211\215\350\203\234\350\200\205\350\200\227\345\260\275\346\210\226\350\242\253\345\240\206\344\270\255\346\233\264\345\260\217\347\232\204\346\227\266\351\227\264\346\210\263\346\214\221\346\210\230\346\210\220\345\212\237\346\227\266\357\274\214\346\211\215\350\277\233\350\241\214\345\240\206\346\223\215\344\275\234\343\200\202"), /*tp_doc*/
+  PyDoc_STR("MergedDataset(list datasets)\n\n\351\253\230\346\200\247\350\203\275\345\244\232\350\267\257\345\275\222\345\271\266\346\225\260\346\215\256\351\233\206 (Cython \347\256\200\345\214\226\347\211\210)"), /*tp_doc*/
   __pyx_tp_traverse_12hft_backtest_14merged_dataset_MergedDataset, /*tp_traverse*/
   __pyx_tp_clear_12hft_backtest_14merged_dataset_MergedDataset, /*tp_clear*/
   0, /*tp_richcompare*/
   0, /*tp_weaklistoffset*/
-  __pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_3__iter__, /*tp_iter*/
-  __pyx_pw_12hft_backtest_14merged_dataset_13MergedDataset_5__next__, /*tp_iternext*/
+  0, /*tp_iter*/
+  0, /*tp_iternext*/
   __pyx_methods_12hft_backtest_14merged_dataset_MergedDataset, /*tp_methods*/
   0, /*tp_members*/
   0, /*tp_getset*/
@@ -5178,12 +4967,28 @@ static int __Pyx_modinit_function_export_code(__pyx_mstatetype *__pyx_mstate) {
 static int __Pyx_modinit_type_init_code(__pyx_mstatetype *__pyx_mstate) {
   __Pyx_RefNannyDeclarations
   CYTHON_UNUSED_VAR(__pyx_mstate);
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__Pyx_modinit_type_init_code", 0);
   /*--- Type init code ---*/
+  __pyx_t_1 = PyImport_ImportModule("hft_backtest.reader"); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_mstate->__pyx_ptype_12hft_backtest_6reader_DataReader = __Pyx_ImportType_3_2_3(__pyx_t_1, "hft_backtest.reader", "DataReader",
+  #if defined(PYPY_VERSION_NUM) && PYPY_VERSION_NUM < 0x050B0000
+  sizeof(struct __pyx_obj_12hft_backtest_6reader_DataReader), __PYX_GET_STRUCT_ALIGNMENT_3_2_3(struct __pyx_obj_12hft_backtest_6reader_DataReader),
+  #elif CYTHON_COMPILING_IN_LIMITED_API
+  sizeof(struct __pyx_obj_12hft_backtest_6reader_DataReader), __PYX_GET_STRUCT_ALIGNMENT_3_2_3(struct __pyx_obj_12hft_backtest_6reader_DataReader),
+  #else
+  sizeof(struct __pyx_obj_12hft_backtest_6reader_DataReader), __PYX_GET_STRUCT_ALIGNMENT_3_2_3(struct __pyx_obj_12hft_backtest_6reader_DataReader),
+  #endif
+  __Pyx_ImportType_CheckSize_Warn_3_2_3); if (!__pyx_mstate->__pyx_ptype_12hft_backtest_6reader_DataReader) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_vtabptr_12hft_backtest_6reader_DataReader = (struct __pyx_vtabstruct_12hft_backtest_6reader_DataReader*)__Pyx_GetVtable(__pyx_mstate->__pyx_ptype_12hft_backtest_6reader_DataReader); if (unlikely(!__pyx_vtabptr_12hft_backtest_6reader_DataReader)) __PYX_ERR(0, 1, __pyx_L1_error)
   __pyx_vtabptr_12hft_backtest_14merged_dataset_MergedDataset = &__pyx_vtable_12hft_backtest_14merged_dataset_MergedDataset;
+  __pyx_vtable_12hft_backtest_14merged_dataset_MergedDataset.__pyx_base = *__pyx_vtabptr_12hft_backtest_6reader_DataReader;
+  __pyx_vtable_12hft_backtest_14merged_dataset_MergedDataset.__pyx_base.fetch_next = (struct __pyx_obj_12hft_backtest_5event_Event *(*)(struct __pyx_obj_12hft_backtest_6reader_DataReader *))__pyx_f_12hft_backtest_14merged_dataset_13MergedDataset_fetch_next;
   __pyx_vtable_12hft_backtest_14merged_dataset_MergedDataset._push = (void (*)(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *, long, int, struct __pyx_obj_12hft_backtest_5event_Event *))__pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__push;
   __pyx_vtable_12hft_backtest_14merged_dataset_MergedDataset._sift_up = (void (*)(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *, size_t))__pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_up;
   __pyx_vtable_12hft_backtest_14merged_dataset_MergedDataset._sift_down = (void (*)(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *, size_t))__pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__sift_down;
@@ -5191,15 +4996,20 @@ static int __Pyx_modinit_type_init_code(__pyx_mstatetype *__pyx_mstate) {
   __pyx_vtable_12hft_backtest_14merged_dataset_MergedDataset._init_heap = (void (*)(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *))__pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__init_heap;
   __pyx_vtable_12hft_backtest_14merged_dataset_MergedDataset._pop_heap_to_current = (void (*)(struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset *))__pyx_f_12hft_backtest_14merged_dataset_13MergedDataset__pop_heap_to_current;
   #if CYTHON_USE_TYPE_SPECS
-  __pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_12hft_backtest_14merged_dataset_MergedDataset_spec, NULL); if (unlikely(!__pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset)) __PYX_ERR(0, 9, __pyx_L1_error)
-  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_12hft_backtest_14merged_dataset_MergedDataset_spec, __pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset) < (0)) __PYX_ERR(0, 9, __pyx_L1_error)
+  __pyx_t_2 = PyTuple_Pack(1, (PyObject *)__pyx_mstate_global->__pyx_ptype_12hft_backtest_6reader_DataReader); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 11, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_12hft_backtest_14merged_dataset_MergedDataset_spec, __pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+  if (unlikely(!__pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset)) __PYX_ERR(0, 11, __pyx_L1_error)
+  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_12hft_backtest_14merged_dataset_MergedDataset_spec, __pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset) < (0)) __PYX_ERR(0, 11, __pyx_L1_error)
   #else
   __pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset = &__pyx_type_12hft_backtest_14merged_dataset_MergedDataset;
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
+  __pyx_mstate_global->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset->tp_base = __pyx_mstate_global->__pyx_ptype_12hft_backtest_6reader_DataReader;
   #endif
   #if !CYTHON_USE_TYPE_SPECS
-  if (__Pyx_PyType_Ready(__pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset) < (0)) __PYX_ERR(0, 9, __pyx_L1_error)
+  if (__Pyx_PyType_Ready(__pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset) < (0)) __PYX_ERR(0, 11, __pyx_L1_error)
   #endif
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount((PyObject*)__pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset);
@@ -5209,13 +5019,16 @@ static int __Pyx_modinit_type_init_code(__pyx_mstatetype *__pyx_mstate) {
     __pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset->tp_getattro = PyObject_GenericGetAttr;
   }
   #endif
-  if (__Pyx_SetVtable(__pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset, __pyx_vtabptr_12hft_backtest_14merged_dataset_MergedDataset) < (0)) __PYX_ERR(0, 9, __pyx_L1_error)
-  if (__Pyx_MergeVtables(__pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset) < (0)) __PYX_ERR(0, 9, __pyx_L1_error)
-  if (PyObject_SetAttr(__pyx_m, __pyx_mstate_global->__pyx_n_u_MergedDataset, (PyObject *) __pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset) < (0)) __PYX_ERR(0, 9, __pyx_L1_error)
-  if (__Pyx_setup_reduce((PyObject *) __pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset) < (0)) __PYX_ERR(0, 9, __pyx_L1_error)
+  if (__Pyx_SetVtable(__pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset, __pyx_vtabptr_12hft_backtest_14merged_dataset_MergedDataset) < (0)) __PYX_ERR(0, 11, __pyx_L1_error)
+  if (__Pyx_MergeVtables(__pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset) < (0)) __PYX_ERR(0, 11, __pyx_L1_error)
+  if (PyObject_SetAttr(__pyx_m, __pyx_mstate_global->__pyx_n_u_MergedDataset, (PyObject *) __pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset) < (0)) __PYX_ERR(0, 11, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject *) __pyx_mstate->__pyx_ptype_12hft_backtest_14merged_dataset_MergedDataset) < (0)) __PYX_ERR(0, 11, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
   __Pyx_RefNannyFinishContext();
   return -1;
 }
@@ -5253,6 +5066,19 @@ static int __Pyx_modinit_type_import_code(__pyx_mstatetype *__pyx_mstate) {
   #endif
   __Pyx_ImportType_CheckSize_Warn_3_2_3); if (!__pyx_mstate->__pyx_ptype_12hft_backtest_5event_Event) __PYX_ERR(3, 3, __pyx_L1_error)
   __pyx_vtabptr_12hft_backtest_5event_Event = (struct __pyx_vtabstruct_12hft_backtest_5event_Event*)__Pyx_GetVtable(__pyx_mstate->__pyx_ptype_12hft_backtest_5event_Event); if (unlikely(!__pyx_vtabptr_12hft_backtest_5event_Event)) __PYX_ERR(3, 3, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = PyImport_ImportModule("hft_backtest.reader"); if (unlikely(!__pyx_t_1)) __PYX_ERR(4, 11, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_mstate->__pyx_ptype_12hft_backtest_6reader_PyDatasetWrapper = __Pyx_ImportType_3_2_3(__pyx_t_1, "hft_backtest.reader", "PyDatasetWrapper",
+  #if defined(PYPY_VERSION_NUM) && PYPY_VERSION_NUM < 0x050B0000
+  sizeof(struct __pyx_obj_12hft_backtest_6reader_PyDatasetWrapper), __PYX_GET_STRUCT_ALIGNMENT_3_2_3(struct __pyx_obj_12hft_backtest_6reader_PyDatasetWrapper),
+  #elif CYTHON_COMPILING_IN_LIMITED_API
+  sizeof(struct __pyx_obj_12hft_backtest_6reader_PyDatasetWrapper), __PYX_GET_STRUCT_ALIGNMENT_3_2_3(struct __pyx_obj_12hft_backtest_6reader_PyDatasetWrapper),
+  #else
+  sizeof(struct __pyx_obj_12hft_backtest_6reader_PyDatasetWrapper), __PYX_GET_STRUCT_ALIGNMENT_3_2_3(struct __pyx_obj_12hft_backtest_6reader_PyDatasetWrapper),
+  #endif
+  __Pyx_ImportType_CheckSize_Warn_3_2_3); if (!__pyx_mstate->__pyx_ptype_12hft_backtest_6reader_PyDatasetWrapper) __PYX_ERR(4, 11, __pyx_L1_error)
+  __pyx_vtabptr_12hft_backtest_6reader_PyDatasetWrapper = (struct __pyx_vtabstruct_12hft_backtest_6reader_PyDatasetWrapper*)__Pyx_GetVtable(__pyx_mstate->__pyx_ptype_12hft_backtest_6reader_PyDatasetWrapper); if (unlikely(!__pyx_vtabptr_12hft_backtest_6reader_PyDatasetWrapper)) __PYX_ERR(4, 11, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_RefNannyFinishContext();
   return 0;
@@ -5551,7 +5377,7 @@ __Pyx_RefNannySetupContext("PyInit_merged_dataset", 0);
  *     raise TypeError, "self._heap cannot be converted to a Python object for pickling"
  * def __setstate_cython__(self, __pyx_state):
 */
-  __pyx_t_2 = __Pyx_CyFunction_New(&__pyx_mdef_12hft_backtest_14merged_dataset_13MergedDataset_7__reduce_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_MergedDataset___reduce_cython, NULL, __pyx_mstate_global->__pyx_n_u_hft_backtest_merged_dataset, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[0])); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 1, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_CyFunction_New(&__pyx_mdef_12hft_backtest_14merged_dataset_13MergedDataset_3__reduce_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_MergedDataset___reduce_cython, NULL, __pyx_mstate_global->__pyx_n_u_hft_backtest_merged_dataset, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[0])); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_2);
@@ -5565,7 +5391,7 @@ __Pyx_RefNannySetupContext("PyInit_merged_dataset", 0);
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
  *     raise TypeError, "self._heap cannot be converted to a Python object for pickling"
 */
-  __pyx_t_2 = __Pyx_CyFunction_New(&__pyx_mdef_12hft_backtest_14merged_dataset_13MergedDataset_9__setstate_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_MergedDataset___setstate_cython, NULL, __pyx_mstate_global->__pyx_n_u_hft_backtest_merged_dataset, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[1])); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 3, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_CyFunction_New(&__pyx_mdef_12hft_backtest_14merged_dataset_13MergedDataset_5__setstate_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_MergedDataset___setstate_cython, NULL, __pyx_mstate_global->__pyx_n_u_hft_backtest_merged_dataset, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[1])); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 3, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_2);
@@ -5574,9 +5400,9 @@ __Pyx_RefNannySetupContext("PyInit_merged_dataset", 0);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
   /* "hft_backtest/merged_dataset.pyx":1
- * # cython: language_level=3             # <<<<<<<<<<<<<<
+ * # hft_backtest/merged_dataset.pyx             # <<<<<<<<<<<<<<
+ * # cython: language_level=3
  * # cython: boundscheck=False
- * # cython: wraparound=False
 */
   __pyx_t_2 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
@@ -5643,34 +5469,34 @@ static int __Pyx_InitCachedConstants(__pyx_mstatetype *__pyx_mstate) {
 static int __Pyx_InitConstants(__pyx_mstatetype *__pyx_mstate) {
   CYTHON_UNUSED_VAR(__pyx_mstate);
   {
-    const struct { const unsigned int length: 6; } index[] = {{1},{34},{7},{6},{2},{9},{62},{14},{13},{31},{33},{20},{18},{18},{8},{12},{27},{13},{5},{8},{10},{8},{4},{3},{11},{14},{12},{10},{17},{13},{4},{12},{10},{12},{19},{8},{6},{9}};
-    #if (CYTHON_COMPRESS_STRINGS) == 2 /* compression: bz2 (362 bytes) */
-const char* const cstring = "BZh91AY&SY\357;+\304\000\000\022_\342d\020@\013\000\025\206\003p\000\277\377\377`@@@\000\000@0\001M\244`\320\221\017SG\251\352=\032ji\220\006\200{PJ\214I\246T\360\322\236\246\324\332\236\324@\000\3652\tS\322\214\210\323#'\244\320\000\0002 \010~Zc\337\3368=\230b\236\230\223\241\007F\240\352\336W4\247,\360\340bQZh\"\007\371\207\031\220\341vU\002K\323^\256\\'\266Lr\242\022\005j\207\246{$\340\214\3210f\265\375\377&\375:\301\331]'\030\373\205\025\302\2668ls\t\2567\2035Sud\330\243A\t\001\207,*\204\256)\215\220\"\323\014\2232J\253\333\002/\254'\316\013\007\266,\326\023\254\267}vV\232\006\211\200\245\021\276\031\n\013s\301\362\326\033\344\224\310\342\273y\355\013\254\037.-\242]\250\216L\324\020^s\203\342\367V\221\250x<z\027\264m\306\307+\311wg)\345d\rxE\341N\034\220n:\027\335;\2602e\311Y\345\001\240&4\023H\254\334 [\255\204\206y\275\215:Q]EO\024\321\263\201Y8g\n\204+~\375\262!`\213\241U@,@y\271\360-\023\255\035\244\301\205v\264\260\003\2702j\271\013\271\"\234(Hw\235\225\342\000";
-    PyObject *data = __Pyx_DecompressString(cstring, 362, 2);
+    const struct { const unsigned int length: 8; } index[] = {{1},{179},{8},{7},{6},{2},{9},{62},{14},{13},{31},{33},{20},{18},{18},{8},{8},{12},{27},{13},{5},{8},{10},{8},{3},{11},{14},{12},{10},{17},{13},{4},{12},{10},{12},{19},{8},{6},{9}};
+    #if (CYTHON_COMPRESS_STRINGS) == 2 /* compression: bz2 (456 bytes) */
+const char* const cstring = "BZh91AY&SY\251^-\216\000\000 _\342d\020@\213\004E\217#p\000\277\377\377`@@@\000\000@0\001\206\245R\032 \023S2d\232b\217I\246\232\032d\323ji\355P\300\r4h4\304\000\000\003 \006\232&\202\032$\364jyOI\240\000\000\310\304\020\361E\360\357\326\035x&K\345\366\356\363]Z\032\252\323\232\277\226\025S\222\206\006l\351\206\277.\2502\252\323\236s\330\316u\300\255\261!\371p?^KI\357\243TD\016\210\0047\030 }\216 \031<\352N\363\302Z5 DX\014M\216U\324\301P\tP*\325\3413\257\300\263\217\016\224ii\262|e\002\027j6\273\261^\030Bf\267_h\263\307/\200\023#{\000R\270\241\247\230\322vit\201\014\005\024&\r\312\315\224\021\t\2065|\357\317!\320\256\024\225RN\023^Y\027\273p\013G\002k\313j\264.\020\210\265\250\327\361K\360\210\326\331\r \200`F\355v\3531\021\272M\254*\3408\246\004\2633\004\350\357m\253\311\255Hj\031\222\260\203P\253\027\232\262\013X\006F\326\340\373\325\350\251\323\315\006\334\026*\t\004\250\301\345?)\317\002\201\002\340\307\304\226\317#\274\022m\333\350\200\361\211\331\226\0020\255fq)*\351\034\355[\0149`DH,KZ\241q\200m\271\331\t\nT\010\002E\272\262PZ\034\210\361!\334\327k%\207\271\257\206N8M\004\020N\005\220nU\331My\252\006A+\220\234\2351\250M\204\024\252\350\301x\017\315\017\233I\326\342\210\330`\337\365\\0\024T\200<\3035\245?\305\334\221N\024$*W\213c\200";
+    PyObject *data = __Pyx_DecompressString(cstring, 456, 2);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #elif (CYTHON_COMPRESS_STRINGS) != 0 /* compression: zlib (297 bytes) */
-const char* const cstring = "x\332mPKN\3040\014\025\022+N\221=\242\007@\0106\303\0224p\001\313u\334N\230\324)\211S\315\354X\262\344x\034\207\244S\206\357\"\366K\354<\277\347\233\025*&V\263w\354-[#A.n'\0265\241}b\322Kc]\302\3263K\215=\271t@6\261\357\032\3300\216\206P$\250i\331P\220\211\243\026\"\r\006\315z\257\233 \013\225\351B4\243\243\255w\322_%\215%\245\220#\361\365\035\307\236\355\242\345\307\245\001\210l31\320\314\005\360\273\\bR\324\257\006\200\365~W\316\312\221\302=\357\364\221;L{!\027\032\n1du\302\211\212\n\006'\240\021\211[\244-@\227\205\352\377\376\223\0226\235B\255)'m\206y2\330\303hp\t\216tNyH\000\003\272Y\300\020l\366\\\221\340P\262\024\025c\030\001\306\242l\241\256p\322\272\312\332\367\234\321\037z\217\206\341\217\365\343\003\357\252o\337\315\356\227\031\005\331b4{\375\266\023\370w?\325\r\300\204>sz9y?={=\177{\370\000uJ\316\306";
-    PyObject *data = __Pyx_DecompressString(cstring, 297, 1);
+    #elif (CYTHON_COMPRESS_STRINGS) != 0 /* compression: zlib (389 bytes) */
+const char* const cstring = "x\332mP\261\216\3250\020\024\022\025_\261\335\025\210TWP (8\220\256\270\323\203\037Xm\354Mb\316\261\203w\375\364\322QR\362y|\016\353\344\36188\212l\306\311\354xf\336\335ge\320\211\024\336\257:\345\004A\300s\014=\027R\216+\210\226\340\224K#%8|8\274\272~}\r\224<\024\376\302N\005\244\366.\222\010\013\344\001\372\032\242\206\004\272.,\035\334\016\260\346\n\211\331\203fX\214\367xA'N \254\r\300\025\245\224\2254\344\204\266\036\322x\005>\024\273$\034\271m\177\244(\334\221\367h<\366A\250\217\314\251\315\321\005\331\221\027\216C\207\023\323\002nS\204\236\301\345t\344\242\273\013\202\303\0366\367-\002\014\271\300\022\334C\264+\337\264\300i\224\\\213\343\267w\\F\3667\244d&\377:t\210\205}u\214n\323B\374\367\267M\2614\177\010\210\207\365d\317\215\025\212\367|\322\317<\220\254\311\205\334\271\\r\265\336X\234\271`\014VA!\307=\271\007\277K\n\342P\223k:\343oi\234\006\305\306Q\026\355\346\315\001\236\371\030\004/\262Ay6\201\231\302fd\316\276Fn(\321l\357%/6\314\335Y\266\301\243\266:\033\347k\245\270\363.\241\361I\374\313\007>\265\354q\330\0328\353\033\362\026\266F}\324\013\376\267\243\226\004\361H\261\262|{\366\363\371\213\357/\177|\372\005\235\347\010u";
+    PyObject *data = __Pyx_DecompressString(cstring, 389, 1);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #else /* compression: none (523 bytes) */
-const char* const bytes = "?Dataset yielded non-Event object: disableenablegcisenabledself._heap cannot be converted to a Python object for pickling<stringsource>MergedDatasetMergedDataset.__reduce_cython__MergedDataset.__setstate_cython____Pyx_PyDict_NextRefasyncio.coroutinescline_in_traceback__func____getstate__hft_backtest.merged_dataset_is_coroutineitems__main____module____name__nextpop__pyx_state__pyx_vtable____qualname____reduce____reduce_cython____reduce_ex__self__set_name__setdefault__setstate____setstate_cython____test__values\200\001\330\004\n\210+\220Q";
+    #else /* compression: none (680 bytes) */
+const char* const bytes = "?Note that Cython is deliberately stricter than PEP-484 and rejects subclasses of builtin types. If you need to pass subclasses then set the 'annotation_typing' directive to False.add_notedisableenablegcisenabledself._heap cannot be converted to a Python object for pickling<stringsource>MergedDatasetMergedDataset.__reduce_cython__MergedDataset.__setstate_cython____Pyx_PyDict_NextRefasyncio.coroutinescline_in_tracebackdatasets__func____getstate__hft_backtest.merged_dataset_is_coroutineitems__main____module____name__pop__pyx_state__pyx_vtable____qualname____reduce____reduce_cython____reduce_ex__self__set_name__setdefault__setstate____setstate_cython____test__values\200\001\330\004\n\210+\220Q";
     PyObject *data = NULL;
     CYTHON_UNUSED_VAR(__Pyx_DecompressString);
     #endif
     PyObject **stringtab = __pyx_mstate->__pyx_string_tab;
     Py_ssize_t pos = 0;
-    for (int i = 0; i < 37; i++) {
+    for (int i = 0; i < 38; i++) {
       Py_ssize_t bytes_length = index[i].length;
       PyObject *string = PyUnicode_DecodeUTF8(bytes + pos, bytes_length, NULL);
-      if (likely(string) && i >= 8) PyUnicode_InternInPlace(&string);
+      if (likely(string) && i >= 9) PyUnicode_InternInPlace(&string);
       if (unlikely(!string)) {
         Py_XDECREF(data);
         __PYX_ERR(0, 1, __pyx_L1_error)
@@ -5678,7 +5504,7 @@ const char* const bytes = "?Dataset yielded non-Event object: disableenablegcise
       stringtab[i] = string;
       pos += bytes_length;
     }
-    for (int i = 37; i < 38; i++) {
+    for (int i = 38; i < 39; i++) {
       Py_ssize_t bytes_length = index[i].length;
       PyObject *string = PyBytes_FromStringAndSize(bytes + pos, bytes_length);
       stringtab[i] = string;
@@ -5689,14 +5515,14 @@ const char* const bytes = "?Dataset yielded non-Event object: disableenablegcise
       }
     }
     Py_XDECREF(data);
-    for (Py_ssize_t i = 0; i < 38; i++) {
+    for (Py_ssize_t i = 0; i < 39; i++) {
       if (unlikely(PyObject_Hash(stringtab[i]) == -1)) {
         __PYX_ERR(0, 1, __pyx_L1_error)
       }
     }
     #if CYTHON_IMMORTAL_CONSTANTS
     {
-      PyObject **table = stringtab + 37;
+      PyObject **table = stringtab + 38;
       for (Py_ssize_t i=0; i<1; ++i) {
         #if CYTHON_COMPILING_IN_CPYTHON_FREETHREADING
         Py_SET_REFCNT(table[i], _Py_IMMORTAL_REFCNT_LOCAL);
@@ -6329,7 +6155,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyDict_Values(PyObject* d) {
     return __Pyx_CallUnboundCMethod0(&__pyx_mstate_global->__pyx_umethod_PyDict_Type_values, d);
 }
 
-/* OwnedDictNext (used by RejectKeywords) */
+/* OwnedDictNext (used by ParseKeywordsImpl) */
 #if CYTHON_AVOID_BORROWED_REFS
 static int __Pyx_PyDict_NextRef(PyObject *p, PyObject **ppos, PyObject **pkey, PyObject **pvalue) {
     PyObject *next = NULL;
@@ -6383,568 +6209,6 @@ static int __Pyx_PyDict_NextRef(PyObject *p, Py_ssize_t *ppos, PyObject **pkey, 
     return result;
 }
 #endif
-
-/* RejectKeywords */
-static void __Pyx_RejectKeywords(const char* function_name, PyObject *kwds) {
-    PyObject *key = NULL;
-    if (CYTHON_METH_FASTCALL && likely(PyTuple_Check(kwds))) {
-        key = __Pyx_PySequence_ITEM(kwds, 0);
-    } else {
-#if CYTHON_AVOID_BORROWED_REFS
-        PyObject *pos = NULL;
-#else
-        Py_ssize_t pos = 0;
-#endif
-#if !CYTHON_COMPILING_IN_PYPY || defined(PyArg_ValidateKeywordArguments)
-        if (unlikely(!PyArg_ValidateKeywordArguments(kwds))) return;
-#endif
-        __Pyx_PyDict_NextRef(kwds, &pos, &key, NULL);
-#if CYTHON_AVOID_BORROWED_REFS
-        Py_XDECREF(pos);
-#endif
-    }
-    if (likely(key)) {
-        PyErr_Format(PyExc_TypeError,
-            "%s() got an unexpected keyword argument '%U'",
-            function_name, key);
-        Py_DECREF(key);
-    }
-}
-
-/* PyErrFetchRestore (used by IterNext) */
-#if CYTHON_FAST_THREAD_STATE
-static CYTHON_INLINE void __Pyx_ErrRestoreInState(PyThreadState *tstate, PyObject *type, PyObject *value, PyObject *tb) {
-#if PY_VERSION_HEX >= 0x030C00A6
-    PyObject *tmp_value;
-    assert(type == NULL || (value != NULL && type == (PyObject*) Py_TYPE(value)));
-    if (value) {
-        #if CYTHON_COMPILING_IN_CPYTHON
-        if (unlikely(((PyBaseExceptionObject*) value)->traceback != tb))
-        #endif
-            PyException_SetTraceback(value, tb);
-    }
-    tmp_value = tstate->current_exception;
-    tstate->current_exception = value;
-    Py_XDECREF(tmp_value);
-    Py_XDECREF(type);
-    Py_XDECREF(tb);
-#else
-    PyObject *tmp_type, *tmp_value, *tmp_tb;
-    tmp_type = tstate->curexc_type;
-    tmp_value = tstate->curexc_value;
-    tmp_tb = tstate->curexc_traceback;
-    tstate->curexc_type = type;
-    tstate->curexc_value = value;
-    tstate->curexc_traceback = tb;
-    Py_XDECREF(tmp_type);
-    Py_XDECREF(tmp_value);
-    Py_XDECREF(tmp_tb);
-#endif
-}
-static CYTHON_INLINE void __Pyx_ErrFetchInState(PyThreadState *tstate, PyObject **type, PyObject **value, PyObject **tb) {
-#if PY_VERSION_HEX >= 0x030C00A6
-    PyObject* exc_value;
-    exc_value = tstate->current_exception;
-    tstate->current_exception = 0;
-    *value = exc_value;
-    *type = NULL;
-    *tb = NULL;
-    if (exc_value) {
-        *type = (PyObject*) Py_TYPE(exc_value);
-        Py_INCREF(*type);
-        #if CYTHON_COMPILING_IN_CPYTHON
-        *tb = ((PyBaseExceptionObject*) exc_value)->traceback;
-        Py_XINCREF(*tb);
-        #else
-        *tb = PyException_GetTraceback(exc_value);
-        #endif
-    }
-#else
-    *type = tstate->curexc_type;
-    *value = tstate->curexc_value;
-    *tb = tstate->curexc_traceback;
-    tstate->curexc_type = 0;
-    tstate->curexc_value = 0;
-    tstate->curexc_traceback = 0;
-#endif
-}
-#endif
-
-/* PyErrExceptionMatches (used by PyObjectGetAttrStrNoError) */
-#if CYTHON_FAST_THREAD_STATE
-static int __Pyx_PyErr_ExceptionMatchesTuple(PyObject *exc_type, PyObject *tuple) {
-    Py_ssize_t i, n;
-    n = PyTuple_GET_SIZE(tuple);
-    for (i=0; i<n; i++) {
-        if (exc_type == PyTuple_GET_ITEM(tuple, i)) return 1;
-    }
-    for (i=0; i<n; i++) {
-        if (__Pyx_PyErr_GivenExceptionMatches(exc_type, PyTuple_GET_ITEM(tuple, i))) return 1;
-    }
-    return 0;
-}
-static CYTHON_INLINE int __Pyx_PyErr_ExceptionMatchesInState(PyThreadState* tstate, PyObject* err) {
-    int result;
-    PyObject *exc_type;
-#if PY_VERSION_HEX >= 0x030C00A6
-    PyObject *current_exception = tstate->current_exception;
-    if (unlikely(!current_exception)) return 0;
-    exc_type = (PyObject*) Py_TYPE(current_exception);
-    if (exc_type == err) return 1;
-#else
-    exc_type = tstate->curexc_type;
-    if (exc_type == err) return 1;
-    if (unlikely(!exc_type)) return 0;
-#endif
-    #if CYTHON_AVOID_BORROWED_REFS
-    Py_INCREF(exc_type);
-    #endif
-    if (unlikely(PyTuple_Check(err))) {
-        result = __Pyx_PyErr_ExceptionMatchesTuple(exc_type, err);
-    } else {
-        result = __Pyx_PyErr_GivenExceptionMatches(exc_type, err);
-    }
-    #if CYTHON_AVOID_BORROWED_REFS
-    Py_DECREF(exc_type);
-    #endif
-    return result;
-}
-#endif
-
-/* PyObjectGetAttrStrNoError (used by GetBuiltinName) */
-#if __PYX_LIMITED_VERSION_HEX < 0x030d0000
-static void __Pyx_PyObject_GetAttrStr_ClearAttributeError(void) {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    if (likely(__Pyx_PyErr_ExceptionMatches(PyExc_AttributeError)))
-        __Pyx_PyErr_Clear();
-}
-#endif
-static CYTHON_INLINE PyObject* __Pyx_PyObject_GetAttrStrNoError(PyObject* obj, PyObject* attr_name) {
-    PyObject *result;
-#if __PYX_LIMITED_VERSION_HEX >= 0x030d0000
-    (void) PyObject_GetOptionalAttr(obj, attr_name, &result);
-    return result;
-#else
-#if CYTHON_COMPILING_IN_CPYTHON && CYTHON_USE_TYPE_SLOTS
-    PyTypeObject* tp = Py_TYPE(obj);
-    if (likely(tp->tp_getattro == PyObject_GenericGetAttr)) {
-        return _PyObject_GenericGetAttrWithDict(obj, attr_name, NULL, 1);
-    }
-#endif
-    result = __Pyx_PyObject_GetAttrStr(obj, attr_name);
-    if (unlikely(!result)) {
-        __Pyx_PyObject_GetAttrStr_ClearAttributeError();
-    }
-    return result;
-#endif
-}
-
-/* GetBuiltinName (used by IterNext) */
-static PyObject *__Pyx_GetBuiltinName(PyObject *name) {
-    PyObject* result = __Pyx_PyObject_GetAttrStrNoError(__pyx_mstate_global->__pyx_b, name);
-    if (unlikely(!result) && !PyErr_Occurred()) {
-        PyErr_Format(PyExc_NameError,
-            "name '%U' is not defined", name);
-    }
-    return result;
-}
-
-/* IterNextPlain (used by IterNext) */
-#if CYTHON_COMPILING_IN_LIMITED_API && __PYX_LIMITED_VERSION_HEX < 0x030A0000
-static PyObject *__Pyx_GetBuiltinNext_LimitedAPI(void) {
-    if (unlikely(!__pyx_mstate_global->__Pyx_GetBuiltinNext_LimitedAPI_cache))
-        __pyx_mstate_global->__Pyx_GetBuiltinNext_LimitedAPI_cache = __Pyx_GetBuiltinName(__pyx_mstate_global->__pyx_n_u_next);
-    return __pyx_mstate_global->__Pyx_GetBuiltinNext_LimitedAPI_cache;
-}
-#endif
-static CYTHON_INLINE PyObject *__Pyx_PyIter_Next_Plain(PyObject *iterator) {
-#if CYTHON_COMPILING_IN_LIMITED_API && __PYX_LIMITED_VERSION_HEX < 0x030A0000
-    PyObject *result;
-    PyObject *next = __Pyx_GetBuiltinNext_LimitedAPI();
-    if (unlikely(!next)) return NULL;
-    result = PyObject_CallFunctionObjArgs(next, iterator, NULL);
-    return result;
-#else
-    (void)__Pyx_GetBuiltinName; // only for early limited API
-    iternextfunc iternext = __Pyx_PyObject_GetIterNextFunc(iterator);
-    assert(iternext);
-    return iternext(iterator);
-#endif
-}
-
-/* IterNext */
-static PyObject *__Pyx_PyIter_Next2Default(PyObject* defval) {
-    PyObject* exc_type;
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    exc_type = __Pyx_PyErr_CurrentExceptionType();
-    if (unlikely(exc_type)) {
-        if (!defval || unlikely(!__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration)))
-            return NULL;
-        __Pyx_PyErr_Clear();
-        Py_INCREF(defval);
-        return defval;
-    }
-    if (defval) {
-        Py_INCREF(defval);
-        return defval;
-    }
-    __Pyx_PyErr_SetNone(PyExc_StopIteration);
-    return NULL;
-}
-static void __Pyx_PyIter_Next_ErrorNoIterator(PyObject *iterator) {
-    __Pyx_TypeName iterator_type_name = __Pyx_PyType_GetFullyQualifiedName(Py_TYPE(iterator));
-    PyErr_Format(PyExc_TypeError,
-        __Pyx_FMT_TYPENAME " object is not an iterator", iterator_type_name);
-    __Pyx_DECREF_TypeName(iterator_type_name);
-}
-static CYTHON_INLINE PyObject *__Pyx_PyIter_Next2(PyObject* iterator, PyObject* defval) {
-    PyObject* next;
-#if !CYTHON_COMPILING_IN_LIMITED_API
-    iternextfunc iternext = __Pyx_PyObject_TryGetSlot(iterator, tp_iternext, iternextfunc);
-    if (likely(iternext)) {
-        next = iternext(iterator);
-        if (likely(next))
-            return next;
-    #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX < 0x030d0000
-        if (unlikely(iternext == &_PyObject_NextNotImplemented))
-            return NULL;
-    #endif
-    } else if (CYTHON_USE_TYPE_SLOTS) {
-        __Pyx_PyIter_Next_ErrorNoIterator(iterator);
-        return NULL;
-    } else
-#endif
-    if (unlikely(!PyIter_Check(iterator))) {
-        __Pyx_PyIter_Next_ErrorNoIterator(iterator);
-        return NULL;
-    } else {
-        next = defval ? PyIter_Next(iterator) : __Pyx_PyIter_Next_Plain(iterator);
-        if (likely(next))
-            return next;
-    }
-    return __Pyx_PyIter_Next2Default(defval);
-}
-
-/* GetTopmostException (used by SaveResetException) */
-#if CYTHON_USE_EXC_INFO_STACK && CYTHON_FAST_THREAD_STATE
-static _PyErr_StackItem *
-__Pyx_PyErr_GetTopmostException(PyThreadState *tstate)
-{
-    _PyErr_StackItem *exc_info = tstate->exc_info;
-    while ((exc_info->exc_value == NULL || exc_info->exc_value == Py_None) &&
-           exc_info->previous_item != NULL)
-    {
-        exc_info = exc_info->previous_item;
-    }
-    return exc_info;
-}
-#endif
-
-/* SaveResetException */
-#if CYTHON_FAST_THREAD_STATE
-static CYTHON_INLINE void __Pyx__ExceptionSave(PyThreadState *tstate, PyObject **type, PyObject **value, PyObject **tb) {
-  #if CYTHON_USE_EXC_INFO_STACK && PY_VERSION_HEX >= 0x030B00a4
-    _PyErr_StackItem *exc_info = __Pyx_PyErr_GetTopmostException(tstate);
-    PyObject *exc_value = exc_info->exc_value;
-    if (exc_value == NULL || exc_value == Py_None) {
-        *value = NULL;
-        *type = NULL;
-        *tb = NULL;
-    } else {
-        *value = exc_value;
-        Py_INCREF(*value);
-        *type = (PyObject*) Py_TYPE(exc_value);
-        Py_INCREF(*type);
-        *tb = PyException_GetTraceback(exc_value);
-    }
-  #elif CYTHON_USE_EXC_INFO_STACK
-    _PyErr_StackItem *exc_info = __Pyx_PyErr_GetTopmostException(tstate);
-    *type = exc_info->exc_type;
-    *value = exc_info->exc_value;
-    *tb = exc_info->exc_traceback;
-    Py_XINCREF(*type);
-    Py_XINCREF(*value);
-    Py_XINCREF(*tb);
-  #else
-    *type = tstate->exc_type;
-    *value = tstate->exc_value;
-    *tb = tstate->exc_traceback;
-    Py_XINCREF(*type);
-    Py_XINCREF(*value);
-    Py_XINCREF(*tb);
-  #endif
-}
-static CYTHON_INLINE void __Pyx__ExceptionReset(PyThreadState *tstate, PyObject *type, PyObject *value, PyObject *tb) {
-  #if CYTHON_USE_EXC_INFO_STACK && PY_VERSION_HEX >= 0x030B00a4
-    _PyErr_StackItem *exc_info = tstate->exc_info;
-    PyObject *tmp_value = exc_info->exc_value;
-    exc_info->exc_value = value;
-    Py_XDECREF(tmp_value);
-    Py_XDECREF(type);
-    Py_XDECREF(tb);
-  #else
-    PyObject *tmp_type, *tmp_value, *tmp_tb;
-    #if CYTHON_USE_EXC_INFO_STACK
-    _PyErr_StackItem *exc_info = tstate->exc_info;
-    tmp_type = exc_info->exc_type;
-    tmp_value = exc_info->exc_value;
-    tmp_tb = exc_info->exc_traceback;
-    exc_info->exc_type = type;
-    exc_info->exc_value = value;
-    exc_info->exc_traceback = tb;
-    #else
-    tmp_type = tstate->exc_type;
-    tmp_value = tstate->exc_value;
-    tmp_tb = tstate->exc_traceback;
-    tstate->exc_type = type;
-    tstate->exc_value = value;
-    tstate->exc_traceback = tb;
-    #endif
-    Py_XDECREF(tmp_type);
-    Py_XDECREF(tmp_value);
-    Py_XDECREF(tmp_tb);
-  #endif
-}
-#endif
-
-/* GetException */
-#if CYTHON_FAST_THREAD_STATE
-static int __Pyx__GetException(PyThreadState *tstate, PyObject **type, PyObject **value, PyObject **tb)
-#else
-static int __Pyx_GetException(PyObject **type, PyObject **value, PyObject **tb)
-#endif
-{
-    PyObject *local_type = NULL, *local_value, *local_tb = NULL;
-#if CYTHON_FAST_THREAD_STATE
-    PyObject *tmp_type, *tmp_value, *tmp_tb;
-  #if PY_VERSION_HEX >= 0x030C0000
-    local_value = tstate->current_exception;
-    tstate->current_exception = 0;
-  #else
-    local_type = tstate->curexc_type;
-    local_value = tstate->curexc_value;
-    local_tb = tstate->curexc_traceback;
-    tstate->curexc_type = 0;
-    tstate->curexc_value = 0;
-    tstate->curexc_traceback = 0;
-  #endif
-#elif __PYX_LIMITED_VERSION_HEX > 0x030C0000
-    local_value = PyErr_GetRaisedException();
-#else
-    PyErr_Fetch(&local_type, &local_value, &local_tb);
-#endif
-#if __PYX_LIMITED_VERSION_HEX > 0x030C0000
-    if (likely(local_value)) {
-        local_type = (PyObject*) Py_TYPE(local_value);
-        Py_INCREF(local_type);
-        local_tb = PyException_GetTraceback(local_value);
-    }
-#else
-    PyErr_NormalizeException(&local_type, &local_value, &local_tb);
-#if CYTHON_FAST_THREAD_STATE
-    if (unlikely(tstate->curexc_type))
-#else
-    if (unlikely(PyErr_Occurred()))
-#endif
-        goto bad;
-    if (local_tb) {
-        if (unlikely(PyException_SetTraceback(local_value, local_tb) < 0))
-            goto bad;
-    }
-#endif // __PYX_LIMITED_VERSION_HEX > 0x030C0000
-    Py_XINCREF(local_tb);
-    Py_XINCREF(local_type);
-    Py_XINCREF(local_value);
-    *type = local_type;
-    *value = local_value;
-    *tb = local_tb;
-#if CYTHON_FAST_THREAD_STATE
-    #if CYTHON_USE_EXC_INFO_STACK
-    {
-        _PyErr_StackItem *exc_info = tstate->exc_info;
-      #if PY_VERSION_HEX >= 0x030B00a4
-        tmp_value = exc_info->exc_value;
-        exc_info->exc_value = local_value;
-        tmp_type = NULL;
-        tmp_tb = NULL;
-        Py_XDECREF(local_type);
-        Py_XDECREF(local_tb);
-      #else
-        tmp_type = exc_info->exc_type;
-        tmp_value = exc_info->exc_value;
-        tmp_tb = exc_info->exc_traceback;
-        exc_info->exc_type = local_type;
-        exc_info->exc_value = local_value;
-        exc_info->exc_traceback = local_tb;
-      #endif
-    }
-    #else
-    tmp_type = tstate->exc_type;
-    tmp_value = tstate->exc_value;
-    tmp_tb = tstate->exc_traceback;
-    tstate->exc_type = local_type;
-    tstate->exc_value = local_value;
-    tstate->exc_traceback = local_tb;
-    #endif
-    Py_XDECREF(tmp_type);
-    Py_XDECREF(tmp_value);
-    Py_XDECREF(tmp_tb);
-#elif __PYX_LIMITED_VERSION_HEX >= 0x030b0000
-    PyErr_SetHandledException(local_value);
-    Py_XDECREF(local_value);
-    Py_XDECREF(local_type);
-    Py_XDECREF(local_tb);
-#else
-    PyErr_SetExcInfo(local_type, local_value, local_tb);
-#endif
-    return 0;
-#if __PYX_LIMITED_VERSION_HEX <= 0x030C0000
-bad:
-    *type = 0;
-    *value = 0;
-    *tb = 0;
-    Py_XDECREF(local_type);
-    Py_XDECREF(local_value);
-    Py_XDECREF(local_tb);
-    return -1;
-#endif
-}
-
-/* RaiseException */
-static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause) {
-    PyObject* owned_instance = NULL;
-    if (tb == Py_None) {
-        tb = 0;
-    } else if (tb && !PyTraceBack_Check(tb)) {
-        PyErr_SetString(PyExc_TypeError,
-            "raise: arg 3 must be a traceback or None");
-        goto bad;
-    }
-    if (value == Py_None)
-        value = 0;
-    if (PyExceptionInstance_Check(type)) {
-        if (value) {
-            PyErr_SetString(PyExc_TypeError,
-                "instance exception may not have a separate value");
-            goto bad;
-        }
-        value = type;
-        type = (PyObject*) Py_TYPE(value);
-    } else if (PyExceptionClass_Check(type)) {
-        PyObject *instance_class = NULL;
-        if (value && PyExceptionInstance_Check(value)) {
-            instance_class = (PyObject*) Py_TYPE(value);
-            if (instance_class != type) {
-                int is_subclass = PyObject_IsSubclass(instance_class, type);
-                if (!is_subclass) {
-                    instance_class = NULL;
-                } else if (unlikely(is_subclass == -1)) {
-                    goto bad;
-                } else {
-                    type = instance_class;
-                }
-            }
-        }
-        if (!instance_class) {
-            PyObject *args;
-            if (!value)
-                args = PyTuple_New(0);
-            else if (PyTuple_Check(value)) {
-                Py_INCREF(value);
-                args = value;
-            } else
-                args = PyTuple_Pack(1, value);
-            if (!args)
-                goto bad;
-            owned_instance = PyObject_Call(type, args, NULL);
-            Py_DECREF(args);
-            if (!owned_instance)
-                goto bad;
-            value = owned_instance;
-            if (!PyExceptionInstance_Check(value)) {
-                PyErr_Format(PyExc_TypeError,
-                             "calling %R should have returned an instance of "
-                             "BaseException, not %R",
-                             type, Py_TYPE(value));
-                goto bad;
-            }
-        }
-    } else {
-        PyErr_SetString(PyExc_TypeError,
-            "raise: exception class must be a subclass of BaseException");
-        goto bad;
-    }
-    if (cause) {
-        PyObject *fixed_cause;
-        if (cause == Py_None) {
-            fixed_cause = NULL;
-        } else if (PyExceptionClass_Check(cause)) {
-            fixed_cause = PyObject_CallObject(cause, NULL);
-            if (fixed_cause == NULL)
-                goto bad;
-        } else if (PyExceptionInstance_Check(cause)) {
-            fixed_cause = cause;
-            Py_INCREF(fixed_cause);
-        } else {
-            PyErr_SetString(PyExc_TypeError,
-                            "exception causes must derive from "
-                            "BaseException");
-            goto bad;
-        }
-        PyException_SetCause(value, fixed_cause);
-    }
-    PyErr_SetObject(type, value);
-    if (tb) {
-#if PY_VERSION_HEX >= 0x030C00A6
-        PyException_SetTraceback(value, tb);
-#elif CYTHON_FAST_THREAD_STATE
-        PyThreadState *tstate = __Pyx_PyThreadState_Current;
-        PyObject* tmp_tb = tstate->curexc_traceback;
-        if (tb != tmp_tb) {
-            Py_INCREF(tb);
-            tstate->curexc_traceback = tb;
-            Py_XDECREF(tmp_tb);
-        }
-#else
-        PyObject *tmp_type, *tmp_value, *tmp_tb;
-        PyErr_Fetch(&tmp_type, &tmp_value, &tmp_tb);
-        Py_INCREF(tb);
-        PyErr_Restore(tmp_type, tmp_value, tb);
-        Py_XDECREF(tmp_tb);
-#endif
-    }
-bad:
-    Py_XDECREF(owned_instance);
-    return;
-}
-
-/* RaiseArgTupleInvalid */
-static void __Pyx_RaiseArgtupleInvalid(
-    const char* func_name,
-    int exact,
-    Py_ssize_t num_min,
-    Py_ssize_t num_max,
-    Py_ssize_t num_found)
-{
-    Py_ssize_t num_expected;
-    const char *more_or_less;
-    if (num_found < num_min) {
-        num_expected = num_min;
-        more_or_less = "at least";
-    } else {
-        num_expected = num_max;
-        more_or_less = "at most";
-    }
-    if (exact) {
-        more_or_less = "exactly";
-    }
-    PyErr_Format(PyExc_TypeError,
-                 "%.200s() takes %.8s %" CYTHON_FORMAT_SSIZE_T "d positional argument%.1s (%" CYTHON_FORMAT_SSIZE_T "d given)",
-                 func_name, more_or_less, num_expected,
-                 (num_expected == 1) ? "" : "s", num_found);
-}
 
 /* RaiseDoubleKeywords (used by ParseKeywordsImpl) */
 static void __Pyx_RaiseDoubleKeywordsError(
@@ -7396,26 +6660,297 @@ static int __Pyx_ParseKeywords(
         return __Pyx_ParseKeywordDict(kwds, argnames, values, num_pos_args, num_kwargs, function_name, ignore_unknown_kwargs);
 }
 
-/* AllocateExtensionType */
-static PyObject *__Pyx_AllocateExtensionType(PyTypeObject *t, int is_final) {
-    if (is_final || likely(!__Pyx_PyType_HasFeature(t, Py_TPFLAGS_IS_ABSTRACT))) {
-        allocfunc alloc_func = __Pyx_PyType_GetSlot(t, tp_alloc, allocfunc);
-        return alloc_func(t, 0);
+/* RaiseArgTupleInvalid */
+static void __Pyx_RaiseArgtupleInvalid(
+    const char* func_name,
+    int exact,
+    Py_ssize_t num_min,
+    Py_ssize_t num_max,
+    Py_ssize_t num_found)
+{
+    Py_ssize_t num_expected;
+    const char *more_or_less;
+    if (num_found < num_min) {
+        num_expected = num_min;
+        more_or_less = "at least";
     } else {
-        newfunc tp_new = __Pyx_PyType_TryGetSlot(&PyBaseObject_Type, tp_new, newfunc);
-    #if CYTHON_COMPILING_IN_LIMITED_API && __PYX_LIMITED_VERSION_HEX < 0x030A0000
-        if (!tp_new) {
-            PyObject *new_str = PyUnicode_FromString("__new__");
-            if (likely(new_str)) {
-                PyObject *o = PyObject_CallMethodObjArgs((PyObject *)&PyBaseObject_Type, new_str, t, NULL);
-                Py_DECREF(new_str);
-                return o;
-            } else
-                return NULL;
-        } else
-    #endif
-        return tp_new(t, __pyx_mstate_global->__pyx_empty_tuple, 0);
+        num_expected = num_max;
+        more_or_less = "at most";
     }
+    if (exact) {
+        more_or_less = "exactly";
+    }
+    PyErr_Format(PyExc_TypeError,
+                 "%.200s() takes %.8s %" CYTHON_FORMAT_SSIZE_T "d positional argument%.1s (%" CYTHON_FORMAT_SSIZE_T "d given)",
+                 func_name, more_or_less, num_expected,
+                 (num_expected == 1) ? "" : "s", num_found);
+}
+
+/* ArgTypeTestFunc (used by ArgTypeTest) */
+static int __Pyx__ArgTypeTest(PyObject *obj, PyTypeObject *type, const char *name, int exact)
+{
+    __Pyx_TypeName type_name;
+    __Pyx_TypeName obj_type_name;
+    PyObject *extra_info = __pyx_mstate_global->__pyx_empty_unicode;
+    int from_annotation_subclass = 0;
+    if (unlikely(!type)) {
+        PyErr_SetString(PyExc_SystemError, "Missing type object");
+        return 0;
+    }
+    else if (!exact) {
+        if (likely(__Pyx_TypeCheck(obj, type))) return 1;
+    } else if (exact == 2) {
+        if (__Pyx_TypeCheck(obj, type)) {
+            from_annotation_subclass = 1;
+            extra_info = __pyx_mstate_global->__pyx_kp_u_Note_that_Cython_is_deliberately;
+        }
+    }
+    type_name = __Pyx_PyType_GetFullyQualifiedName(type);
+    obj_type_name = __Pyx_PyType_GetFullyQualifiedName(Py_TYPE(obj));
+    PyErr_Format(PyExc_TypeError,
+        "Argument '%.200s' has incorrect type (expected " __Pyx_FMT_TYPENAME
+        ", got " __Pyx_FMT_TYPENAME ")"
+#if __PYX_LIMITED_VERSION_HEX < 0x030C0000
+        "%s%U"
+#endif
+        , name, type_name, obj_type_name
+#if __PYX_LIMITED_VERSION_HEX < 0x030C0000
+        , (from_annotation_subclass ? ". " : ""), extra_info
+#endif
+        );
+#if __PYX_LIMITED_VERSION_HEX >= 0x030C0000
+    if (exact == 2 && from_annotation_subclass) {
+        PyObject *res;
+        PyObject *vargs[2];
+        vargs[0] = PyErr_GetRaisedException();
+        vargs[1] = extra_info;
+        res = PyObject_VectorcallMethod(__pyx_mstate_global->__pyx_kp_u_add_note, vargs, 2, NULL);
+        Py_XDECREF(res);
+        PyErr_SetRaisedException(vargs[0]);
+    }
+#endif
+    __Pyx_DECREF_TypeName(type_name);
+    __Pyx_DECREF_TypeName(obj_type_name);
+    return 0;
+}
+
+/* RejectKeywords */
+static void __Pyx_RejectKeywords(const char* function_name, PyObject *kwds) {
+    PyObject *key = NULL;
+    if (CYTHON_METH_FASTCALL && likely(PyTuple_Check(kwds))) {
+        key = __Pyx_PySequence_ITEM(kwds, 0);
+    } else {
+#if CYTHON_AVOID_BORROWED_REFS
+        PyObject *pos = NULL;
+#else
+        Py_ssize_t pos = 0;
+#endif
+#if !CYTHON_COMPILING_IN_PYPY || defined(PyArg_ValidateKeywordArguments)
+        if (unlikely(!PyArg_ValidateKeywordArguments(kwds))) return;
+#endif
+        __Pyx_PyDict_NextRef(kwds, &pos, &key, NULL);
+#if CYTHON_AVOID_BORROWED_REFS
+        Py_XDECREF(pos);
+#endif
+    }
+    if (likely(key)) {
+        PyErr_Format(PyExc_TypeError,
+            "%s() got an unexpected keyword argument '%U'",
+            function_name, key);
+        Py_DECREF(key);
+    }
+}
+
+/* PyErrFetchRestore (used by RaiseException) */
+#if CYTHON_FAST_THREAD_STATE
+static CYTHON_INLINE void __Pyx_ErrRestoreInState(PyThreadState *tstate, PyObject *type, PyObject *value, PyObject *tb) {
+#if PY_VERSION_HEX >= 0x030C00A6
+    PyObject *tmp_value;
+    assert(type == NULL || (value != NULL && type == (PyObject*) Py_TYPE(value)));
+    if (value) {
+        #if CYTHON_COMPILING_IN_CPYTHON
+        if (unlikely(((PyBaseExceptionObject*) value)->traceback != tb))
+        #endif
+            PyException_SetTraceback(value, tb);
+    }
+    tmp_value = tstate->current_exception;
+    tstate->current_exception = value;
+    Py_XDECREF(tmp_value);
+    Py_XDECREF(type);
+    Py_XDECREF(tb);
+#else
+    PyObject *tmp_type, *tmp_value, *tmp_tb;
+    tmp_type = tstate->curexc_type;
+    tmp_value = tstate->curexc_value;
+    tmp_tb = tstate->curexc_traceback;
+    tstate->curexc_type = type;
+    tstate->curexc_value = value;
+    tstate->curexc_traceback = tb;
+    Py_XDECREF(tmp_type);
+    Py_XDECREF(tmp_value);
+    Py_XDECREF(tmp_tb);
+#endif
+}
+static CYTHON_INLINE void __Pyx_ErrFetchInState(PyThreadState *tstate, PyObject **type, PyObject **value, PyObject **tb) {
+#if PY_VERSION_HEX >= 0x030C00A6
+    PyObject* exc_value;
+    exc_value = tstate->current_exception;
+    tstate->current_exception = 0;
+    *value = exc_value;
+    *type = NULL;
+    *tb = NULL;
+    if (exc_value) {
+        *type = (PyObject*) Py_TYPE(exc_value);
+        Py_INCREF(*type);
+        #if CYTHON_COMPILING_IN_CPYTHON
+        *tb = ((PyBaseExceptionObject*) exc_value)->traceback;
+        Py_XINCREF(*tb);
+        #else
+        *tb = PyException_GetTraceback(exc_value);
+        #endif
+    }
+#else
+    *type = tstate->curexc_type;
+    *value = tstate->curexc_value;
+    *tb = tstate->curexc_traceback;
+    tstate->curexc_type = 0;
+    tstate->curexc_value = 0;
+    tstate->curexc_traceback = 0;
+#endif
+}
+#endif
+
+/* RaiseException */
+static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause) {
+    PyObject* owned_instance = NULL;
+    if (tb == Py_None) {
+        tb = 0;
+    } else if (tb && !PyTraceBack_Check(tb)) {
+        PyErr_SetString(PyExc_TypeError,
+            "raise: arg 3 must be a traceback or None");
+        goto bad;
+    }
+    if (value == Py_None)
+        value = 0;
+    if (PyExceptionInstance_Check(type)) {
+        if (value) {
+            PyErr_SetString(PyExc_TypeError,
+                "instance exception may not have a separate value");
+            goto bad;
+        }
+        value = type;
+        type = (PyObject*) Py_TYPE(value);
+    } else if (PyExceptionClass_Check(type)) {
+        PyObject *instance_class = NULL;
+        if (value && PyExceptionInstance_Check(value)) {
+            instance_class = (PyObject*) Py_TYPE(value);
+            if (instance_class != type) {
+                int is_subclass = PyObject_IsSubclass(instance_class, type);
+                if (!is_subclass) {
+                    instance_class = NULL;
+                } else if (unlikely(is_subclass == -1)) {
+                    goto bad;
+                } else {
+                    type = instance_class;
+                }
+            }
+        }
+        if (!instance_class) {
+            PyObject *args;
+            if (!value)
+                args = PyTuple_New(0);
+            else if (PyTuple_Check(value)) {
+                Py_INCREF(value);
+                args = value;
+            } else
+                args = PyTuple_Pack(1, value);
+            if (!args)
+                goto bad;
+            owned_instance = PyObject_Call(type, args, NULL);
+            Py_DECREF(args);
+            if (!owned_instance)
+                goto bad;
+            value = owned_instance;
+            if (!PyExceptionInstance_Check(value)) {
+                PyErr_Format(PyExc_TypeError,
+                             "calling %R should have returned an instance of "
+                             "BaseException, not %R",
+                             type, Py_TYPE(value));
+                goto bad;
+            }
+        }
+    } else {
+        PyErr_SetString(PyExc_TypeError,
+            "raise: exception class must be a subclass of BaseException");
+        goto bad;
+    }
+    if (cause) {
+        PyObject *fixed_cause;
+        if (cause == Py_None) {
+            fixed_cause = NULL;
+        } else if (PyExceptionClass_Check(cause)) {
+            fixed_cause = PyObject_CallObject(cause, NULL);
+            if (fixed_cause == NULL)
+                goto bad;
+        } else if (PyExceptionInstance_Check(cause)) {
+            fixed_cause = cause;
+            Py_INCREF(fixed_cause);
+        } else {
+            PyErr_SetString(PyExc_TypeError,
+                            "exception causes must derive from "
+                            "BaseException");
+            goto bad;
+        }
+        PyException_SetCause(value, fixed_cause);
+    }
+    PyErr_SetObject(type, value);
+    if (tb) {
+#if PY_VERSION_HEX >= 0x030C00A6
+        PyException_SetTraceback(value, tb);
+#elif CYTHON_FAST_THREAD_STATE
+        PyThreadState *tstate = __Pyx_PyThreadState_Current;
+        PyObject* tmp_tb = tstate->curexc_traceback;
+        if (tb != tmp_tb) {
+            Py_INCREF(tb);
+            tstate->curexc_traceback = tb;
+            Py_XDECREF(tmp_tb);
+        }
+#else
+        PyObject *tmp_type, *tmp_value, *tmp_tb;
+        PyErr_Fetch(&tmp_type, &tmp_value, &tmp_tb);
+        Py_INCREF(tb);
+        PyErr_Restore(tmp_type, tmp_value, tb);
+        Py_XDECREF(tmp_tb);
+#endif
+    }
+bad:
+    Py_XDECREF(owned_instance);
+    return;
+}
+
+/* CallNextTpDealloc */
+static void __Pyx_call_next_tp_dealloc(PyObject* obj, destructor current_tp_dealloc) {
+    PyTypeObject* type = Py_TYPE(obj);
+    destructor tp_dealloc = NULL;
+    while (type && __Pyx_PyType_GetSlot(type, tp_dealloc, destructor) != current_tp_dealloc)
+        type = __Pyx_PyType_GetSlot(type, tp_base, PyTypeObject*);
+    while (type && (tp_dealloc = __Pyx_PyType_GetSlot(type, tp_dealloc, destructor)) == current_tp_dealloc)
+        type = __Pyx_PyType_GetSlot(type, tp_base, PyTypeObject*);
+    if (type)
+        tp_dealloc(obj);
+}
+
+/* CallNextTpTraverse */
+static int __Pyx_call_next_tp_traverse(PyObject* obj, visitproc v, void *a, traverseproc current_tp_traverse) {
+    PyTypeObject* type = Py_TYPE(obj);
+    traverseproc tp_traverse = NULL;
+    while (type && __Pyx_PyType_GetSlot(type, tp_traverse, traverseproc) != current_tp_traverse)
+        type = __Pyx_PyType_GetSlot(type, tp_base, PyTypeObject*);
+    while (type && (tp_traverse = __Pyx_PyType_GetSlot(type, tp_traverse, traverseproc)) == current_tp_traverse)
+        type = __Pyx_PyType_GetSlot(type, tp_base, PyTypeObject*);
+    if (type && tp_traverse)
+        return tp_traverse(obj, v, a);
+    return 0;
 }
 
 /* CallTypeTraverse */
@@ -7436,6 +6971,121 @@ static int __Pyx_call_type_traverse(PyObject *o, int always_call, visitproc visi
     return 0;
 }
 #endif
+
+/* CallNextTpClear */
+static void __Pyx_call_next_tp_clear(PyObject* obj, inquiry current_tp_clear) {
+    PyTypeObject* type = Py_TYPE(obj);
+    inquiry tp_clear = NULL;
+    while (type && __Pyx_PyType_GetSlot(type, tp_clear, inquiry) != current_tp_clear)
+        type = __Pyx_PyType_GetSlot(type, tp_base, PyTypeObject*);
+    while (type && (tp_clear = __Pyx_PyType_GetSlot(type, tp_clear, inquiry)) == current_tp_clear)
+        type = __Pyx_PyType_GetSlot(type, tp_base, PyTypeObject*);
+    if (type && tp_clear)
+        tp_clear(obj);
+}
+
+/* TypeImport */
+#ifndef __PYX_HAVE_RT_ImportType_3_2_3
+#define __PYX_HAVE_RT_ImportType_3_2_3
+static PyTypeObject *__Pyx_ImportType_3_2_3(PyObject *module, const char *module_name, const char *class_name,
+    size_t size, size_t alignment, enum __Pyx_ImportType_CheckSize_3_2_3 check_size)
+{
+    PyObject *result = 0;
+    Py_ssize_t basicsize;
+    Py_ssize_t itemsize;
+#if defined(Py_LIMITED_API) || (defined(CYTHON_COMPILING_IN_LIMITED_API) && CYTHON_COMPILING_IN_LIMITED_API)
+    PyObject *py_basicsize;
+    PyObject *py_itemsize;
+#endif
+    result = PyObject_GetAttrString(module, class_name);
+    if (!result)
+        goto bad;
+    if (!PyType_Check(result)) {
+        PyErr_Format(PyExc_TypeError,
+            "%.200s.%.200s is not a type object",
+            module_name, class_name);
+        goto bad;
+    }
+#if !( defined(Py_LIMITED_API) || (defined(CYTHON_COMPILING_IN_LIMITED_API) && CYTHON_COMPILING_IN_LIMITED_API) )
+    basicsize = ((PyTypeObject *)result)->tp_basicsize;
+    itemsize = ((PyTypeObject *)result)->tp_itemsize;
+#else
+    if (size == 0) {
+        return (PyTypeObject *)result;
+    }
+    py_basicsize = PyObject_GetAttrString(result, "__basicsize__");
+    if (!py_basicsize)
+        goto bad;
+    basicsize = PyLong_AsSsize_t(py_basicsize);
+    Py_DECREF(py_basicsize);
+    py_basicsize = 0;
+    if (basicsize == (Py_ssize_t)-1 && PyErr_Occurred())
+        goto bad;
+    py_itemsize = PyObject_GetAttrString(result, "__itemsize__");
+    if (!py_itemsize)
+        goto bad;
+    itemsize = PyLong_AsSsize_t(py_itemsize);
+    Py_DECREF(py_itemsize);
+    py_itemsize = 0;
+    if (itemsize == (Py_ssize_t)-1 && PyErr_Occurred())
+        goto bad;
+#endif
+    if (itemsize) {
+        if (size % alignment) {
+            alignment = size % alignment;
+        }
+        if (itemsize < (Py_ssize_t)alignment)
+            itemsize = (Py_ssize_t)alignment;
+    }
+    if ((size_t)(basicsize + itemsize) < size) {
+        PyErr_Format(PyExc_ValueError,
+            "%.200s.%.200s size changed, may indicate binary incompatibility. "
+            "Expected %zd from C header, got %zd from PyObject",
+            module_name, class_name, size, basicsize+itemsize);
+        goto bad;
+    }
+    if (check_size == __Pyx_ImportType_CheckSize_Error_3_2_3 &&
+            ((size_t)basicsize > size || (size_t)(basicsize + itemsize) < size)) {
+        PyErr_Format(PyExc_ValueError,
+            "%.200s.%.200s size changed, may indicate binary incompatibility. "
+            "Expected %zd from C header, got %zd-%zd from PyObject",
+            module_name, class_name, size, basicsize, basicsize+itemsize);
+        goto bad;
+    }
+    else if (check_size == __Pyx_ImportType_CheckSize_Warn_3_2_3 && (size_t)basicsize > size) {
+        if (PyErr_WarnFormat(NULL, 0,
+                "%.200s.%.200s size changed, may indicate binary incompatibility. "
+                "Expected %zd from C header, got %zd from PyObject",
+                module_name, class_name, size, basicsize) < 0) {
+            goto bad;
+        }
+    }
+    return (PyTypeObject *)result;
+bad:
+    Py_XDECREF(result);
+    return NULL;
+}
+#endif
+
+/* GetVTable */
+static void* __Pyx_GetVtable(PyTypeObject *type) {
+    void* ptr;
+#if CYTHON_COMPILING_IN_LIMITED_API
+    PyObject *ob = PyObject_GetAttr((PyObject *)type, __pyx_mstate_global->__pyx_n_u_pyx_vtable);
+#else
+    PyObject *ob = PyObject_GetItem(type->tp_dict, __pyx_mstate_global->__pyx_n_u_pyx_vtable);
+#endif
+    if (!ob)
+        goto bad;
+    ptr = PyCapsule_GetPointer(ob, 0);
+    if (!ptr && !PyErr_Occurred())
+        PyErr_SetString(PyExc_RuntimeError, "invalid vtable found for imported type");
+    Py_DECREF(ob);
+    return ptr;
+bad:
+    Py_XDECREF(ob);
+    return NULL;
+}
 
 /* LimitedApiGetTypeDict (used by SetItemOnTypeDict) */
 #if CYTHON_COMPILING_IN_LIMITED_API
@@ -7905,26 +7555,6 @@ bad:
     return -1;
 }
 
-/* GetVTable (used by MergeVTables) */
-static void* __Pyx_GetVtable(PyTypeObject *type) {
-    void* ptr;
-#if CYTHON_COMPILING_IN_LIMITED_API
-    PyObject *ob = PyObject_GetAttr((PyObject *)type, __pyx_mstate_global->__pyx_n_u_pyx_vtable);
-#else
-    PyObject *ob = PyObject_GetItem(type->tp_dict, __pyx_mstate_global->__pyx_n_u_pyx_vtable);
-#endif
-    if (!ob)
-        goto bad;
-    ptr = PyCapsule_GetPointer(ob, 0);
-    if (!ptr && !PyErr_Occurred())
-        PyErr_SetString(PyExc_RuntimeError, "invalid vtable found for imported type");
-    Py_DECREF(ob);
-    return ptr;
-bad:
-    Py_XDECREF(ob);
-    return NULL;
-}
-
 /* MergeVTables */
 static int __Pyx_MergeVtables(PyTypeObject *type) {
     int i=0;
@@ -8032,6 +7662,76 @@ static int __Pyx__DelItemOnTypeDict(PyTypeObject *tp, PyObject *k) {
     result = PyDict_DelItem(tp_dict, k);
     if (likely(!result)) PyType_Modified(tp);
     return result;
+}
+
+/* PyErrExceptionMatches (used by PyObjectGetAttrStrNoError) */
+#if CYTHON_FAST_THREAD_STATE
+static int __Pyx_PyErr_ExceptionMatchesTuple(PyObject *exc_type, PyObject *tuple) {
+    Py_ssize_t i, n;
+    n = PyTuple_GET_SIZE(tuple);
+    for (i=0; i<n; i++) {
+        if (exc_type == PyTuple_GET_ITEM(tuple, i)) return 1;
+    }
+    for (i=0; i<n; i++) {
+        if (__Pyx_PyErr_GivenExceptionMatches(exc_type, PyTuple_GET_ITEM(tuple, i))) return 1;
+    }
+    return 0;
+}
+static CYTHON_INLINE int __Pyx_PyErr_ExceptionMatchesInState(PyThreadState* tstate, PyObject* err) {
+    int result;
+    PyObject *exc_type;
+#if PY_VERSION_HEX >= 0x030C00A6
+    PyObject *current_exception = tstate->current_exception;
+    if (unlikely(!current_exception)) return 0;
+    exc_type = (PyObject*) Py_TYPE(current_exception);
+    if (exc_type == err) return 1;
+#else
+    exc_type = tstate->curexc_type;
+    if (exc_type == err) return 1;
+    if (unlikely(!exc_type)) return 0;
+#endif
+    #if CYTHON_AVOID_BORROWED_REFS
+    Py_INCREF(exc_type);
+    #endif
+    if (unlikely(PyTuple_Check(err))) {
+        result = __Pyx_PyErr_ExceptionMatchesTuple(exc_type, err);
+    } else {
+        result = __Pyx_PyErr_GivenExceptionMatches(exc_type, err);
+    }
+    #if CYTHON_AVOID_BORROWED_REFS
+    Py_DECREF(exc_type);
+    #endif
+    return result;
+}
+#endif
+
+/* PyObjectGetAttrStrNoError (used by SetupReduce) */
+#if __PYX_LIMITED_VERSION_HEX < 0x030d0000
+static void __Pyx_PyObject_GetAttrStr_ClearAttributeError(void) {
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    if (likely(__Pyx_PyErr_ExceptionMatches(PyExc_AttributeError)))
+        __Pyx_PyErr_Clear();
+}
+#endif
+static CYTHON_INLINE PyObject* __Pyx_PyObject_GetAttrStrNoError(PyObject* obj, PyObject* attr_name) {
+    PyObject *result;
+#if __PYX_LIMITED_VERSION_HEX >= 0x030d0000
+    (void) PyObject_GetOptionalAttr(obj, attr_name, &result);
+    return result;
+#else
+#if CYTHON_COMPILING_IN_CPYTHON && CYTHON_USE_TYPE_SLOTS
+    PyTypeObject* tp = Py_TYPE(obj);
+    if (likely(tp->tp_getattro == PyObject_GenericGetAttr)) {
+        return _PyObject_GenericGetAttrWithDict(obj, attr_name, NULL, 1);
+    }
+#endif
+    result = __Pyx_PyObject_GetAttrStr(obj, attr_name);
+    if (unlikely(!result)) {
+        __Pyx_PyObject_GetAttrStr_ClearAttributeError();
+    }
+    return result;
+#endif
 }
 
 /* SetupReduce */
@@ -8142,89 +7842,6 @@ __PYX_GOOD:
     Py_XDECREF(setstate_cython);
     return ret;
 }
-
-/* TypeImport */
-#ifndef __PYX_HAVE_RT_ImportType_3_2_3
-#define __PYX_HAVE_RT_ImportType_3_2_3
-static PyTypeObject *__Pyx_ImportType_3_2_3(PyObject *module, const char *module_name, const char *class_name,
-    size_t size, size_t alignment, enum __Pyx_ImportType_CheckSize_3_2_3 check_size)
-{
-    PyObject *result = 0;
-    Py_ssize_t basicsize;
-    Py_ssize_t itemsize;
-#if defined(Py_LIMITED_API) || (defined(CYTHON_COMPILING_IN_LIMITED_API) && CYTHON_COMPILING_IN_LIMITED_API)
-    PyObject *py_basicsize;
-    PyObject *py_itemsize;
-#endif
-    result = PyObject_GetAttrString(module, class_name);
-    if (!result)
-        goto bad;
-    if (!PyType_Check(result)) {
-        PyErr_Format(PyExc_TypeError,
-            "%.200s.%.200s is not a type object",
-            module_name, class_name);
-        goto bad;
-    }
-#if !( defined(Py_LIMITED_API) || (defined(CYTHON_COMPILING_IN_LIMITED_API) && CYTHON_COMPILING_IN_LIMITED_API) )
-    basicsize = ((PyTypeObject *)result)->tp_basicsize;
-    itemsize = ((PyTypeObject *)result)->tp_itemsize;
-#else
-    if (size == 0) {
-        return (PyTypeObject *)result;
-    }
-    py_basicsize = PyObject_GetAttrString(result, "__basicsize__");
-    if (!py_basicsize)
-        goto bad;
-    basicsize = PyLong_AsSsize_t(py_basicsize);
-    Py_DECREF(py_basicsize);
-    py_basicsize = 0;
-    if (basicsize == (Py_ssize_t)-1 && PyErr_Occurred())
-        goto bad;
-    py_itemsize = PyObject_GetAttrString(result, "__itemsize__");
-    if (!py_itemsize)
-        goto bad;
-    itemsize = PyLong_AsSsize_t(py_itemsize);
-    Py_DECREF(py_itemsize);
-    py_itemsize = 0;
-    if (itemsize == (Py_ssize_t)-1 && PyErr_Occurred())
-        goto bad;
-#endif
-    if (itemsize) {
-        if (size % alignment) {
-            alignment = size % alignment;
-        }
-        if (itemsize < (Py_ssize_t)alignment)
-            itemsize = (Py_ssize_t)alignment;
-    }
-    if ((size_t)(basicsize + itemsize) < size) {
-        PyErr_Format(PyExc_ValueError,
-            "%.200s.%.200s size changed, may indicate binary incompatibility. "
-            "Expected %zd from C header, got %zd from PyObject",
-            module_name, class_name, size, basicsize+itemsize);
-        goto bad;
-    }
-    if (check_size == __Pyx_ImportType_CheckSize_Error_3_2_3 &&
-            ((size_t)basicsize > size || (size_t)(basicsize + itemsize) < size)) {
-        PyErr_Format(PyExc_ValueError,
-            "%.200s.%.200s size changed, may indicate binary incompatibility. "
-            "Expected %zd from C header, got %zd-%zd from PyObject",
-            module_name, class_name, size, basicsize, basicsize+itemsize);
-        goto bad;
-    }
-    else if (check_size == __Pyx_ImportType_CheckSize_Warn_3_2_3 && (size_t)basicsize > size) {
-        if (PyErr_WarnFormat(NULL, 0,
-                "%.200s.%.200s size changed, may indicate binary incompatibility. "
-                "Expected %zd from C header, got %zd from PyObject",
-                module_name, class_name, size, basicsize) < 0) {
-            goto bad;
-        }
-    }
-    return (PyTypeObject *)result;
-bad:
-    Py_XDECREF(result);
-    return NULL;
-}
-#endif
 
 /* dict_setdefault (used by FetchCommonType) */
 static CYTHON_INLINE PyObject *__Pyx_PyDict_SetDefault(PyObject *d, PyObject *key, PyObject *default_value) {

@@ -32,6 +32,7 @@ extensions = [
         ["hft_backtest/merged_dataset.pyx"],
         language="c++",
     ),
+    Extension("hft_backtest.reader", ["hft_backtest/reader.pyx"]),
 ]
 
 setup(

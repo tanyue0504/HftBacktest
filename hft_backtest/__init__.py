@@ -1,6 +1,7 @@
 # 先导入基础数据结构
 from .event import Event
 from .order import Order
+from .timer import Timer
 
 # 再按照依赖顺序导入组件
 from .event_engine import EventEngine, Component

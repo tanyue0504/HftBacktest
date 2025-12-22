@@ -1,6 +1,5 @@
 from abc import ABC
-from operator import is_
-from hft_backtest import Component, EventEngine, Order, Event, Account
+from hft_backtest import Component, EventEngine, Order, Event, Account, Timer
 
 class Recorder(Component, ABC):
     """
@@ -84,7 +83,7 @@ class AccountRecorder(Recorder):
 
     def start(self, engine: EventEngine):
         # 注册账户相关事件监听
-        engine.global_register(self.on_event)
+        engine.register(Timer, self.on_timer)
         # 打开文件
         self.file = open(self.path, "w", encoding="utf-8-sig")
         # 写入表头
@@ -104,7 +103,7 @@ class AccountRecorder(Recorder):
             self.file.flush()
         self.buffer.clear()
 
-    def on_event(self, event: Event):
+    def on_timer(self, event: Timer):
         self.current_timestamp = event.timestamp
         self.record()
 

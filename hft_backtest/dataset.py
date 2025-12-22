@@ -87,12 +87,7 @@ class CsvDataset(Dataset):
             for row in zip(*[df[col].values for col in self.columns]):
                 yield self.event_type(*row)
 
-class TimerEvent(Event):
-    """
-    定时器事件
-    仅包含时间戳
-    """
-    pass
+
 
 class TimerDataset(Dataset):
     """

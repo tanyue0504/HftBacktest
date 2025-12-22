@@ -90,6 +90,7 @@ class AccountRecorder(Recorder):
         self.buffer.append("timestamp,equity,balance,commission,funding,pnl,trade_count,trade_amount\n")
 
     def stop(self):
+        self.record(force=True)
         self.flush(flush_to_disk=True)
         self.file.close()
 

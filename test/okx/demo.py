@@ -69,7 +69,7 @@ class DemoStrategy(Strategy):
         self.flag = 0
 
     def on_trade(self, event: OKXTrades):
-        print(f"Trade event: {event}")
+        # print(f"Trade event: {event}")
         if self.flag == 0:
             # 【修改 2】使用 create_market 工厂方法
             order = Order.create_market('BTC-USDT-SWAP', 1)
@@ -101,14 +101,15 @@ def main():
     ds = get_ds()
 
     matcher = OKXMatcher()
-    account = OKXAccount(initial_balance=1000000)
-    strategy = DemoStrategy(account=account)
+    account_client = OKXAccount(initial_balance=1000000)
+    account_server = OKXAccount(initial_balance=1000000)
+    strategy = DemoStrategy(account=account_client)
     
     path = Path(__file__).parent.parent
-    trader_recorder = TradeRecorder(path=path / "tmp/okx_trades_demo.csv", account=account)
+    trader_recorder = TradeRecorder(path=path / "tmp/okx_trades_demo.csv", account=account_server)
     
     # 【修复】AccountRecorder 移除 interval
-    account_recorder = AccountRecorder(path=path / "tmp/okx_account_demo.csv", account=account, interval= 5 * 60 * 1000)
+    account_recorder = AccountRecorder(path=path / "tmp/okx_account_demo.csv", account=account_server, interval=5 * 60 * 1000)
     
     delay_model_server = FixedDelayModel(delay=10)
     delay_model_client = FixedDelayModel(delay=10)
@@ -131,10 +132,11 @@ def main():
     # Printer 加在 Server 端，这样能在数据刚进入引擎时就看到
     backtest_engine.add_component(event_printer, is_server=True)
     backtest_engine.add_component(matcher, is_server=True)
+    backtest_engine.add_component(account_server, is_server=True)
+    backtest_engine.add_component(trader_recorder, is_server=True)
+    backtest_engine.add_component(account_recorder, is_server=True)
     
-    backtest_engine.add_component(account, is_server=False)
-    backtest_engine.add_component(trader_recorder, is_server=False)
-    backtest_engine.add_component(account_recorder, is_server=False)
+    backtest_engine.add_component(account_client, is_server=False)
     # 策略要放到最后，因为会通过raise来结束，其他组件需要先运行完，否则记录可能不会正常生成
     backtest_engine.add_component(strategy, is_server=False)
     

@@ -35,12 +35,17 @@ cdef class FixedDelayModel(LatencyModel):
 cdef class DelayBus(Component):
     def __init__(
         self, 
-        EventEngine target_engine, 
-        LatencyModel delay_model
+        LatencyModel delay_model,
     ):
-        self.target_engine = target_engine
         self.model = delay_model
         self._source_id = 0
+        self.target_engine = None
+    
+    cpdef set_target_engine(self, EventEngine engine):
+        """
+        允许延迟绑定目标引擎
+        """
+        self.target_engine = engine
 
     cpdef start(self, EventEngine engine):
         """

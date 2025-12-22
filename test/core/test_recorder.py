@@ -1,7 +1,7 @@
-import re
+from sqlite3 import Time
 import pytest
 from unittest.mock import MagicMock, ANY
-from hft_backtest import EventEngine, Order, Event
+from hft_backtest import EventEngine, Order, Event, Timer
 from hft_backtest.account import Account
 from hft_backtest.recorder import TradeRecorder, AccountRecorder
 
@@ -131,7 +131,7 @@ class TestAccountRecorder:
         recorder.start(engine)
         
         # 验证注册全局监听
-        engine.global_register.assert_called_with(recorder.on_event)
+        engine.register.assert_called_with(Timer, recorder.on_timer)
         
         # 验证表头
         recorder.flush(flush_to_disk=True)
@@ -151,8 +151,8 @@ class TestAccountRecorder:
         recorder.start(engine)
         
         # T=500: 未达到间隔 (500 - 0 < 1000)
-        event1 = Event(timestamp=500)
-        recorder.on_event(event1)
+        event1 = Timer(timestamp=500)
+        recorder.on_timer(event1)
         
         recorder.flush(flush_to_disk=True)
         with open(file_path, 'r') as f:
@@ -162,8 +162,8 @@ class TestAccountRecorder:
         assert recorder.last_timestamp == 0
         assert recorder.current_timestamp == 500
         assert len(recorder.buffer) == 0
-        event2 = Event(timestamp=1200)
-        recorder.on_event(event2)
+        event2 = Timer(timestamp=1200)
+        recorder.on_timer(event2)
         assert recorder.last_timestamp == 1200
         assert recorder.current_timestamp == 1200
         assert len(recorder.buffer) == 1
@@ -175,8 +175,8 @@ class TestAccountRecorder:
         assert len(recorder.buffer) == 0
             
         # T=1500: 未达到间隔 (1500 - 1200 < 1000)
-        event3 = Event(timestamp=1500)
-        recorder.on_event(event3)
+        event3 = Timer(timestamp=1500)
+        recorder.on_timer(event3)
         
         recorder.flush(flush_to_disk=True)
         with open(file_path, 'r') as f:
@@ -203,7 +203,7 @@ class TestAccountRecorder:
         account.get_total_trade_count.return_value = 1
         account.get_total_turnover.return_value = 50000.0
         
-        recorder.on_event(Event(timestamp=1000))
+        recorder.on_timer(Timer(timestamp=1000))
         
         # 验证第一条记录 (Flow = Current - Initial(0))
         recorder.flush(flush_to_disk=True)
@@ -223,7 +223,7 @@ class TestAccountRecorder:
         account.get_total_trade_pnl.return_value = 150.0 # +50.0
         account.get_total_trade_count.return_value = 3   # +2
         
-        recorder.on_event(Event(timestamp=2000))
+        recorder.on_timer(Timer(timestamp=2000))
 
         recorder.flush(flush_to_disk=True)
         

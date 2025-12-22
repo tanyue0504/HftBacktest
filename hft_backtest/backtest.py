@@ -1,39 +1,46 @@
-from hft_backtest import Dataset, MergedDataset, Component, EventEngine, DelayBus
-
-from itertools import chain
 import math
+from itertools import chain
+
+from hft_backtest import Dataset, Component, EventEngine, DelayBus, Timer
 
 class BacktestEngine:
     """
-    单事件引擎本质上是双事件引擎在delay=0时的特例
+    事件驱动回测引擎 (Python 逻辑重构版)
+    集成 Timer 发生器与 DelayBus 管理
     """
     def __init__(
         self,
-        datasets: list[Dataset],
-        delay:int = 0, # unit: ms
-        start_timestamp: int = None,
-        end_timestamp: int = None,
+        dataset: Dataset, 
+        server2client_delaybus: DelayBus,
+        client2server_delaybus: DelayBus,
+        timer_interval: int = 1000,  # 定时器间隔 (ms)
     ):
-        self.dataset = MergedDataset(*datasets)
+        # 初始化内部变量
         self.server_engine = EventEngine()
         self.client_engine = EventEngine()
+        
         self.server_components: list[Component] = []
         self.client_components: list[Component] = []
-        self.server2client_bus = DelayBus(
-            self.server_engine,
-            self.client_engine,
-            delay
-        )
-        self.client2server_bus = DelayBus(
-            self.client_engine,
-            self.server_engine,
-            delay
-        )
-        self.start_timestamp = start_timestamp
-        self.end_timestamp = end_timestamp
 
+        # 保存参数
+        self.dataset = dataset
+        self.timer_interval = timer_interval
+        
+        self.server2client_bus = server2client_delaybus
+        self.client2server_bus = client2server_delaybus
 
-    def add_component(self, component:Component, is_server: bool):
+        # 【核心修改】在此处进行"接线" (Wiring)
+        # ServerBus 负责把 Server 的事件搬运给 Client
+        self.server2client_bus.set_target_engine(self.client_engine)
+        self.client2server_bus.set_target_engine(self.server_engine)
+
+        # 注册组件：DelayBus 需要监听它的"源头"
+        # server2client 监听 Server，所以它是 Server 的组件
+        self.add_component(self.server2client_bus, is_server=True)
+        # client2server 监听 Client，所以它是 Client 的组件
+        self.add_component(self.client2server_bus, is_server=False)
+
+    def add_component(self, component: Component, is_server: bool):
         if is_server:
             self.server_components.append(component)
         else:
@@ -45,48 +52,57 @@ class BacktestEngine:
             data_iterator = iter(self.dataset)
             current_data = next(data_iterator, None)
 
+            next_timer = current_data.timestamp
+
             while current_data is not None:
-                # 1. 获取三个时间点的最小值：
-                #    A. 下一条行情数据的时间
-                #    B. Server->Client 总线最早消息的时间
-                #    C. Client->Server 总线最早消息的时间
+                # 1. 获取四个时间点的最小值（事件竞价）：
+                #    A. 下一条行情数据
+                #    B. Server->Client 延迟消息
+                #    C. Client->Server 延迟消息
+                #    D. 下一次定时器触发 (Timer)
                 
                 t_data = current_data.timestamp
                 t_s2c = self.server2client_bus.next_timestamp
                 t_c2s = self.client2server_bus.next_timestamp
                 
-                min_t = min(t_data, t_s2c, t_c2s)
-                # 时光回放
-                if self.start_timestamp is not None and min_t < self.start_timestamp:
-                    continue
-                if self.end_timestamp is not None and min_t > self.end_timestamp:
-                    break
-
-                # 2. 谁的时间到了，就处理谁
+                # 找出最小时间戳，决定先处理谁
+                min_t = min(t_data, t_s2c, t_c2s, next_timer)
                 
-                # 情况 A: 延迟消息先到（或同时到），先处理延迟消息
-                # 注意：优先处理 Bus 消息，防止同一毫秒内，策略先收到行情再收到之前的回报，导致乱序
+                # 2. 事件处理 (优先级策略：DelayBus > Timer > Data)
+                
+                # 情况 A: 处理延迟消息 (Server -> Client)
+                # 必须使用 <= 以处理同一毫秒内的事件
                 if t_s2c <= min_t:
                     self.server2client_bus.process_until(t_s2c)
-                    continue # 处理完回到循环头部，重新评估
+                    continue
                 
+                # 情况 B: 处理延迟消息 (Client -> Server)
                 if t_c2s <= min_t:
                     self.client2server_bus.process_until(t_c2s)
                     continue
 
-                # 情况 B: 行情数据时间到了
+                # 情况 C: 处理 Timer
+                if next_timer <= min_t:
+                    self.client_engine.put(Timer(next_timer))
+                    next_timer += self.timer_interval
+                    continue
+
+                # 情况 D: 处理行情数据
                 if t_data == min_t:
+                    # 数据通常先到达 Server (模拟交易所撮合)
                     self.server_engine.put(current_data)
-                    # 取下一条数据
                     current_data = next(data_iterator, None)
             
-            # 数据耗尽后，处理剩余的延迟消息
+            # --- 数据耗尽后的收尾 ---
+            # 处理还在路上的延迟消息 (防止最后几笔回报丢失)
             while True:
                 t_s2c = self.server2client_bus.next_timestamp
                 t_c2s = self.client2server_bus.next_timestamp
+                
                 if t_s2c == math.inf and t_c2s == math.inf:
                     break
                 
+                # 谁的时间早处理谁
                 if t_s2c <= t_c2s:
                      self.server2client_bus.process_until(t_s2c)
                 else:

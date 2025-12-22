@@ -36,3 +36,5 @@ cdef class DelayBus(Component):
     # cpdef 方法在 .pxd 里声明（可选，但推荐声明）
     cpdef on_event(self, Event event)
     cpdef process_until(self, long timestamp)
+
+    cpdef set_target_engine(self, EventEngine engine)

@@ -32,7 +32,8 @@ class TestDelayBusComprehensive:
         source, target = engines
         
         # 延迟 100ns
-        bus = DelayBus(target, FixedDelayModel(100))
+        bus = DelayBus(FixedDelayModel(100))
+        bus.set_target_engine(target)
         bus.start(source)
         
         received = []
@@ -69,7 +70,8 @@ class TestDelayBusComprehensive:
         
         # 使用自定义模型：第一次调用延迟100，第二次延迟10
         model = MockVariableLatency([100, 10])
-        bus = DelayBus(target, model)
+        bus = DelayBus(model)
+        bus.set_target_engine(target)
         bus.start(source)
         
         received = []
@@ -108,7 +110,8 @@ class TestDelayBusComprehensive:
         source1, target = engines
         source2 = EventEngine() # 干扰源
         
-        bus = DelayBus(target, FixedDelayModel(10))
+        bus = DelayBus(FixedDelayModel(10))
+        bus.set_target_engine(target)
         bus.start(source1) # 只监听 source1
         
         received = []
@@ -137,7 +140,8 @@ class TestDelayBusComprehensive:
     def test_target_time_sync(self, engines):
         """测试 4: 目标引擎时间同步逻辑"""
         source, target = engines
-        bus = DelayBus(target, FixedDelayModel(50))
+        bus = DelayBus(FixedDelayModel(50))
+        bus.set_target_engine(target)
         bus.start(source)
         
         # 目标引擎当前时间落后
@@ -156,7 +160,8 @@ class TestDelayBusComprehensive:
     def test_zero_delay_edge_case(self, engines):
         """测试 5: 零延迟边界情况"""
         source, target = engines
-        bus = DelayBus(target, FixedDelayModel(0)) # 0 延迟
+        bus = DelayBus(FixedDelayModel(0)) # 0 延迟
+        bus.set_target_engine(target)
         bus.start(source)
         
         target_events = []
@@ -175,7 +180,8 @@ class TestDelayBusComprehensive:
     def test_batch_processing(self, engines):
         """测试 6: 批量出堆能力"""
         source, target = engines
-        bus = DelayBus(target, FixedDelayModel(10))
+        bus = DelayBus(FixedDelayModel(10))
+        bus.set_target_engine(target)
         bus.start(source)
         
         rec = []

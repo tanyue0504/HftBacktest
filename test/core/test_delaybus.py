@@ -8,7 +8,8 @@ def test_delay_bus_logic():
     
     # 1. 设置 100ns 固定延迟
     model = FixedDelayModel(delay=100)
-    bus = DelayBus(target, model)
+    bus = DelayBus(model)
+    bus.set_target_engine(target)
     bus.start(source)
     
     received_events = []

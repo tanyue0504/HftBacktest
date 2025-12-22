@@ -32,16 +32,6 @@ extensions = [
         ["hft_backtest/merged_dataset.pyx"],
         language="c++",
     ),
-    Extension(
-        "hft_backtest.orderbook",
-        sources=[
-            "hft_backtest/orderbook.pyx", 
-            "hft_backtest/orderbook_impl.cpp"  # 改这个名字！
-        ],
-        # include_dirs=[numpy.get_include(), "hft_backtest"],
-        language="c++",
-        extra_compile_args=["-std=c++11", "-O3"],
-    ),
 ]
 
 setup(

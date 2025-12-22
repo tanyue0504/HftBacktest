@@ -24,8 +24,7 @@ class DelayBus(Component):
     """
     def __init__(
         self,
-        target_engine: EventEngine,
-        delay_model: LatencyModel
+        delay_model: LatencyModel,
     ) -> None: ...
 
     def start(self, engine: EventEngine) -> None:
@@ -45,6 +44,12 @@ class DelayBus(Component):
     def process_until(self, timestamp: int) -> None:
         """
         处理所有触发时间 <= 指定时间戳的事件，并推送到目标引擎。
+        """
+        ...
+    
+    def set_target_engine(self, engine: EventEngine) -> None:
+        """
+        设置目标事件引擎。
         """
         ...
 

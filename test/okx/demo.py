@@ -1,11 +1,13 @@
-from turtle import end_fill
 from hft_backtest import MergedDataset, ParquetDataset, CsvDataset, Strategy, EventEngine, BacktestEngine, TradeRecorder, AccountRecorder, Order
+from hft_backtest.helper import EventPrinter
+from hft_backtest.delaybus import DelayBus, FixedDelayModel
 from hft_backtest.account import Account
 from hft_backtest.okx.event import OKXTrades, OKXFundingRate, OKXBookticker, OKXDelivery
 from hft_backtest.okx.account import OKXAccount
 from hft_backtest.okx.matcher import OKXMatcher
-
+from hft_backtest.timer import Timer
 from pathlib import Path
+
 
 def get_ds():
     ds_trades = ParquetDataset(
@@ -58,7 +60,8 @@ def get_ds():
         ],
     )
 
-    return MergedDataset(ds_trades, ds_bookticker, ds_funding, ds_delivery)
+    # 【修改 1】MergedDataset 接受列表参数
+    return MergedDataset([ds_trades, ds_bookticker, ds_funding, ds_delivery])
 
 class DemoStrategy(Strategy):
     def __init__(self, account: Account):
@@ -68,38 +71,74 @@ class DemoStrategy(Strategy):
     def on_trade(self, event: OKXTrades):
         print(f"Trade event: {event}")
         if self.flag == 0:
-            order = Order.market_order('BTC-USDT-SWAP', 1)
+            # 【修改 2】使用 create_market 工厂方法
+            order = Order.create_market('BTC-USDT-SWAP', 1)
             self.send_order(order)
             print(f"Created order: {order}")
             self.flag = 1
         if self.flag == 1:
-            order = Order.limit_order('BTC-USDT-SWAP', -1, 115710)
+            # 【修改 3】使用 create_limit 工厂方法
+            order = Order.create_limit('BTC-USDT-SWAP', -1, 115710)
             self.send_order(order)
             print(f"Created order: {order}")
             self.flag = 2
-        
+
+    def on_order(self, order: Order):
+        if self.flag == 2:
+            if not self.account.get_orders() and not self.account.get_positions():
+                print("All orders filled and positions closed. Stopping strategy.")
+                raise RuntimeError("Stop Strategy")
 
     def start(self, event_engine: EventEngine):
         self.event_engine = event_engine
         event_engine.register(OKXTrades, self.on_trade)
+        event_engine.register(Order, self.on_order)
 
     def stop(self):
         pass
 
 def main():
     ds = get_ds()
-    matcher =OKXMatcher()
+
+    matcher = OKXMatcher()
     account = OKXAccount(initial_balance=1000000)
     strategy = DemoStrategy(account=account)
+    
     path = Path(__file__).parent.parent
     trader_recorder = TradeRecorder(path=path / "tmp/okx_trades_demo.csv", account=account)
-    account_recorder = AccountRecorder(path=path / "tmp/okx_account_demo.csv", account=account, interval=1000)
-    backtest_engine = BacktestEngine(datasets=[ds], delay=10)
+    
+    # 【修复】AccountRecorder 移除 interval
+    account_recorder = AccountRecorder(path=path / "tmp/okx_account_demo.csv", account=account, interval= 5 * 60 * 1000)
+    
+    delay_model_server = FixedDelayModel(delay=10)
+    delay_model_client = FixedDelayModel(delay=10)
+    server2client_bus = DelayBus(delay_model_server)
+    client2server_bus = DelayBus(delay_model_client)
+
+    # 监听 Trades 和 Order
+    # 修改 demo.py 中的这一行
+    # 加入 OKXFundingRate，这样第一条数据进去你就能看到
+    # 如果想看 Timer 刷屏，也可以加入 Timer (hft_backtest.timer)
+    event_printer = EventPrinter(tips="[Engine]", event_types=[OKXTrades, Order])
+    
+    backtest_engine = BacktestEngine(
+        dataset=ds,
+        server2client_delaybus=server2client_bus,
+        client2server_delaybus=client2server_bus,
+        timer_interval=1000
+    )
+    
+    # Printer 加在 Server 端，这样能在数据刚进入引擎时就看到
+    backtest_engine.add_component(event_printer, is_server=True)
     backtest_engine.add_component(matcher, is_server=True)
+    
     backtest_engine.add_component(account, is_server=False)
-    backtest_engine.add_component(strategy, is_server=False)
     backtest_engine.add_component(trader_recorder, is_server=False)
     backtest_engine.add_component(account_recorder, is_server=False)
+    # 策略要放到最后，因为会通过raise来结束，其他组件需要先运行完，否则记录可能不会正常生成
+    backtest_engine.add_component(strategy, is_server=False)
+    
+    
     backtest_engine.run()
 
 if __name__ == "__main__":

@@ -12,6 +12,6 @@ class Strategy(Component, ABC):
 
     def send_order(self, order: Order):
         """发送订单到事件引擎"""
-        assert order.is_created() or order.is_cancel_order()
+        assert order.is_created or order.is_cancel_order
         order.state = Order.ORDER_STATE_SUBMITTED
         self.event_engine.put(order)

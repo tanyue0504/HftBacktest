@@ -1,6 +1,8 @@
 import math
 from itertools import chain
+from typing import Optional
 
+# 确保这些组件在 __init__.py 中被正确暴露
 from hft_backtest import Dataset, Component, EventEngine, DelayBus, Timer
 
 class BacktestEngine:
@@ -13,7 +15,7 @@ class BacktestEngine:
         dataset: Dataset, 
         server2client_delaybus: DelayBus,
         client2server_delaybus: DelayBus,
-        timer_interval: int = 1000,  # 定时器间隔 (ms)
+        timer_interval: Optional[int] = 1000,  # 改为 Optional，支持 None (禁用 Timer)
     ):
         # 初始化内部变量
         self.server_engine = EventEngine()
@@ -30,11 +32,11 @@ class BacktestEngine:
         self.client2server_bus = client2server_delaybus
 
         # 【核心修改】在此处进行"接线" (Wiring)
-        # ServerBus 负责把 Server 的事件搬运给 Client
+        # 1. 告诉 Bus 它的目的地是谁
         self.server2client_bus.set_target_engine(self.client_engine)
         self.client2server_bus.set_target_engine(self.server_engine)
 
-        # 注册组件：DelayBus 需要监听它的"源头"
+        # 2. 注册组件：DelayBus 需要监听它的"源头"
         # server2client 监听 Server，所以它是 Server 的组件
         self.add_component(self.server2client_bus, is_server=True)
         # client2server 监听 Client，所以它是 Client 的组件
@@ -52,8 +54,14 @@ class BacktestEngine:
             data_iterator = iter(self.dataset)
             current_data = next(data_iterator, None)
 
-            next_timer = current_data.timestamp
+            # --- Timer 初始化逻辑 ---
+            # 如果 dataset 为空或 interval 为 None，则 Timer 设为无穷大（不触发）
+            if current_data is not None and self.timer_interval is not None:
+                next_timer = current_data.timestamp
+            else:
+                next_timer = math.inf
 
+            # --- 主循环 ---
             while current_data is not None:
                 # 1. 获取四个时间点的最小值（事件竞价）：
                 #    A. 下一条行情数据
@@ -83,8 +91,14 @@ class BacktestEngine:
 
                 # 情况 C: 处理 Timer
                 if next_timer <= min_t:
+                    # Timer 事件通常推送到 Client 端 (驱动策略/记录器)
                     self.client_engine.put(Timer(next_timer))
-                    next_timer += self.timer_interval
+                    
+                    # 只有当 interval 有效时才更新，否则设为 inf
+                    if self.timer_interval is not None:
+                        next_timer += self.timer_interval
+                    else:
+                        next_timer = math.inf
                     continue
 
                 # 情况 D: 处理行情数据

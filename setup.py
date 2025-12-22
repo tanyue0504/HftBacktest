@@ -78,6 +78,11 @@ extensions = [
         language="c++",
         define_macros=define_macros, # <--- 新增
     ),
+    Extension(
+        "hft_backtest.okx.event",  # <--- 新模块
+        ["hft_backtest/okx/event.pyx"],
+        define_macros=define_macros,
+    ),
 ]
 
 setup(

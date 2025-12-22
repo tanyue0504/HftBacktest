@@ -83,6 +83,17 @@ extensions = [
         ["hft_backtest/okx/event.pyx"],
         define_macros=define_macros,
     ),
+    Extension(
+        "hft_backtest.account",
+        ["hft_backtest/account.pyx"],
+        define_macros=define_macros,
+    ),
+    # 添加 OKX Account
+    Extension(
+        "hft_backtest.okx.account",
+        ["hft_backtest/okx/account.pyx"],
+        define_macros=define_macros,
+    ),
 ]
 
 setup(

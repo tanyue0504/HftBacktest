@@ -33,6 +33,7 @@ extensions = [
         language="c++",
     ),
     Extension("hft_backtest.reader", ["hft_backtest/reader.pyx"]),
+    Extension("hft_backtest.backtest", ["hft_backtest/backtest.pyx"], language="c++"),
 ]
 
 setup(

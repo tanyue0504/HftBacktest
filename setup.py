@@ -1,6 +1,7 @@
 # 运行时执行以下命令以编译 Cython 模块
 # python setup.py build_ext --inplace
 # HFT_DEBUG=1 python setup.py build_ext --inplace
+# rm -rf build/ hft_backtest/*.so hft_backtest/*.cpp hft_backtest/*.c
 # 生成pyi文件 
 # stubgen -m hft_backtest.order -o .
 # stubgen -m hft_backtest.event -o .
@@ -21,12 +22,15 @@ compiler_directives = {
 
 # 2. 定义宏列表
 define_macros = []
-
 if DEBUG_MODE:
     print("⚠️  BUILDING IN DEBUG MODE (Linetrace Enabled) ⚠️")
-    # 开启行级追踪 (告诉 Cython 生成追踪代码)
+    
+    # 【Python 3.10 黄金配置】
     compiler_directives['linetrace'] = True
-    # 告诉 C 编译器开启追踪宏 (告诉 C 编译器编译这些追踪代码)
+    compiler_directives['binding'] = True   # <--- 3.10 必须开启 binding！
+    # compiler_directives['profile'] = True # <--- 删掉或注释掉这行，不需要
+    
+    # 宏定义
     define_macros.append(('CYTHON_TRACE', '1'))
     define_macros.append(('CYTHON_TRACE_NOGIL', '1'))
 else:

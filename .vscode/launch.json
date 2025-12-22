@@ -2,11 +2,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Debug Demo",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/test/okx/demo.py",
-            "console": "integratedTerminal",
             "justMyCode": false  // 【关键】必须设为 false，否则调试器会跳过库代码
         }
     ]

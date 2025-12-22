@@ -1,0 +1,9 @@
+[build-system]
+# 这里定义了运行 setup.py 之前必须先安装的包
+requires = [
+    "setuptools",
+    "wheel",
+    "Cython",
+    "numpy"
+]
+build-backend = "setuptools.build_meta"

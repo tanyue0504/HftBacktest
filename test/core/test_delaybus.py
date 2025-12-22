@@ -33,7 +33,9 @@ def test_delay_bus_logic():
     # 5. 推进时间到 110 (正好触发)
     bus.process_until(110)
     assert len(received_events) == 1
-    assert received_events[0] == e1
+    assert received_events[0].timestamp == e1.timestamp
+    assert received_events[0].source == e1.source
+    assert received_events[0].producer == e1.producer
     
     # 验证目标引擎时间是否被同步（防止时间倒流）
     assert target.timestamp == 110

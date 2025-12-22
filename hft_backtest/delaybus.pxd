@@ -17,7 +17,7 @@ cdef class FixedDelayModel(LatencyModel):
     cdef long delay
 
 cdef class DelayBus(Component):
-    cdef EventEngine target_engine
+    cdef public EventEngine target_engine
     cdef LatencyModel model
     
     cdef unsigned long _source_id

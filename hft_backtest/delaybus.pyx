@@ -120,7 +120,7 @@ cdef class DelayBus(Component):
         cdef BusItem top = self._queue.front()
         cdef Event event = <Event>top.event
         
-        # 2. 移除并保持堆序
+        # 2. 移除并保持堆序 (原逻辑不变)
         cdef BusItem last = self._queue.back()
         self._queue.pop_back()
         
@@ -129,13 +129,26 @@ cdef class DelayBus(Component):
             self._sift_down(0)
             
         # 3. 推送给 Target Engine
-        # 同步目标引擎时间，防止时间倒流
+        # 同步目标引擎时间
         if self.target_engine.timestamp < top.trigger_time:
             self.target_engine.timestamp = top.trigger_time
-            
-        self.target_engine.put(event)
+
+        # 【核心修复 START】================================================
+        # 解决引用共享问题：进行物理克隆
+        # 使用 derive() 进行内存拷贝 (memcpy)，此时 payload (如 price, qty) 已经被复制
+        cdef Event event_copy = event.derive()
+
+        # 还原元数据
+        # derive() 把这些设为了0，但作为“网线”，我们需要保留原始发件信息
+        event_copy.timestamp = event.timestamp
+        event_copy.source = event.source
+        event_copy.producer = event.producer
         
-        # [关键] 释放引用计数
+        # 将副本推送到目标引擎，原件 (event) 留在当前作用域直至销毁
+        self.target_engine.put(event_copy)
+        # 【核心修复 END】==================================================
+        
+        # 释放堆中持有的原事件引用
         Py_DECREF(event)
 
     cdef void _sift_up(self, size_t idx):

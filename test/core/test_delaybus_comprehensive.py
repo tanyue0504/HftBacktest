@@ -54,7 +54,9 @@ class TestDelayBusComprehensive:
         # T=110 时处理，应该收到
         bus.process_until(110)
         assert len(received) == 1
-        assert received[0] == e1
+        assert received[0].timestamp == e1.timestamp
+        assert received[0].source == e1.source
+        assert received[0].producer == e1.producer
         assert target.timestamp == 110  # 目标时间应被推进
 
     def test_heap_ordering_jitter(self, engines):
@@ -94,7 +96,9 @@ class TestDelayBusComprehensive:
         
         # 应该只收到了 Event B
         assert len(received) == 1
-        assert received[0] == eb
+        assert received[0].timestamp == eb.timestamp
+        assert received[0].source == eb.source
+        assert received[0].producer == eb.producer
         assert target.timestamp == 30
         
         # 处理到 T=120
@@ -102,7 +106,9 @@ class TestDelayBusComprehensive:
         
         # 现在收到了 Event A
         assert len(received) == 2
-        assert received[1] == ea
+        assert received[1].timestamp == ea.timestamp
+        assert received[1].source == ea.source
+        assert received[1].producer == ea.producer
         assert target.timestamp == 110
 
     def test_source_filtering(self, engines):
@@ -135,7 +141,9 @@ class TestDelayBusComprehensive:
         
         # 结果：只收到 e1，e2 被丢弃
         assert len(received) == 1
-        assert received[0] == e1
+        assert received[0].timestamp == e1.timestamp
+        assert received[0].source == e1.source
+        assert received[0].producer == e1.producer
 
     def test_target_time_sync(self, engines):
         """测试 4: 目标引擎时间同步逻辑"""

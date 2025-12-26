@@ -1,0 +1,26 @@
+from typing import List
+from hft_backtest.matcher import MatchEngine
+from hft_backtest.event_engine import EventEngine
+from hft_backtest.order import Order
+from hft_backtest.okx.event import OKXBookticker, OKXTrades, OKXDelivery
+
+class OKXMatcherNew(MatchEngine):
+    # Public attributes (defined in .pxd)
+    symbol: str
+    taker_fee: float
+    maker_fee: float
+    event_engine: EventEngine
+    best_bid_price_int: int
+    best_ask_price_int: int
+    buy_book: List[Order]
+    sell_book: List[Order]
+    PRICE_SCALAR: int
+
+    def __init__(self, symbol: str, taker_fee: float = ..., maker_fee: float = ...) -> None: ...
+    
+    # CPDEF methods
+    def start(self, engine: EventEngine) -> None: ...
+    def on_order(self, order: Order) -> None: ...
+    def on_bookticker(self, event: OKXBookticker) -> None: ...
+    def on_trade(self, event: OKXTrades) -> None: ...
+    def on_delivery(self, event: OKXDelivery) -> None: ...

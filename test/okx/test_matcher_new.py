@@ -14,7 +14,8 @@ class MockEventEngine(EventEngine):
     def put(self, event):
         self.queue.append(event)
     
-    def register(self, event_type, handler):
+    # 【修正】增加 ignore_self 参数以匹配基类签名
+    def register(self, event_type, handler, ignore_self=False):
         pass
     
     def global_register(self, handler, ignore_self=False, is_senior=False):

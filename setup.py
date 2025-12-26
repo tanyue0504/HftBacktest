@@ -55,6 +55,11 @@ extensions = [
         define_macros=define_macros, # <--- 新增
     ),
     Extension(
+        "hft_backtest.matcher",  # <--- 新增 MatchEngine 基类
+        ["hft_backtest/matcher.pyx"],
+        define_macros=define_macros,
+    ),
+    Extension(
         "hft_backtest.delaybus", 
         ["hft_backtest/delaybus.pyx"],
         # include_dirs=[numpy.get_include()],

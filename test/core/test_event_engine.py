@@ -1,145 +1,166 @@
 import pytest
-from hft_backtest.event_engine import EventEngine
+import sys
 from hft_backtest.event import Event
+from hft_backtest.event_engine import EventEngine
 
-# 定义用于测试的子事件
-class TypeAEvent(Event):
+# 定义一些测试用的子类
+class MarketEvent(Event):
     pass
 
-class TypeBEvent(Event):
+class OrderEvent(Event):
     pass
 
-def test_basic_handling():
-    """测试基础的注册和事件分发"""
-    engine = EventEngine()
-    received = []
+class TestEventEngine:
+    def test_clock_update(self):
+        """测试逻辑时钟更新机制"""
+        engine = EventEngine()
+        assert engine.timestamp == 0
+        
+        # 1. 推送带时间的事件 -> 更新引擎时间
+        e1 = Event(100)
+        engine.put(e1)
+        assert engine.timestamp == 100
+        assert e1.timestamp == 100
+        
+        # 2. 推送时间较早的事件 -> 引擎时间不回退
+        e2 = Event(90)
+        engine.put(e2)
+        assert engine.timestamp == 100  # 保持 100
+        assert e2.timestamp == 90       # 事件时间保持原样
+        
+        # 3. 推送无时间事件 -> 继承引擎时间
+        e3 = Event(0)
+        engine.put(e3)
+        assert engine.timestamp == 100
+        assert e3.timestamp == 100      # 被赋值为 100
 
-    def on_event(event):
-        received.append(event)
+    def test_dispatch_order(self):
+        """测试分发顺序：Senior -> Specific -> Junior"""
+        engine = EventEngine()
+        result = []
+        
+        def handler_senior(e): result.append("senior")
+        def handler_spec(e): result.append("spec")
+        def handler_junior(e): result.append("junior")
+        
+        engine.global_register(handler_senior, is_senior=True)
+        engine.global_register(handler_junior, is_senior=False)
+        engine.register(Event, handler_spec)
+        
+        engine.put(Event(1))
+        
+        assert result == ["senior", "spec", "junior"]
 
-    engine.register(TypeAEvent, on_event)
-    
-    # 推送事件
-    evt = TypeAEvent(100)
-    engine.put(evt)
+    def test_no_polymorphic_dispatch(self):
+        """验证：不支持多态分发 (父类监听器收不到子类事件)"""
+        engine = EventEngine()
+        received = []
+        
+        def handler(e): received.append(e)
+        
+        # 注册监听 Event
+        engine.register(Event, handler)
+        
+        # 发送 MarketEvent (继承自 Event)
+        engine.put(MarketEvent(1))
+        
+        # 预期：收不到
+        assert len(received) == 0
+        
+        # 发送 Event
+        engine.put(Event(1))
+        assert len(received) == 1
 
-    assert len(received) == 1
-    assert received[0] == evt
-    assert engine.timestamp == 100
+    def test_ignore_self_behavior(self):
+        """
+        深度测试 ignore_self 的行为边界
+        """
+        engine = EventEngine()
+        results = []
 
-def test_execution_order():
-    """测试监听器执行顺序：Senior Global -> Specific -> Junior Global"""
-    engine = EventEngine()
-    order = []
+        class Strategy:
+            def on_trigger(self, event):
+                # 这个方法产生事件
+                new_event = Event(0)
+                # 这里的 producer 会被标记为 on_trigger 的 ID
+                engine.put(new_event)
+            
+            def on_echo_default(self, event):
+                # 默认 ignore_self=True
+                results.append("echo_default")
+                
+            def on_echo_force(self, event):
+                # 强制 ignore_self=False
+                results.append("echo_receive")
 
-    def senior_listener(event):
-        order.append("senior")
+        s = Strategy()
+        
+        # 1. 注册 on_trigger 监听 MarketEvent
+        engine.register(MarketEvent, s.on_trigger)
+        
+        # 2. 注册 echo 监听 Event (on_trigger 发出的就是 Event)
+        # 注意：这里我们测试的是“不同方法”之间的隔离性
+        engine.register(Event, s.on_echo_default, ignore_self=True)
+        engine.register(Event, s.on_echo_force, ignore_self=False)
+        
+        # 3. 触发
+        engine.put(MarketEvent(1))
+        
+        # 分析：
+        # MarketEvent -> on_trigger -> put(Event)
+        # Event.producer == id(on_trigger)
+        # 
+        # 分发 Event:
+        # Check on_echo_default: ignore_self=True. 
+        #     Condition: producer(id_trigger) == listener(id_echo_default)?
+        #     NO. They are different methods.
+        #     Result: on_echo_default Should run.
+        
+        assert "echo_default" in results
+        assert "echo_receive" in results
+        
+        # 结论：ignore_self 只能防止递归调用同一个 handler，不能隔离组件内的不同 handler
 
-    def specific_listener(event):
-        order.append("specific")
+    def test_ignore_self_recursion(self):
+        """测试 ignore_self 确实能防止自递归"""
+        engine = EventEngine()
+        count = [0]
+        
+        def recursive_handler(event):
+            count[0] += 1
+            if count[0] < 5:
+                # 发出一个同样类型的事件
+                engine.put(Event(0))
+        
+        # 注册并开启 ignore_self (默认)
+        engine.register(Event, recursive_handler, ignore_self=True)
+        
+        engine.put(Event(1))
+        
+        # 如果 ignore_self 工作，recursive_handler 发出的事件会被它自己忽略
+        # 所以 count 应该是 1
+        assert count[0] == 1
 
-    def junior_listener(event):
-        order.append("junior")
-
-    # 注册不同优先级的监听器
-    engine.global_register(senior_listener, is_senior=True)
-    engine.register(TypeAEvent, specific_listener)
-    engine.global_register(junior_listener, is_senior=False)
-
-    engine.put(TypeAEvent(1))
-
-    assert order == ["senior", "specific", "junior"]
-
-def test_timestamp_logic():
-    """测试时间戳更新逻辑"""
-    engine = EventEngine()
-    engine.timestamp = 500
-
-    # 1. 传入 0 时间戳事件 -> 应该继承引擎时间
-    evt1 = TypeAEvent(0)
-    engine.put(evt1)
-    assert evt1.timestamp == 500
-    assert engine.timestamp == 500
-
-    # 2. 传入更小的时间戳 -> 应该保留原时间戳，且不更新引擎时间 (历史回放或乱序数据场景)
-    evt2 = TypeAEvent(400)
-    engine.put(evt2)
-    assert evt2.timestamp == 400
-    assert engine.timestamp == 500
-
-    # 3. 传入更大的时间戳 -> 应该更新引擎时间
-    evt3 = TypeAEvent(600)
-    engine.put(evt3)
-    assert evt3.timestamp == 600
-    assert engine.timestamp == 600
-
-def test_ignore_self_true():
-    """测试 ignore_self=True (默认): 监听器不应收到自己发出的事件"""
-    engine = EventEngine()
-    received_b = []
-
-    def chain_reaction_listener(event):
-        # 收到 A 后发出 B
-        if isinstance(event, TypeAEvent):
-            engine.put(TypeBEvent(event.timestamp + 1))
-        # 收到 B 后记录
-        elif isinstance(event, TypeBEvent):
-            received_b.append(event)
-
-    # 注册监听器同时监听 A 和 B
-    # 对于 B 事件，ignore_self=True 是默认行为
-    engine.register(TypeAEvent, chain_reaction_listener)
-    engine.register(TypeBEvent, chain_reaction_listener, ignore_self=True)
-
-    engine.put(TypeAEvent(1))
-
-    # 结果：监听器发出了 B，但因为它被注册为忽略自己发出的 B，所以 received_b 应该为空
-    assert len(received_b) == 0
-
-def test_ignore_self_false():
-    """测试 ignore_self=False: 监听器可以收到自己发出的事件"""
-    engine = EventEngine()
-    received_b = []
-
-    def chain_reaction_listener(event):
-        if isinstance(event, TypeAEvent):
-            engine.put(TypeBEvent(event.timestamp + 1))
-        elif isinstance(event, TypeBEvent):
-            received_b.append(event)
-
-    engine.register(TypeAEvent, chain_reaction_listener)
-    # 显式允许接收自己产生的事件
-    engine.register(TypeBEvent, chain_reaction_listener, ignore_self=False)
-
-    engine.put(TypeAEvent(1))
-
-    # 结果：应该收到 B
-    assert len(received_b) == 1
-    assert isinstance(received_b[0], TypeBEvent)
-
-def test_source_tagging():
-    """测试事件来源(Source)标注"""
-    engine = EventEngine()
-    
-    def on_event(e):
-        pass
-    
-    engine.register(TypeAEvent, on_event)
-    
-    evt = TypeAEvent(1)
-    assert evt.source == 0 # 初始为 0/None
-    
-    engine.put(evt)
-    
-    # 引擎应该将 source 标记为引擎的 id
-    assert evt.source == id(engine)
+    def test_exception_crash(self):
+        """测试异常会中断引擎"""
+        engine = EventEngine()
+        
+        def bad_handler(e):
+            raise ValueError("Boom")
+            
+        def good_handler(e):
+            # 这个不应该被执行，因为前面炸了
+            e.timestamp = 9999
+            
+        engine.register(Event, bad_handler)
+        engine.register(Event, good_handler) # 注意：list顺序，append在后
+        
+        e = Event(1)
+        with pytest.raises(ValueError, match="Boom"):
+            engine.put(e)
+            
+        # 验证 good_handler 没有运行
+        assert e.timestamp == 1
 
 if __name__ == "__main__":
-    # 手动运行测试
-    test_basic_handling()
-    test_execution_order()
-    test_timestamp_logic()
-    test_ignore_self_true()
-    test_ignore_self_false()
-    test_source_tagging()
-    print("All tests passed!")
+    sys.exit(pytest.main(["-v", __file__]))

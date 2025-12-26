@@ -146,8 +146,8 @@ class OKXMatcherNew(MatchEngine):
         if event.symbol != self.symbol:
             return
         # 更新最佳买卖价
-        self.best_bid_price_int = self.to_int_price(event.best_bid_price)
-        self.best_ask_price_int = self.to_int_price(event.best_ask_price)
+        self.best_bid_price_int = self.to_int_price(event.bid_price_1)
+        self.best_ask_price_int = self.to_int_price(event.ask_price_1)
         # 生成price -> quantity映射
         ask_prices = self.get_ask_prices(event)
         ask_qtys = self.get_ask_qtys(event)
@@ -190,7 +190,7 @@ class OKXMatcherNew(MatchEngine):
                 order:Order
                 if order.price_int < self.best_ask_price_int:
                     self.fill_order(order, order.price, is_taker=False)
-                if order.price_int == event.price_int:
+                if order.price_int == self.best_ask_price_int:
                     order.traded += event.size
                 if (order.rank - order.traded) <= -order.quantity:
                     self.fill_order(order, order.price, is_taker=False)
@@ -209,7 +209,7 @@ class OKXMatcherNew(MatchEngine):
                 if order.price_int > self.best_bid_price_int:
                     self.fill_order(order, order.price, is_taker=False)
                     continue
-                if order.price_int == event.price_int:
+                if order.price_int == self.best_bid_price_int:
                     order.traded += event.size
                 if (order.rank - order.traded) <= -order.quantity:
                     self.fill_order(order, order.price, is_taker=False)

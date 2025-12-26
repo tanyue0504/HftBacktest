@@ -70,7 +70,7 @@ class AccountRecorder(Recorder):
         super().__init__(path, account)
         self.interval = interval
         self.current_timestamp = 0
-        self.last_timestamp = 0
+        self.last_timestamp = -interval
         self.buffer = []
         self.buffer_size = buffer_size
         self.last_state_dict = {

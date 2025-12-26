@@ -31,7 +31,7 @@ cdef class PyDatasetWrapper(DataReader):
         try:
             # 这里虽然会回调 Python，但这是兼容性必须的代价
             # 只有最底层读取会有这个开销，合并层不会有
-            return <Event>next(self._iter)
+            return <Event?>next(self._iter)
         except StopIteration:
             return None
         except Exception as e:

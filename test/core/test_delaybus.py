@@ -5,7 +5,7 @@ from hft_backtest.event_engine import EventEngine
 from hft_backtest.delaybus import DelayBus, FixedDelayModel, LatencyModel
 
 # 定义用于测试的 Event 子类，携带额外的测试数据
-class TestEvent(Event):
+class MockEvent(Event):
     def __init__(self, timestamp, delay_val=0):
         super().__init__(timestamp)
         self.extra_delay = delay_val
@@ -131,10 +131,10 @@ class TestDelayBus:
         bus.set_target_engine(target)
         
         # 事件 A: T=100, Delay=50 -> Arrive=150
-        ea = TestEvent(100, delay_val=50)
+        ea = MockEvent(100, delay_val=50)
         
         # 事件 B: T=110, Delay=10 -> Arrive=120
-        eb = TestEvent(110, delay_val=10)
+        eb = MockEvent(110, delay_val=10)
         
         source.put(ea)
         source.put(eb)
@@ -143,7 +143,7 @@ class TestDelayBus:
         assert bus.next_timestamp == 120
         
         received = []
-        target.register(TestEvent, lambda x: received.append(x))
+        target.register(MockEvent, lambda x: received.append(x))
         
         # 1. 推进到 130
         bus.process_until(130)

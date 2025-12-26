@@ -91,10 +91,9 @@ extensions = [
         ["hft_backtest/okx/account.pyx"],
         define_macros=define_macros,
     ),
-    # 新增 OKX Matcher New
     Extension(
-        "hft_backtest.okx.matcher_new",
-        ["hft_backtest/okx/matcher_new.pyx"],
+        "hft_backtest.okx.matcher",
+        ["hft_backtest/okx/matcher.pyx"],
         define_macros=define_macros,
     ),
 ]

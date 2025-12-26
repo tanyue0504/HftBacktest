@@ -1,237 +1,153 @@
+import sys
 import pytest
-from unittest.mock import MagicMock
-from hft_backtest import Order, EventEngine
-from hft_backtest.okx.matcher import OKXMatcher
+from collections import deque
+from hft_backtest import EventEngine, Order
 from hft_backtest.okx.event import OKXBookticker, OKXTrades, OKXDelivery
+from hft_backtest.okx.matcher import OKXMatcher
 
-# 假设 Order.SCALER 是 1e8
-SCALER = Order.SCALER
+# 【关键修复】必须继承 EventEngine
+class MockEventEngine(EventEngine):
+    def __init__(self):
+        super().__init__()
+        self.queue = deque()
+        self.strategies = []
+        # 添加 events 列表以便像 test_matcher.py 那样断言
+        self.events = []
+    
+    def put(self, event):
+        self.queue.append(event)
+        self.events.append(event)
+    
+    def register(self, event_type, handler, ignore_self=False):
+        pass
+    
+    def global_register(self, handler, ignore_self=False, is_senior=False):
+        pass
 
 class TestOKXMatcher:
-    
-    @pytest.fixture
-    def engine(self):
-        """Mock 事件引擎，用于捕获撮合结果"""
-        engine = MagicMock(spec=EventEngine)
-        engine.put = MagicMock()
-        return engine
+    def setup_method(self):
+        self.engine = MockEventEngine()
+        self.symbol = "BTC-USDT"
+        self.matcher = OKXMatcher(self.symbol)
+        self.matcher.start(self.engine)
+        
+        # 初始化默认盘口
+        self.matcher.best_bid_price_int = 100 * self.matcher.PRICE_SCALAR
+        self.matcher.best_ask_price_int = 101 * self.matcher.PRICE_SCALAR
 
-    @pytest.fixture
-    def matcher(self, engine):
-        matcher = OKXMatcher(taker_fee=0.0005, maker_fee=0.0002)
-        matcher.start(engine)
-        return matcher
-    
-    def create_order(self, order_id, symbol, direction, qty, price=0.0, type=Order.ORDER_TYPE_LIMIT):
-        """
-        兼容旧测试代码的辅助函数。
-        关键点：必须将 Order 状态设置为 SUBMITTED，否则 Matcher 会忽略它。
-        """
-        # 根据方向决定正负
-        signed_qty = qty if direction > 0 else -qty
-        
-        if type == Order.ORDER_TYPE_MARKET:
-            order = Order.create_market(symbol, signed_qty)
-        elif type == Order.ORDER_TYPE_TRACKING:
-             # 假设有 create_tracking
-             order = Order.create_tracking(symbol, signed_qty)
-        else:
-            order = Order.create_limit(symbol, signed_qty, price)
-        
-        # 模拟设置 Order ID (如果 Order 内部有 setter 或者直接属性赋值)
-        # order.order_id = order_id  # 取决于你的 Order 实现，有些是自动生成的
-        
-        # [CRITICAL FIX] 模拟策略发送订单，将状态改为 SUBMITTED
-        order.state = Order.ORDER_STATE_SUBMITTED
-        
-        # 假如你的 Order.create_* 会自动生成 ID，这里可能需要 hack 一下以匹配测试中的硬编码 ID
-        # 为了让测试里的 cancel_order(target_order_id=1) 生效，我们需要确保这里的 ID 是 1
-        # 这是一个由于 Mock 和硬编码导致的常见测试问题，这里强行赋值演示：
-        try:
-            order.order_id = order_id
-        except AttributeError:
-            pass # 如果 order_id 是只读属性，可能需要其他方式 mock
-            
-        return order
+    # --- Helper Methods ---
 
-    def create_ticker(self, symbol, best_bid, best_ask, qty=1.0):
-        """辅助函数：创建扁平的 OKXBookticker 对象"""
-        # 利用修改后带有默认参数的构造函数
-        ticker = OKXBookticker(timestamp=1, symbol=symbol)
-        
-        # 填充 25 档行情
-        for i in range(1, 26):
-            # Bid: 递减 (100, 99, 98...)
-            setattr(ticker, f"bid_price_{i}", best_bid - (i-1))
-            setattr(ticker, f"bid_amount_{i}", qty)
-            
-            # Ask: 递增 (101, 102, 103...)
-            setattr(ticker, f"ask_price_{i}", best_ask + (i-1))
-            setattr(ticker, f"ask_amount_{i}", qty)
-            
+    def create_ticker(self, bid, ask, bid_qty=1.0, ask_qty=1.0):
+        ticker = OKXBookticker(symbol=self.symbol)
+        ticker.bid_price_1 = bid
+        ticker.bid_amount_1 = bid_qty
+        ticker.ask_price_1 = ask
+        ticker.ask_amount_1 = ask_qty
+        for i in range(2, 6):
+            setattr(ticker, f"bid_price_{i}", bid - i * 0.1)
+            setattr(ticker, f"bid_amount_{i}", 1.0)
+            setattr(ticker, f"ask_price_{i}", ask + i * 0.1)
+            setattr(ticker, f"ask_amount_{i}", 1.0)
         return ticker
 
-    def test_limit_buy_maker(self, matcher, engine):
-        """测试：限价买单挂单 (Maker)"""
-        symbol = "BTC-USDT"
-        
-        # 1. 初始行情: Bid 100, Ask 105
-        ticker = self.create_ticker(symbol, 100.0, 105.0)
-        matcher.on_bookticker(ticker)
+    def create_trade(self, price, size, side):
+        return OKXTrades(symbol=self.symbol, price=price, size=size, side=side)
 
-        # 2. 下单: 买单 101 (优于当前 Bid 100, 但低于 Ask 105 -> 挂单)
-        order = self.create_order(1, symbol, 1, 1.0, 101.0)
-        # order = Order.create_limit(symbol, 1.0, 101.0)
-        matcher.on_order(order)
-
-        # 3. 再次推送行情触发撮合
-        matcher.on_bookticker(ticker)
-
-        # 验证: 订单应在 order_book 中
-        assert symbol in matcher.order_book
-        book = matcher.order_book[symbol][matcher.SIDE_BUY]
-        price_int = matcher.to_int_price(101.0)
-        assert price_int in book
-        assert 1 in book[price_int]
-        
-        # 检查 engine 调用: 收到 RECEIVED 状态
-        args, _ = engine.put.call_args
-        assert args[0].state == Order.ORDER_STATE_RECEIVED
-
-    def test_limit_buy_taker(self, matcher, engine):
-        """测试：限价买单吃单 (Taker)"""
-        symbol = "BTC-USDT"
-        ticker = self.create_ticker(symbol, 100.0, 105.0)
-        matcher.on_bookticker(ticker)
-
-        # 2. 下单: 买单 106 (高于 Ask 105 -> 立即成交)
-        order = self.create_order(1, symbol, 1, 0.5, 106.0)
-        # order = Order.create_limit(symbol, 0.5, 106.0)
-        matcher.on_order(order)
-
-        # 3. 触发撮合
-        matcher.on_bookticker(ticker)
-
-        # 验证: engine 应收到 FILLED 事件
-        calls = engine.put.call_args_list
-        filled_event = calls[-1][0][0]
-        
-        assert filled_event.is_filled
-        assert filled_event.filled_price == 105.0
-        assert filled_event.commission_fee == (105.0 * 0.5) * matcher.taker_fee
-
-    def test_limit_sell_maker_then_fill(self, matcher, engine):
-        """测试：卖单挂单后，行情移动导致成交 (Passive Fill)"""
-        symbol = "BTC-USDT"
-        
-        ticker1 = self.create_ticker(symbol, 100.0, 105.0)
-        matcher.on_bookticker(ticker1)
-
-        # 2. 下卖单 102 (挂在中间)
-        order = self.create_order(1, symbol, -1, 1.0, 102.0)
-        # order = Order.create_limit(symbol, -1.0, 102.0)
-        matcher.on_order(order)
-        matcher.on_bookticker(ticker1) # 处理入队
-
-        # 验证已挂单
-        assert matcher.to_int_price(102.0) in matcher.order_book[symbol][matcher.SIDE_SELL]
-
-        # 3. 行情剧烈波动: Bid 涨到 103 (Crossed Market)
-        ticker2 = self.create_ticker(symbol, 103.0, 108.0)
-        matcher.on_bookticker(ticker2)
-
-        # 验证: 被动成交, Maker Fee
-        filled_event = engine.put.call_args[0][0]
-        assert filled_event.is_filled
-        assert filled_event.filled_price == 102.0
-        assert filled_event.commission_fee == (102.0 * 1.0) * matcher.maker_fee
-        assert len(matcher.order_book[symbol][matcher.SIDE_SELL]) == 0
-
-    def test_market_buy(self, matcher, engine):
-        """测试：市价买单"""
-        symbol = "BTC-USDT"
-        ticker = self.create_ticker(symbol, 100.0, 105.0)
-        matcher.on_bookticker(ticker)
-
-        # 市价买入
-        order = self.create_order(1, symbol, 1, 1.0, type=Order.ORDER_TYPE_MARKET)
-        # order = Order.create_market(symbol, 1.0)
-        matcher.on_order(order)
-        matcher.on_bookticker(ticker)
-
-        # 验证: 以 Ask 1 (105.0) 成交
-        filled_event = engine.put.call_args[0][0]
-        assert filled_event.is_filled
-        assert filled_event.filled_price == 105.0
-
-    def test_cancel_order(self, matcher, engine):
-        """测试：撤单逻辑"""
-        symbol = "BTC-USDT"
-        ticker = self.create_ticker(symbol, 100.0, 105.0)
-        matcher.on_bookticker(ticker)
-
-        # 1. 挂买单 99
-        order = self.create_order(1, symbol, 1, 1.0, 99.0)
-        # order = Order.create_limit(symbol, 1.0, 99.0)
-        matcher.on_order(order)
-        matcher.on_bookticker(ticker)
-        assert matcher.to_int_price(99.0) in matcher.order_book[symbol][matcher.SIDE_BUY]
-
-        # 2. 发送撤单指令
-        cancel_order = order.derive()
-        cancel_order.order_type = Order.ORDER_TYPE_CANCEL
-        matcher.on_order(cancel_order)
-
-        # 验证: 收到 CANCELED 事件
-        canceled_event = engine.put.call_args[0][0]
-        assert canceled_event.is_canceled
-        assert canceled_event.order_id == 1
-        assert len(matcher.order_book[symbol][matcher.SIDE_BUY][matcher.to_int_price(99.0)]) == 0
-
-    def test_trade_event_matching(self, matcher, engine):
-        """测试：Trade 事件触发被动成交"""
-        symbol = "BTC-USDT"
-        # 1. 挂买单 100
-        order = self.create_order(1, symbol, 1, 1.0, 100.0)
-        # order = Order.create_limit(symbol, 1.0, 100.0)
-        matcher.on_order(order)
-        
-        # 先推一个 Bookticker 让订单入书
-        ticker = self.create_ticker(symbol, 99.0, 101.0)
-        matcher.on_bookticker(ticker)
-        
-        # 2. 模拟市场发生一笔成交: 价格 100, Side=Sell (主动卖方砸盘)
-        trade = OKXTrades(timestamp=2, symbol=symbol, price=100.0, size=0.5, side='sell')
-        
-        matcher.on_trade(trade)
-
-        # 验证: 订单被成交
-        filled_event = engine.put.call_args[0][0]
-        assert filled_event.is_filled
-        assert filled_event.filled_price == 100.0
-        assert filled_event.commission_fee == (100.0 * 1.0) * matcher.maker_fee
-
-    def test_tracking_order(self, matcher, engine):
-        """测试：Tracking Order 转换为 Limit Order"""
-        symbol = "BTC-USDT"
-        ticker = self.create_ticker(symbol, 100.0, 105.0)
-        matcher.on_bookticker(ticker)
-
-        # 下一个 Buy Tracking Order (应该挂在 Bid 1 = 100)
-        order = self.create_order(1, symbol, 1, 1.0, type=Order.ORDER_TYPE_TRACKING)
-        # order = Order.create_tracking(symbol, 1.0)
+    def create_limit_order(self, price, qty, oid):
+        order_id = int(oid)
+        order = Order(order_id, Order.ORDER_TYPE_LIMIT, self.symbol, float(qty), float(price))
         order.state = Order.ORDER_STATE_SUBMITTED
-        matcher.on_order(order)
-        matcher.on_bookticker(ticker)
+        return order
 
-        # 验证: 订单进入 Order Book, 价格为 100.0
-        price_int = matcher.to_int_price(100.0)
-        assert price_int in matcher.order_book[symbol][matcher.SIDE_BUY]
+    def test_01_limit_maker_entry(self):
+        order = self.create_limit_order(99, 1.0, "1")
+        self.matcher.on_order(order)
         
-        stored_order = matcher.order_book[symbol][matcher.SIDE_BUY][price_int][1]
-        assert stored_order.price == 100.0
-        assert stored_order.is_limit_order
+        assert len(self.engine.queue) == 1
+        evt = self.engine.queue.pop()
+        assert evt.state == Order.ORDER_STATE_RECEIVED
+        assert len(self.matcher.buy_book) == 1
 
-if __name__ == "__main__":
-    import sys
-    sys.exit(pytest.main(["-v", "-s", __file__]))
+    def test_02_limit_taker_fill(self):
+        order = self.create_limit_order(102, 1.0, "2")
+        self.matcher.on_order(order)
+        
+        assert len(self.engine.queue) == 2
+        evt_recv = self.engine.queue.popleft()
+        evt_fill = self.engine.queue.popleft()
+        assert evt_fill.state == Order.ORDER_STATE_FILLED
+        assert evt_fill.filled_price == 101.0
+        assert len(self.matcher.buy_book) == 0
+
+    def test_03_trade_sweeping_passive(self):
+        # 1. Maker Order at 100
+        order = self.create_limit_order(100, 1.0, "3")
+        self.matcher.on_order(order)
+        
+        # 必须发送包含价格 100 的 Ticker 以初始化 Rank
+        ticker = self.create_ticker(100, 101, bid_qty=1.0)
+        self.matcher.on_bookticker(ticker)
+        
+        self.engine.queue.clear()
+        
+        # 2. Trade Event: Seller Taker 砸到 99
+        # 因为盘口显示 1.0，我们排在后面，所以需要 2.0 的量才能成交我们
+        trade = self.create_trade(99, 2.5, 'sell')
+        self.matcher.on_trade(trade)
+        
+        assert len(self.engine.queue) == 1
+        evt = self.engine.queue.pop()
+        assert evt.state == Order.ORDER_STATE_FILLED
+        assert evt.order_id == 3
+
+    def test_04_trade_logic_your_special_case(self):
+        self.matcher.best_bid_price_int = 90 * self.matcher.PRICE_SCALAR
+        self.matcher.best_ask_price_int = 100 * self.matcher.PRICE_SCALAR
+        
+        order = self.create_limit_order(95, 1.0, "4")
+        self.matcher.on_order(order)
+        
+        # 确保订单被"看见"
+        ticker = self.create_ticker(90, 100) # 这里不包含95，Rank 保持 10^9
+        self.matcher.on_bookticker(ticker)
+        
+        self.engine.queue.clear()
+        
+        # 2. Trade: Buyer Taker 成交在 92 (Ask 掉到了 92)
+        # 此时价格交叉，逻辑应该直接成交，无关排队
+        trade = self.create_trade(92, 0.5, 'buy')
+        self.matcher.on_trade(trade)
+        
+        assert len(self.engine.queue) == 1
+        evt = self.engine.queue.pop()
+        assert evt.state == Order.ORDER_STATE_FILLED
+        assert evt.filled_price == 92.0
+
+    def test_05_rank_queue_logic(self):
+        # 1. 初始化盘口: Bid 100 (Size 1000)
+        ticker = self.create_ticker(100, 101, bid_qty=1000, ask_qty=1000)
+        self.matcher.on_bookticker(ticker)
+        
+        # 2. 下单 10 (Maker)
+        order = self.create_limit_order(100, 10, "5")
+        self.matcher.on_order(order)
+        self.engine.queue.clear()
+        
+        # Rank 初始化 (排在 1000 后面)
+        self.matcher.on_bookticker(ticker)
+        
+        # 3. Trade 1: 消耗 500 (剩余前面还有 500)
+        trade1 = self.create_trade(100, 500, 'sell')
+        self.matcher.on_trade(trade1)
+        assert len(self.engine.queue) == 0
+        
+        # 4. Trade 2: 消耗 600 (总消耗 1100 > 前面 1000 + 自己 10)
+        trade2 = self.create_trade(100, 600, 'sell')
+        self.matcher.on_trade(trade2)
+        
+        assert len(self.engine.queue) == 1
+        evt = self.engine.queue.pop()
+        assert evt.state == Order.ORDER_STATE_FILLED
+
+if __name__ == '__main__':
+    sys.exit(pytest.main(["-v", __file__]))

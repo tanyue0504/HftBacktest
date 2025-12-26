@@ -10,21 +10,21 @@ from hft_backtest.event_engine cimport EventEngine
 from hft_backtest.okx.event cimport OKXBookticker, OKXTrades, OKXDelivery
 from libc.math cimport round, abs
 
-cdef class OKXMatcherNew(MatchEngine):
+cdef class OKXMatcher(MatchEngine):
     
     def __init__(self, str symbol, double taker_fee = 2e-4, double maker_fee = 1.1e-4):
         self.symbol = symbol
         self.taker_fee = taker_fee
         self.maker_fee = maker_fee
         
-        # 从 Python Order 类获取 SCALER，或者直接硬编码
+        # 从 Python Order 类获取 SCALER
         from hft_backtest.order import Order as PyOrder
         self.PRICE_SCALAR = PyOrder.SCALER
         
         self.INIT_RANK = 10.0**9
         
         self.best_bid_price_int = 0
-        self.best_ask_price_int = 9223372036854775807 # Max Long as inf
+        self.best_ask_price_int = 9223372036854775807 # Max Long
 
         self.buy_book = []
         self.sell_book = []
@@ -148,7 +148,7 @@ cdef class OKXMatcherNew(MatchEngine):
         self.best_bid_price_int = self.to_int_price(event.bid_price_1)
         self.best_ask_price_int = self.to_int_price(event.ask_price_1)
         
-        # 2. Extract top 5 levels for fast lookup (避免创建 dict)
+        # 2. Extract top 5 levels for fast lookup
         cdef long ask_p[5]
         cdef double ask_q[5]
         cdef long bid_p[5]
@@ -167,7 +167,6 @@ cdef class OKXMatcherNew(MatchEngine):
         bid_p[4] = self.to_int_price(event.bid_price_5); bid_q[4] = event.bid_amount_5
 
         # 3. Process Buy Book
-        # 复制列表以避免遍历时修改问题 (Python逻辑如此)
         cdef list orders_to_check = list(self.buy_book) 
         cdef Order order
         cdef double qty
@@ -183,14 +182,14 @@ cdef class OKXMatcherNew(MatchEngine):
                 self.fill_order(order, self.best_ask_price_int / <double>self.PRICE_SCALAR, False)
                 continue
             
-            # Find qty in bids (Lookup 5 levels)
+            # Find qty in bids
             qty = math.inf
             for i in range(5):
                 if bid_p[i] == p_int:
                     qty = bid_q[i]
                     break
             
-            # Queue simulation logic (Copied from python)
+            # Queue simulation
             front_cancel = max(0.0, order.rank - order.traded - qty)
             order.rank = order.rank - order.traded - front_cancel
             order.traded = 0.0
@@ -236,7 +235,6 @@ cdef class OKXMatcherNew(MatchEngine):
                     self.fill_order(order, order._price, False)
                 elif order._price_int_cache == self.best_ask_price_int:
                     order.traded += event.size
-                    # 原逻辑: if (order.rank - order.traded) <= -order.quantity:
                     if (order.rank - order.traded) <= -order._quantity:
                         self.fill_order(order, order._price, False)
             
@@ -245,7 +243,7 @@ cdef class OKXMatcherNew(MatchEngine):
                 if order._price_int_cache >= self.best_ask_price_int:
                     self.fill_order(order, self.best_ask_price_int / <double>self.PRICE_SCALAR, False)
                     
-        else: # side == 'sell' (taker sell, matches bids)
+        else: # side == 'sell'
             self.best_bid_price_int = price_int
             orders_to_check = list(self.sell_book)
             for order in orders_to_check:

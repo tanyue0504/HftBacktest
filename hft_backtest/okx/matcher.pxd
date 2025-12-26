@@ -4,7 +4,7 @@ from hft_backtest.order cimport Order
 from hft_backtest.event_engine cimport EventEngine
 from hft_backtest.okx.event cimport OKXBookticker, OKXTrades, OKXDelivery
 
-cdef class OKXMatcherNew(MatchEngine):
+cdef class OKXMatcher(MatchEngine):
     cdef public str symbol
     cdef public double taker_fee
     cdef public double maker_fee
@@ -21,7 +21,6 @@ cdef class OKXMatcherNew(MatchEngine):
     cdef public list sell_book
     
     # 内部常量
-    # 【修正】添加 public 修饰符，使 Python 测试代码可以访问
     cdef public long PRICE_SCALAR
     cdef double INIT_RANK
 

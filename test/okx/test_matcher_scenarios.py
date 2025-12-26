@@ -1,27 +1,28 @@
 import pytest
 from hft_backtest.okx.matcher import OKXMatcher
 from hft_backtest.okx.event import OKXTrades, OKXBookticker
-from hft_backtest import Order
+from hft_backtest import Order, EventEngine
 
-ORDER_TYPE_LIMIT = Order.ORDER_TYPE_LIMIT
-ORDER_TYPE_CANCEL = Order.ORDER_TYPE_CANCEL
 ORDER_STATE_FILLED = Order.ORDER_STATE_FILLED
 ORDER_STATE_CANCELED = Order.ORDER_STATE_CANCELED
 ORDER_STATE_SUBMITTED = Order.ORDER_STATE_SUBMITTED
+ORDER_TYPE_CANCEL = Order.ORDER_TYPE_CANCEL
 
-class MockEngine:
+# 【关键修复】必须继承 EventEngine
+class MockEngine(EventEngine):
     def __init__(self):
+        super().__init__()
         self.events = []
     
     def put(self, event):
         self.events.append(event)
         
-    def register(self, event_type, handler):
+    def register(self, event_type, handler, ignore_self=False):
         pass
 
 @pytest.fixture
 def matcher_env():
-    matcher = OKXMatcher()
+    matcher = OKXMatcher("BTC-USDT")
     engine = MockEngine()
     matcher.start(engine)
     return matcher, engine
@@ -37,8 +38,8 @@ def create_ticker(symbol, bid, ask):
     return ticker
 
 def test_matcher_limit_buy_full_fill(matcher_env):
-    """测试限价买单作为 Maker 被 Taker 卖单吃掉"""
     matcher, engine = matcher_env
+    # 初始盘口
     matcher.on_bookticker(create_ticker("BTC-USDT", 49000.0, 51000.0))
     
     order = Order.create_limit("BTC-USDT", 1.0, 50000.0)
@@ -46,8 +47,10 @@ def test_matcher_limit_buy_full_fill(matcher_env):
     order.state = ORDER_STATE_SUBMITTED
     matcher.on_order(order)
     
+    # 再次推送盘口以初始化 Rank
     matcher.on_bookticker(create_ticker("BTC-USDT", 49000.0, 51000.0))
     
+    # 成交价 49900 (穿价成交)
     trade = OKXTrades()
     trade.symbol = "BTC-USDT"
     trade.price = 49900.0
@@ -60,17 +63,12 @@ def test_matcher_limit_buy_full_fill(matcher_env):
     last_event = order_events[-1]
     
     assert last_event.order_id == 1
-    # 只要检查状态为 FILLED 即代表全成
     assert last_event.state == ORDER_STATE_FILLED
-    # 【修正】不再检查 traded 字段，因为它是内部排队计数器
 
 def test_matcher_limit_sell_crossing_fill(matcher_env):
-    """测试卖单被买单向上穿价吃掉 (应完全成交)"""
     matcher, engine = matcher_env
-    
     matcher.on_bookticker(create_ticker("BTC-USDT", 59000.0, 61000.0))
     
-    # 卖单 @ 60000，数量 2.0
     order = Order.create_limit("BTC-USDT", -2.0, 60000.0)
     order.order_id = 2
     order.state = ORDER_STATE_SUBMITTED
@@ -78,8 +76,6 @@ def test_matcher_limit_sell_crossing_fill(matcher_env):
     
     matcher.on_bookticker(create_ticker("BTC-USDT", 59000.0, 61000.0))
     
-    # 市场买单 @ 60001 (穿过了 60000)
-    # 在 All-or-Nothing 框架下，穿价即全成
     trade = OKXTrades()
     trade.symbol = "BTC-USDT"
     trade.price = 60001.0 
@@ -91,8 +87,6 @@ def test_matcher_limit_sell_crossing_fill(matcher_env):
     order_events = [e for e in engine.events if isinstance(e, Order)]
     last_event = order_events[-1]
     assert last_event.order_id == 2
-    
-    # 检查全成状态
     assert last_event.state == ORDER_STATE_FILLED
 
 def test_matcher_cancel_order(matcher_env):
@@ -121,8 +115,6 @@ def test_matcher_symbol_mismatch(matcher_env):
     order.state = ORDER_STATE_SUBMITTED
     matcher.on_order(order)
     
-    matcher.on_bookticker(create_ticker("BTC-USDT", 49000.0, 51000.0))
-    
     trade = OKXTrades()
     trade.symbol = "ETH-USDT"
     trade.price = 4000
@@ -131,5 +123,4 @@ def test_matcher_symbol_mismatch(matcher_env):
     
     order_events = [e for e in engine.events if isinstance(e, Order) and e.order_id == order.order_id]
     for e in order_events:
-        # 既没成交，也没状态变化
         assert e.state != ORDER_STATE_FILLED

@@ -4,8 +4,7 @@ from hft_backtest.event_engine import EventEngine
 from hft_backtest.order import Order
 from hft_backtest.okx.event import OKXBookticker, OKXTrades, OKXDelivery
 
-class OKXMatcherNew(MatchEngine):
-    # Public attributes (defined in .pxd)
+class OKXMatcher(MatchEngine):
     symbol: str
     taker_fee: float
     maker_fee: float
@@ -17,8 +16,6 @@ class OKXMatcherNew(MatchEngine):
     PRICE_SCALAR: int
 
     def __init__(self, symbol: str, taker_fee: float = ..., maker_fee: float = ...) -> None: ...
-    
-    # CPDEF methods
     def start(self, engine: EventEngine) -> None: ...
     def on_order(self, order: Order) -> None: ...
     def on_bookticker(self, event: OKXBookticker) -> None: ...

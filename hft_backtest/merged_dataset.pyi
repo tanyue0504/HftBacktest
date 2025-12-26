@@ -10,7 +10,7 @@ class MergedDataset(Iterator[Event]):
     使用最小堆算法将它们合并为一个按时间顺序排列的事件流。
     """
     
-    def __init__(self, *datasets: Dataset) -> None:
+    def __init__(self, datasets: list[Dataset]) -> None:
         """
         Args:
             *datasets: 变长参数，每个参数都应是一个实现了 __iter__ 并产生 Event 的 Dataset 对象。

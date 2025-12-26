@@ -1,106 +1,107 @@
 import pytest
-from hft_backtest import Event, MergedDataset
-# 移除 DataReader 的导入，MockDataset 不需要继承它
-# from hft_backtest.reader import DataReader
+import sys
+from hft_backtest.event import Event
+from hft_backtest.reader import DataReader, PyDatasetWrapper
+from hft_backtest.merged_dataset import MergedDataset
 
-class MockDataset:
-    """
-    模拟数据集，用于测试归并逻辑。
-    实现标准的 Python 迭代器协议 (__iter__, __next__)。
-    """
-    def __init__(self, timestamps, source_id):
-        self.timestamps = timestamps
-        self.source_id = source_id
-        self._iter = iter(timestamps)
+# 辅助函数：生成简单的 Event 列表
+def create_events(timestamps, source_id=0):
+    events = []
+    for ts in timestamps:
+        e = Event(ts)
+        e.source = source_id # 借用 source 字段来标记来源，验证稳定性
+        events.append(e)
+    return events
+
+class TestMergedDataset:
+    def test_basic_merge(self):
+        """测试基本的合并逻辑"""
+        # Source 0: 1, 3, 5
+        ds1 = create_events([1, 3, 5], source_id=0)
+        # Source 1: 2, 4, 6
+        ds2 = create_events([2, 4, 6], source_id=1)
         
-    def __iter__(self):
-        return self
+        # 注意：根据 .pyx 实现，必须传入 list
+        merged = MergedDataset([ds1, ds2])
         
-    def __next__(self):
+        result = list(merged)
+        timestamps = [e.timestamp for e in result]
+        
+        assert timestamps == [1, 2, 3, 4, 5, 6]
+        # 验证总数
+        assert len(result) == 6
+
+    def test_stability(self):
+        """测试排序稳定性：相同时间戳，靠前的源优先"""
+        # Source 0: 10, 20
+        ds1 = create_events([10, 20], source_id=0)
+        # Source 1: 10, 20
+        ds2 = create_events([10, 20], source_id=1)
+        
+        merged = MergedDataset([ds1, ds2])
+        result = list(merged)
+        
+        # 预期顺序: 10(s0), 10(s1), 20(s0), 20(s1)
+        assert len(result) == 4
+        assert result[0].timestamp == 10 and result[0].source == 0
+        assert result[1].timestamp == 10 and result[1].source == 1
+        assert result[2].timestamp == 20 and result[2].source == 0
+        assert result[3].timestamp == 20 and result[3].source == 1
+
+    def test_empty_sources(self):
+        """测试包含空源的情况"""
+        ds1 = create_events([1, 5], source_id=0)
+        ds2 = [] # 空源
+        ds3 = create_events([2, 3], source_id=2)
+        
+        merged = MergedDataset([ds1, ds2, ds3])
+        result = list(merged)
+        
+        timestamps = [e.timestamp for e in result]
+        assert timestamps == [1, 2, 3, 5]
+
+    def test_uneven_length(self):
+        """测试长度不一致"""
+        ds1 = create_events([1, 100], source_id=0)
+        ds2 = create_events([2, 3, 4, 5, 6], source_id=1)
+        
+        merged = MergedDataset([ds1, ds2])
+        timestamps = [e.timestamp for e in merged]
+        
+        assert timestamps == [1, 2, 3, 4, 5, 6, 100]
+
+    def test_init_interface_behavior(self):
+        """
+        验证 __init__ 接口行为。
+        目前的 .pyx 实现强制要求传入 list。
+        如果传入多个参数（像 .pyi 暗示的那样），应该会报错。
+        """
+        ds1 = create_events([1])
+        ds2 = create_events([2])
+        
+        # 尝试使用 varargs 调用 (如果 pyx 没改，这里会挂)
+        with pytest.raises(TypeError):
+            MergedDataset(ds1, ds2)
+            
+        # 正确用法
         try:
-            ts = next(self._iter)
-            # 构造 Event，设置 timestamp 和 source
-            evt = Event(ts)
-            evt.source = self.source_id
-            return evt
-        except StopIteration:
-            raise StopIteration
+            MergedDataset([ds1, ds2])
+        except TypeError:
+            pytest.fail("MergedDataset should accept a list of datasets")
 
-def test_basic_merge():
-    """测试基础归并逻辑：交叉时间戳"""
-    # Source A: 10, 30, 50
-    ds1 = MockDataset([10, 30, 50], source_id=1)
-    # Source B: 20, 40, 60
-    ds2 = MockDataset([20, 40, 60], source_id=2)
-    
-    # MergedDataset 会自动检测到 ds1/ds2 是 Python 对象，
-    # 并将其包装在 PyDatasetWrapper 中
-    merged = MergedDataset([ds1, ds2])
-    
-    events = list(merged)
-    timestamps = [e.timestamp for e in events]
-    sources = [e.source for e in events]
-    
-    # 验证时间戳顺序
-    assert timestamps == [10, 20, 30, 40, 50, 60]
-    # 验证来源
-    assert sources == [1, 2, 1, 2, 1, 2]
-
-def test_stability():
-    """测试稳定性：相同时间戳，应按数据集传入顺序优先"""
-    # Source A: 10, 20
-    ds1 = MockDataset([10, 20], source_id=1)
-    # Source B: 10, 20
-    ds2 = MockDataset([10, 20], source_id=2)
-    
-    merged = MergedDataset([ds1, ds2])
-    
-    events = list(merged)
-    # 预期顺序：10(src1), 10(src2), 20(src1), 20(src2)
-    
-    assert len(events) == 4
-    
-    assert events[0].timestamp == 10 and events[0].source == 1
-    assert events[1].timestamp == 10 and events[1].source == 2
-    
-    assert events[2].timestamp == 20 and events[2].source == 1
-    assert events[3].timestamp == 20 and events[3].source == 2
-
-def test_biased_fast_path():
-    """测试 Biased 优化：单数据源连续输出"""
-    # Source A: 1, 2, 3, 4
-    ds1 = MockDataset([1, 2, 3, 4], source_id=1)
-    # Source B: 10
-    ds2 = MockDataset([10], source_id=2)
-    
-    merged = MergedDataset([ds1, ds2])
-    
-    events = list(merged)
-    timestamps = [e.timestamp for e in events]
-    
-    assert timestamps == [1, 2, 3, 4, 10]
-
-def test_empty_handling():
-    """测试空数据集处理"""
-    ds1 = MockDataset([], source_id=1)
-    ds2 = MockDataset([10, 20], source_id=2)
-    
-    merged = MergedDataset([ds1, ds2])
-    
-    events = list(merged)
-    assert len(events) == 2
-    assert events[0].timestamp == 10
-    assert events[1].timestamp == 20
-
-def test_all_empty():
-    """测试全空数据集"""
-    ds1 = MockDataset([], source_id=1)
-    ds2 = MockDataset([], source_id=2)
-    
-    merged = MergedDataset([ds1, ds2])
-    
-    events = list(merged)
-    assert len(events) == 0
+    def test_nested_readers(self):
+        """测试传入的已经是 DataReader 的情况"""
+        ds1 = create_events([1, 3])
+        reader1 = PyDatasetWrapper(ds1)
+        
+        ds2 = create_events([2, 4])
+        # reader2 也是 DataReader
+        reader2 = PyDatasetWrapper(ds2)
+        
+        # MergedDataset 应该能识别它们已经是 Reader，不再二次包装
+        merged = MergedDataset([reader1, reader2])
+        timestamps = [e.timestamp for e in merged]
+        assert timestamps == [1, 2, 3, 4]
 
 if __name__ == "__main__":
-    pytest.main(["-v", __file__])
+    sys.exit(pytest.main(["-v", __file__]))

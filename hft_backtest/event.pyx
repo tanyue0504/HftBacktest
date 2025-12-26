@@ -90,6 +90,11 @@ cdef class Event:
 
     # 暴露给 Python 和 Cython 的 derive 接口
     cpdef Event derive(self):
+        """
+        Clones the event and resets header info.
+        WARNING: This uses raw memory copy. Python-level attributes (in __dict__) 
+        of subclasses are NOT safely handled.
+        """
         # 1. 调用通用拷贝
         cdef Event new_event = self._c_clone()
         

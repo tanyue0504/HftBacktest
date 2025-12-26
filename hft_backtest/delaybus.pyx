@@ -1,3 +1,4 @@
+# hft_backtest/delaybus.pyx
 # cython: language_level=3
 # cython: boundscheck=False
 # cython: wraparound=False
@@ -57,7 +58,6 @@ cdef class DelayBus(Component):
         
         # 注册为 Global Listener，接收所有事件，我们在 on_event 里过滤
         # is_senior=False (Junior)，确保在策略处理完事件后，我们再搬运事件
-        # 修复：显式传入 ignore_self=False，满足 C 函数调用规范
         engine.global_register(self.on_event, ignore_self=False, is_senior=False)
 
     cpdef stop(self):
@@ -68,16 +68,26 @@ cdef class DelayBus(Component):
         事件回调
         """
         # 1. 来源过滤：只处理 Source Engine 产生的事件
-        # 使用 C 级别的整数比较，极快
         if event.source != self._source_id:
             return
 
-        # 2. 计算延迟
+        # 【核心修复 START】================================================
+        # 在接收端立即进行物理克隆（Snapshot），切断引用。
+        # 这样即使发送方在延迟期间修改了原 event 对象，也不会影响已经在总线中的副本。
+        cdef Event snapshot = event.derive()
+        
+        # 还原元数据 (derive 通常会重置这些路由信息，作为网线我们需要保留)
+        snapshot.timestamp = event.timestamp
+        snapshot.source = event.source
+        snapshot.producer = event.producer
+        # 【核心修复 END】==================================================
+
+        # 2. 计算延迟 (使用原事件或副本均可，这里用原事件计算)
         cdef long delay = self.model.get_delay(event)
         cdef long trigger_time = event.timestamp + delay
         
-        # 3. 入堆
-        self._push(trigger_time, event)
+        # 3. 入堆 (注意：这里 push 的是 snapshot)
+        self._push(trigger_time, snapshot)
 
     cpdef process_until(self, long timestamp):
         """
@@ -110,6 +120,7 @@ cdef class DelayBus(Component):
         item.event = <PyObject*>event
         
         # [关键] 增加引用计数，防止 Event 在传输过程中被 GC
+        # 这里的 event 已经是 on_event 里传进来的 snapshot 了
         Py_INCREF(event)
         
         self._queue.push_back(item)
@@ -118,9 +129,10 @@ cdef class DelayBus(Component):
     cdef void _pop_and_process(self):
         # 1. 取出堆顶
         cdef BusItem top = self._queue.front()
+        # 此时取出的已经是之前 clone 好的 snapshot
         cdef Event event = <Event>top.event
         
-        # 2. 移除并保持堆序 (原逻辑不变)
+        # 2. 移除并保持堆序
         cdef BusItem last = self._queue.back()
         self._queue.pop_back()
         
@@ -133,22 +145,11 @@ cdef class DelayBus(Component):
         if self.target_engine.timestamp < top.trigger_time:
             self.target_engine.timestamp = top.trigger_time
 
-        # 【核心修复 START】================================================
-        # 解决引用共享问题：进行物理克隆
-        # 使用 derive() 进行内存拷贝 (memcpy)，此时 payload (如 price, qty) 已经被复制
-        cdef Event event_copy = event.derive()
-
-        # 还原元数据
-        # derive() 把这些设为了0，但作为“网线”，我们需要保留原始发件信息
-        event_copy.timestamp = event.timestamp
-        event_copy.source = event.source
-        event_copy.producer = event.producer
+        # 【直接推送】
+        # 因为在 on_event 已经做过 clone，这里拿到的 event 已经是独占副本，可以直接推送
+        self.target_engine.put(event)
         
-        # 将副本推送到目标引擎，原件 (event) 留在当前作用域直至销毁
-        self.target_engine.put(event_copy)
-        # 【核心修复 END】==================================================
-        
-        # 释放堆中持有的原事件引用
+        # 释放堆中持有的引用 (Queue 不再持有，Target Engine 会接手或处理完释放)
         Py_DECREF(event)
 
     cdef void _sift_up(self, size_t idx):

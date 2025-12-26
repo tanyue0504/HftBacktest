@@ -15,7 +15,8 @@ cpdef enum:
     ORDER_STATE_SUBMITTED = 1  # 已提交，等待交易所确认
     ORDER_STATE_RECEIVED = 2    # 交易所已接收，等待成交
     ORDER_STATE_FILLED = 3      # 已成交
-    ORDER_STATE_CANCELED = 4    # 已撤销 
+    ORDER_STATE_CANCELED = 4    # 已撤销
+    ORDER_STATE_REJECTED = 5    # 已拒单
 
 cdef class Order(Event):
     # --- 核心字段 (cdef public 让 Python 可读写) ---

@@ -31,6 +31,7 @@ cdef class Order(Event):
     ORDER_STATE_RECEIVED = 2    # 交易所已接收，等待成交
     ORDER_STATE_FILLED = 3      # 已成交
     ORDER_STATE_CANCELED = 4    # 已撤销 
+    ORDER_STATE_REJECTED = 5    # 已拒单
     
     # --- 2. 初始化 ---
     def __init__(
@@ -99,6 +100,10 @@ cdef class Order(Event):
     @property
     def is_canceled(self):
         return self.state == ORDER_STATE_CANCELED
+
+    @property
+    def is_rejected(self):
+        return self.state == ORDER_STATE_REJECTED
 
     # --- 4. 整数化价格/数量 (带缓存) ---
     

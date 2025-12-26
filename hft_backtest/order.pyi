@@ -28,6 +28,7 @@ class Order(Event):
     ORDER_STATE_RECEIVED: int
     ORDER_STATE_FILLED: int
     ORDER_STATE_CANCELED: int
+    ORDER_SATTE_REJECTED: int
 
     # cdef public 属性
     order_id: int
@@ -67,6 +68,8 @@ class Order(Event):
     def is_filled(self) -> bool: ...
     @property
     def is_canceled(self) -> bool: ...
+    @property
+    def is_rejected(self) -> bool: ...
 
     # 价格和数量属性 (带 getter/setter)
     @property

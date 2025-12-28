@@ -25,14 +25,19 @@ cdef class OKXMatcher(MatchEngine):
     cdef double INIT_RANK
 
     # 方法定义
+    # 基类方法
     cpdef start(self, EventEngine engine)
+    cpdef stop(self)
+    # 辅助方法，无副作用
     cdef long to_int_price(self, double price)
     cdef void _add_order(self, Order order)
     cdef bint _remove_order(self, Order order)
+    cdef double _get_level_volume(self, OKXBookticker event, bint is_buy_book, long target_price_int)
+    # 动作方法，有推送事件的副作用
     cdef void fill_order(self, Order order, double filled_price, bint is_taker)
     cdef void cancel_order(self, Order order)
     
-    # 事件处理
+    # 事件监听
     cpdef on_order(self, Order order)
     cpdef on_bookticker(self, OKXBookticker event)
     cpdef on_trade(self, OKXTrades event)

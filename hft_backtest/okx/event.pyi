@@ -1,7 +1,6 @@
 from hft_backtest.event import Event
 
 class OKXBookticker(Event):
-    exchange: str
     symbol: str
     local_timestamp: int
     
@@ -158,7 +157,6 @@ class OKXBookticker(Event):
     def __init__(
         self, 
         timestamp: int = 0, 
-        exchange: str = "", 
         symbol: str = "", 
         local_timestamp: int = 0,
         ask_price_1: float = 0.0, ask_amount_1: float = 0.0, bid_price_1: float = 0.0, bid_amount_1: float = 0.0,

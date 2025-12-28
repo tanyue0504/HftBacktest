@@ -9,8 +9,7 @@ from hft_backtest.event cimport Event
 cdef class OKXBookticker(Event):
     def __init__(
         self, 
-        long long timestamp = 0, 
-        str exchange = "", 
+        long long timestamp = 0,  
         str symbol = "", 
         long long local_timestamp = 0,
         double ask_price_1 = 0.0, double ask_amount_1 = 0.0, double bid_price_1 = 0.0, double bid_amount_1 = 0.0,
@@ -40,7 +39,6 @@ cdef class OKXBookticker(Event):
         double ask_price_25 = 0.0, double ask_amount_25 = 0.0, double bid_price_25 = 0.0, double bid_amount_25 = 0.0,
     ):
         self.timestamp = timestamp
-        self.exchange = exchange
         self.symbol = symbol
         self.local_timestamp = local_timestamp
         

@@ -3,7 +3,6 @@
 from hft_backtest.event cimport Event
 
 cdef class OKXBookticker(Event):
-    cdef public str exchange
     cdef public str symbol
     cdef public long long local_timestamp
     

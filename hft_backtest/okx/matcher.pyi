@@ -1,4 +1,3 @@
-from typing import List
 from hft_backtest.matcher import MatchEngine
 from hft_backtest.event_engine import EventEngine
 from hft_backtest.order import Order
@@ -8,13 +7,7 @@ class OKXMatcher(MatchEngine):
     symbol: str
     taker_fee: float
     maker_fee: float
-    event_engine: EventEngine
-    best_bid_price_int: int
-    best_ask_price_int: int
-    buy_book: List[Order]
-    sell_book: List[Order]
-    PRICE_SCALAR: int
-
+    
     def __init__(self, symbol: str, taker_fee: float = ..., maker_fee: float = ...) -> None: ...
     def start(self, engine: EventEngine) -> None: ...
     def on_order(self, order: Order) -> None: ...

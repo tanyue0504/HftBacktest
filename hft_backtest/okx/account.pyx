@@ -27,13 +27,13 @@ cdef class OKXAccount(Account):
         self.net_cash_flow = defaultdict(float)
         self.total_trade_count = defaultdict(int)
 
-    def start(self, EventEngine engine):
+    cpdef start(self, EventEngine engine):
         engine.register(Order, self.on_order)
         engine.register(OKXTrades, self.on_trade_data)
         engine.register(OKXFundingRate, self.on_funding_data)
         engine.register(OKXDelivery, self.on_delivery_data)
         
-    def stop(self):
+    cpdef stop(self):
         pass
 
     # ==========================
@@ -154,20 +154,20 @@ cdef class OKXAccount(Account):
     def get_leverage(self):
         cdef double equity = self.get_equity()
         if equity == 0:
-            return None
+            return 1
         return self.get_total_margin() / equity
-
-    def get_total_turnover(self):
+    
+    cpdef double get_total_turnover(self):
         return sum(self.total_turnover.values())
     
-    def get_total_trade_count(self):
+    cpdef int get_total_trade_count(self):
         return sum(self.total_trade_count.values())
     
-    def get_total_commission(self):
+    cpdef double get_total_commission(self):
         return sum(self.total_commission.values())
     
-    def get_total_funding_fee(self):
+    cpdef double get_total_funding_fee(self):
         return sum(self.total_funding_fee.values())
         
-    def get_total_trade_pnl(self):
+    cpdef double get_total_trade_pnl(self):
         return sum(self.net_cash_flow.values()) + self._get_position_cashvalue()

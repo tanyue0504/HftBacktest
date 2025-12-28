@@ -60,7 +60,6 @@ def test_okx_bookticker():
         event_type=OKXBookticker,
         columns=[
             'timestamp',
-            'exchange',
             'symbol',
             'local_timestamp',
         ] + book_fields,

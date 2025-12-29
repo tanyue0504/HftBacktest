@@ -7,7 +7,7 @@ from .timer import Timer
 from .event_engine import EventEngine, Component
 from .dataset import Dataset, ParquetDataset, CsvDataset
 from .merged_dataset import MergedDataset
-from .delaybus import DelayBus
+from .delaybus import LatencyModel, FixedDelayModel, DelayBus
 from .matcher import MatchEngine
 from .backtest import BacktestEngine
 from .account import Account

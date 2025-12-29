@@ -19,18 +19,21 @@ cdef class OKXMatcher(MatchEngine):
     cdef public list buy_book
     cdef public list sell_book
     
-    # 引用 EventEngine 用于推送回报
     cdef EventEngine event_engine
 
-    # --- C 内部方法 ---
-    cdef long to_int_price(self, double price)
+    # --- C 内部/混合方法 ---
+    # 使用 inline 减少函数调用开销
+    cdef inline long _to_int(self, double price)
+    cpdef long to_int_price(self, double price)
+    
     cdef void _add_order(self, Order order)
     cdef bint _remove_order(self, Order order)
     cdef void fill_order(self, Order order, double filled_price, bint is_taker)
     cdef void cancel_order(self, Order order)
     
-    # [新增] 高性能二分查找档位量
-    cdef double _get_level_volume(self, OKXBookticker event, bint is_ask, long price_int)
+    # 硬编码二分查找
+    cdef double _search_ask_book(self, OKXBookticker event, long target)
+    cdef double _search_bid_book(self, OKXBookticker event, long target)
 
     # --- 接口实现 ---
     cpdef start(self, EventEngine engine)

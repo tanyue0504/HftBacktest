@@ -1830,6 +1830,8 @@ struct __pyx_vtabstruct_12hft_backtest_8delaybus_DelayBus {
   void (*_pop_and_process)(struct __pyx_obj_12hft_backtest_8delaybus_DelayBus *);
   void (*_sift_up)(struct __pyx_obj_12hft_backtest_8delaybus_DelayBus *, size_t);
   void (*_sift_down)(struct __pyx_obj_12hft_backtest_8delaybus_DelayBus *, size_t);
+  int (*is_empty)(struct __pyx_obj_12hft_backtest_8delaybus_DelayBus *);
+  long (*peek_trigger_time)(struct __pyx_obj_12hft_backtest_8delaybus_DelayBus *);
   PyObject *(*on_event)(struct __pyx_obj_12hft_backtest_8delaybus_DelayBus *, struct __pyx_obj_12hft_backtest_5event_Event *, int __pyx_skip_dispatch);
   PyObject *(*process_until)(struct __pyx_obj_12hft_backtest_8delaybus_DelayBus *, long, int __pyx_skip_dispatch);
   PyObject *(*set_target_engine)(struct __pyx_obj_12hft_backtest_8delaybus_DelayBus *, struct __pyx_obj_12hft_backtest_12event_engine_EventEngine *, int __pyx_skip_dispatch);
@@ -3751,7 +3753,7 @@ static PyObject *__pyx_pf_12hft_backtest_8backtest_14BacktestEngine_2add_compone
  *             self.client_components.append(component)
  * 
  *     cpdef run(self):             # <<<<<<<<<<<<<<
- *         # 1.
+ *         # 1.  ()
  *         cdef Component c
 */
 
@@ -3859,7 +3861,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
   }
 
   /* "hft_backtest/backtest.pyx":69
- *         # 1.
+ *         # 1.  ()
  *         cdef Component c
  *         for c_obj in self.server_components:             # <<<<<<<<<<<<<<
  *             c = <Component>c_obj
@@ -3913,7 +3915,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
     /* "hft_backtest/backtest.pyx":69
- *         # 1.
+ *         # 1.  ()
  *         cdef Component c
  *         for c_obj in self.server_components:             # <<<<<<<<<<<<<<
  *             c = <Component>c_obj
@@ -3967,7 +3969,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
  *             c = <Component>c_obj
  *             c.start(self.client_engine)             # <<<<<<<<<<<<<<
  * 
- *         # 2.  C  ()
+ *         # 2.  C
 */
     __pyx_t_4 = ((PyObject *)__pyx_v_self->client_engine);
     __Pyx_INCREF(__pyx_t_4);
@@ -3988,7 +3990,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
 
   /* "hft_backtest/backtest.pyx":77
  * 
- *         # 2.  C  ()
+ *         # 2.  C
  *         cdef long t_data = LLONG_MAX             # <<<<<<<<<<<<<<
  *         cdef long t_s2c = LLONG_MAX
  *         cdef long t_c2s = LLONG_MAX
@@ -3996,7 +3998,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
   __pyx_v_t_data = LLONG_MAX;
 
   /* "hft_backtest/backtest.pyx":78
- *         # 2.  C  ()
+ *         # 2.  C
  *         cdef long t_data = LLONG_MAX
  *         cdef long t_s2c = LLONG_MAX             # <<<<<<<<<<<<<<
  *         cdef long t_c2s = LLONG_MAX
@@ -4105,106 +4107,42 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
  *             while current_data is not None:
  *                 t_data = current_data.timestamp             # <<<<<<<<<<<<<<
  * 
- *                 #  C++ vector  Python
+ *                 #  LLONG_MAX
 */
       __pyx_t_9 = __pyx_v_current_data->timestamp;
       __pyx_v_t_data = __pyx_t_9;
 
-      /* "hft_backtest/backtest.pyx":97
+      /* "hft_backtest/backtest.pyx":98
+ *                 #  LLONG_MAX
+ *                 #  ._queue
+ *                 t_s2c = self.server2client_bus.peek_trigger_time()             # <<<<<<<<<<<<<<
+ *                 t_c2s = self.client2server_bus.peek_trigger_time()
  * 
- *                 #  C++ vector  Python
- *                 if self.server2client_bus._queue.empty():             # <<<<<<<<<<<<<<
- *                     t_s2c = LLONG_MAX
- *                 else:
 */
-      __pyx_t_7 = __pyx_v_self->server2client_bus->_queue.empty();
-      if (__pyx_t_7) {
+      __pyx_t_10 = ((struct __pyx_vtabstruct_12hft_backtest_8delaybus_DelayBus *)__pyx_v_self->server2client_bus->__pyx_base.__pyx_vtab)->peek_trigger_time(__pyx_v_self->server2client_bus); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 98, __pyx_L10_error)
+      __pyx_v_t_s2c = __pyx_t_10;
 
-        /* "hft_backtest/backtest.pyx":98
- *                 #  C++ vector  Python
- *                 if self.server2client_bus._queue.empty():
- *                     t_s2c = LLONG_MAX             # <<<<<<<<<<<<<<
- *                 else:
- *                     t_s2c = self.server2client_bus._queue.front().trigger_time
-*/
-        __pyx_v_t_s2c = LLONG_MAX;
-
-        /* "hft_backtest/backtest.pyx":97
+      /* "hft_backtest/backtest.pyx":99
+ *                 #  ._queue
+ *                 t_s2c = self.server2client_bus.peek_trigger_time()
+ *                 t_c2s = self.client2server_bus.peek_trigger_time()             # <<<<<<<<<<<<<<
  * 
- *                 #  C++ vector  Python
- *                 if self.server2client_bus._queue.empty():             # <<<<<<<<<<<<<<
- *                     t_s2c = LLONG_MAX
- *                 else:
+ *                 #  min
 */
-        goto __pyx_L17;
-      }
-
-      /* "hft_backtest/backtest.pyx":100
- *                     t_s2c = LLONG_MAX
- *                 else:
- *                     t_s2c = self.server2client_bus._queue.front().trigger_time             # <<<<<<<<<<<<<<
- * 
- *                 if self.client2server_bus._queue.empty():
-*/
-      /*else*/ {
-        __pyx_t_10 = __pyx_v_self->server2client_bus->_queue.front().trigger_time;
-        __pyx_v_t_s2c = __pyx_t_10;
-      }
-      __pyx_L17:;
+      __pyx_t_10 = ((struct __pyx_vtabstruct_12hft_backtest_8delaybus_DelayBus *)__pyx_v_self->client2server_bus->__pyx_base.__pyx_vtab)->peek_trigger_time(__pyx_v_self->client2server_bus); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 99, __pyx_L10_error)
+      __pyx_v_t_c2s = __pyx_t_10;
 
       /* "hft_backtest/backtest.pyx":102
- *                     t_s2c = self.server2client_bus._queue.front().trigger_time
  * 
- *                 if self.client2server_bus._queue.empty():             # <<<<<<<<<<<<<<
- *                     t_c2s = LLONG_MAX
- *                 else:
-*/
-      __pyx_t_7 = __pyx_v_self->client2server_bus->_queue.empty();
-      if (__pyx_t_7) {
-
-        /* "hft_backtest/backtest.pyx":103
- * 
- *                 if self.client2server_bus._queue.empty():
- *                     t_c2s = LLONG_MAX             # <<<<<<<<<<<<<<
- *                 else:
- *                     t_c2s = self.client2server_bus._queue.front().trigger_time
-*/
-        __pyx_v_t_c2s = LLONG_MAX;
-
-        /* "hft_backtest/backtest.pyx":102
- *                     t_s2c = self.server2client_bus._queue.front().trigger_time
- * 
- *                 if self.client2server_bus._queue.empty():             # <<<<<<<<<<<<<<
- *                     t_c2s = LLONG_MAX
- *                 else:
-*/
-        goto __pyx_L18;
-      }
-
-      /* "hft_backtest/backtest.pyx":105
- *                     t_c2s = LLONG_MAX
- *                 else:
- *                     t_c2s = self.client2server_bus._queue.front().trigger_time             # <<<<<<<<<<<<<<
- * 
- *                 #  min  ( Python min() )
-*/
-      /*else*/ {
-        __pyx_t_10 = __pyx_v_self->client2server_bus->_queue.front().trigger_time;
-        __pyx_v_t_c2s = __pyx_t_10;
-      }
-      __pyx_L18:;
-
-      /* "hft_backtest/backtest.pyx":108
- * 
- *                 #  min  ( Python min() )
+ *                 #  min
  *                 min_t = t_data             # <<<<<<<<<<<<<<
  *                 if t_s2c < min_t: min_t = t_s2c
  *                 if t_c2s < min_t: min_t = t_c2s
 */
       __pyx_v_min_t = __pyx_v_t_data;
 
-      /* "hft_backtest/backtest.pyx":109
- *                 #  min  ( Python min() )
+      /* "hft_backtest/backtest.pyx":103
+ *                 #  min
  *                 min_t = t_data
  *                 if t_s2c < min_t: min_t = t_s2c             # <<<<<<<<<<<<<<
  *                 if t_c2s < min_t: min_t = t_c2s
@@ -4215,7 +4153,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
         __pyx_v_min_t = __pyx_v_t_s2c;
       }
 
-      /* "hft_backtest/backtest.pyx":110
+      /* "hft_backtest/backtest.pyx":104
  *                 min_t = t_data
  *                 if t_s2c < min_t: min_t = t_s2c
  *                 if t_c2s < min_t: min_t = t_c2s             # <<<<<<<<<<<<<<
@@ -4227,7 +4165,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
         __pyx_v_min_t = __pyx_v_t_c2s;
       }
 
-      /* "hft_backtest/backtest.pyx":111
+      /* "hft_backtest/backtest.pyx":105
  *                 if t_s2c < min_t: min_t = t_s2c
  *                 if t_c2s < min_t: min_t = t_c2s
  *                 if next_timer < min_t: min_t = next_timer             # <<<<<<<<<<<<<<
@@ -4239,7 +4177,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
         __pyx_v_min_t = __pyx_v_next_timer;
       }
 
-      /* "hft_backtest/backtest.pyx":114
+      /* "hft_backtest/backtest.pyx":108
  * 
  *                 #
  *                 if t_s2c <= min_t:             # <<<<<<<<<<<<<<
@@ -4249,18 +4187,18 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
       __pyx_t_7 = (__pyx_v_t_s2c <= __pyx_v_min_t);
       if (__pyx_t_7) {
 
-        /* "hft_backtest/backtest.pyx":115
+        /* "hft_backtest/backtest.pyx":109
  *                 #
  *                 if t_s2c <= min_t:
  *                     self.server2client_bus.process_until(t_s2c)             # <<<<<<<<<<<<<<
  *                     continue
  * 
 */
-        __pyx_t_1 = ((struct __pyx_vtabstruct_12hft_backtest_8delaybus_DelayBus *)__pyx_v_self->server2client_bus->__pyx_base.__pyx_vtab)->process_until(__pyx_v_self->server2client_bus, __pyx_v_t_s2c, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 115, __pyx_L10_error)
+        __pyx_t_1 = ((struct __pyx_vtabstruct_12hft_backtest_8delaybus_DelayBus *)__pyx_v_self->server2client_bus->__pyx_base.__pyx_vtab)->process_until(__pyx_v_self->server2client_bus, __pyx_v_t_s2c, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 109, __pyx_L10_error)
         __Pyx_GOTREF(__pyx_t_1);
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-        /* "hft_backtest/backtest.pyx":116
+        /* "hft_backtest/backtest.pyx":110
  *                 if t_s2c <= min_t:
  *                     self.server2client_bus.process_until(t_s2c)
  *                     continue             # <<<<<<<<<<<<<<
@@ -4269,7 +4207,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
 */
         goto __pyx_L15_continue;
 
-        /* "hft_backtest/backtest.pyx":114
+        /* "hft_backtest/backtest.pyx":108
  * 
  *                 #
  *                 if t_s2c <= min_t:             # <<<<<<<<<<<<<<
@@ -4278,7 +4216,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
 */
       }
 
-      /* "hft_backtest/backtest.pyx":118
+      /* "hft_backtest/backtest.pyx":112
  *                     continue
  * 
  *                 if t_c2s <= min_t:             # <<<<<<<<<<<<<<
@@ -4288,18 +4226,18 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
       __pyx_t_7 = (__pyx_v_t_c2s <= __pyx_v_min_t);
       if (__pyx_t_7) {
 
-        /* "hft_backtest/backtest.pyx":119
+        /* "hft_backtest/backtest.pyx":113
  * 
  *                 if t_c2s <= min_t:
  *                     self.client2server_bus.process_until(t_c2s)             # <<<<<<<<<<<<<<
  *                     continue
  * 
 */
-        __pyx_t_1 = ((struct __pyx_vtabstruct_12hft_backtest_8delaybus_DelayBus *)__pyx_v_self->client2server_bus->__pyx_base.__pyx_vtab)->process_until(__pyx_v_self->client2server_bus, __pyx_v_t_c2s, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 119, __pyx_L10_error)
+        __pyx_t_1 = ((struct __pyx_vtabstruct_12hft_backtest_8delaybus_DelayBus *)__pyx_v_self->client2server_bus->__pyx_base.__pyx_vtab)->process_until(__pyx_v_self->client2server_bus, __pyx_v_t_c2s, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 113, __pyx_L10_error)
         __Pyx_GOTREF(__pyx_t_1);
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-        /* "hft_backtest/backtest.pyx":120
+        /* "hft_backtest/backtest.pyx":114
  *                 if t_c2s <= min_t:
  *                     self.client2server_bus.process_until(t_c2s)
  *                     continue             # <<<<<<<<<<<<<<
@@ -4308,7 +4246,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
 */
         goto __pyx_L15_continue;
 
-        /* "hft_backtest/backtest.pyx":118
+        /* "hft_backtest/backtest.pyx":112
  *                     continue
  * 
  *                 if t_c2s <= min_t:             # <<<<<<<<<<<<<<
@@ -4317,27 +4255,27 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
 */
       }
 
-      /* "hft_backtest/backtest.pyx":122
+      /* "hft_backtest/backtest.pyx":116
  *                     continue
  * 
  *                 if next_timer <= min_t:             # <<<<<<<<<<<<<<
- *                     #  Timer ( Python )
  *                     self.client_engine.put(Timer(next_timer))
+ *                     if self._use_timer:
 */
       __pyx_t_7 = (__pyx_v_next_timer <= __pyx_v_min_t);
       if (__pyx_t_7) {
 
-        /* "hft_backtest/backtest.pyx":124
- *                 if next_timer <= min_t:
- *                     #  Timer ( Python )
- *                     self.client_engine.put(Timer(next_timer))             # <<<<<<<<<<<<<<
+        /* "hft_backtest/backtest.pyx":117
  * 
+ *                 if next_timer <= min_t:
+ *                     self.client_engine.put(Timer(next_timer))             # <<<<<<<<<<<<<<
  *                     if self._use_timer:
+ *                         next_timer += self._timer_interval_v
 */
         __pyx_t_2 = NULL;
-        __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_Timer); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 124, __pyx_L10_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_Timer); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 117, __pyx_L10_error)
         __Pyx_GOTREF(__pyx_t_4);
-        __pyx_t_3 = __Pyx_PyLong_From_long(__pyx_v_next_timer); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 124, __pyx_L10_error)
+        __pyx_t_3 = __Pyx_PyLong_From_long(__pyx_v_next_timer); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 117, __pyx_L10_error)
         __Pyx_GOTREF(__pyx_t_3);
         __pyx_t_5 = 1;
         #if CYTHON_UNPACK_METHODS
@@ -4357,26 +4295,26 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
           __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
           __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-          if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 124, __pyx_L10_error)
+          if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 117, __pyx_L10_error)
           __Pyx_GOTREF(__pyx_t_1);
         }
-        if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_mstate_global->__pyx_ptype_12hft_backtest_5event_Event))))) __PYX_ERR(0, 124, __pyx_L10_error)
-        __pyx_t_4 = ((struct __pyx_vtabstruct_12hft_backtest_12event_engine_EventEngine *)__pyx_v_self->client_engine->__pyx_vtab)->put(__pyx_v_self->client_engine, ((struct __pyx_obj_12hft_backtest_5event_Event *)__pyx_t_1), 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 124, __pyx_L10_error)
+        if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_mstate_global->__pyx_ptype_12hft_backtest_5event_Event))))) __PYX_ERR(0, 117, __pyx_L10_error)
+        __pyx_t_4 = ((struct __pyx_vtabstruct_12hft_backtest_12event_engine_EventEngine *)__pyx_v_self->client_engine->__pyx_vtab)->put(__pyx_v_self->client_engine, ((struct __pyx_obj_12hft_backtest_5event_Event *)__pyx_t_1), 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 117, __pyx_L10_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-        /* "hft_backtest/backtest.pyx":126
+        /* "hft_backtest/backtest.pyx":118
+ *                 if next_timer <= min_t:
  *                     self.client_engine.put(Timer(next_timer))
- * 
  *                     if self._use_timer:             # <<<<<<<<<<<<<<
  *                         next_timer += self._timer_interval_v
  *                     else:
 */
         if (__pyx_v_self->_use_timer) {
 
-          /* "hft_backtest/backtest.pyx":127
- * 
+          /* "hft_backtest/backtest.pyx":119
+ *                     self.client_engine.put(Timer(next_timer))
  *                     if self._use_timer:
  *                         next_timer += self._timer_interval_v             # <<<<<<<<<<<<<<
  *                     else:
@@ -4384,17 +4322,17 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
 */
           __pyx_v_next_timer = (__pyx_v_next_timer + __pyx_v_self->_timer_interval_v);
 
-          /* "hft_backtest/backtest.pyx":126
+          /* "hft_backtest/backtest.pyx":118
+ *                 if next_timer <= min_t:
  *                     self.client_engine.put(Timer(next_timer))
- * 
  *                     if self._use_timer:             # <<<<<<<<<<<<<<
  *                         next_timer += self._timer_interval_v
  *                     else:
 */
-          goto __pyx_L25;
+          goto __pyx_L23;
         }
 
-        /* "hft_backtest/backtest.pyx":129
+        /* "hft_backtest/backtest.pyx":121
  *                         next_timer += self._timer_interval_v
  *                     else:
  *                         next_timer = LLONG_MAX             # <<<<<<<<<<<<<<
@@ -4404,9 +4342,9 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
         /*else*/ {
           __pyx_v_next_timer = LLONG_MAX;
         }
-        __pyx_L25:;
+        __pyx_L23:;
 
-        /* "hft_backtest/backtest.pyx":130
+        /* "hft_backtest/backtest.pyx":122
  *                     else:
  *                         next_timer = LLONG_MAX
  *                     continue             # <<<<<<<<<<<<<<
@@ -4415,154 +4353,90 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
 */
         goto __pyx_L15_continue;
 
-        /* "hft_backtest/backtest.pyx":122
+        /* "hft_backtest/backtest.pyx":116
  *                     continue
  * 
  *                 if next_timer <= min_t:             # <<<<<<<<<<<<<<
- *                     #  Timer ( Python )
  *                     self.client_engine.put(Timer(next_timer))
+ *                     if self._use_timer:
 */
       }
 
-      /* "hft_backtest/backtest.pyx":132
+      /* "hft_backtest/backtest.pyx":124
  *                     continue
  * 
  *                 if t_data == min_t:             # <<<<<<<<<<<<<<
  *                     self.server_engine.put(current_data)
- *                     #
+ *                     current_data = self.dataset.fetch_next()
 */
       __pyx_t_7 = (__pyx_v_t_data == __pyx_v_min_t);
       if (__pyx_t_7) {
 
-        /* "hft_backtest/backtest.pyx":133
+        /* "hft_backtest/backtest.pyx":125
  * 
  *                 if t_data == min_t:
  *                     self.server_engine.put(current_data)             # <<<<<<<<<<<<<<
- *                     #
  *                     current_data = self.dataset.fetch_next()
+ * 
 */
-        __pyx_t_4 = ((struct __pyx_vtabstruct_12hft_backtest_12event_engine_EventEngine *)__pyx_v_self->server_engine->__pyx_vtab)->put(__pyx_v_self->server_engine, __pyx_v_current_data, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 133, __pyx_L10_error)
+        __pyx_t_4 = ((struct __pyx_vtabstruct_12hft_backtest_12event_engine_EventEngine *)__pyx_v_self->server_engine->__pyx_vtab)->put(__pyx_v_self->server_engine, __pyx_v_current_data, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 125, __pyx_L10_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-        /* "hft_backtest/backtest.pyx":135
+        /* "hft_backtest/backtest.pyx":126
+ *                 if t_data == min_t:
  *                     self.server_engine.put(current_data)
- *                     #
  *                     current_data = self.dataset.fetch_next()             # <<<<<<<<<<<<<<
  * 
  *             # ---  ---
 */
-        __pyx_t_4 = ((PyObject *)((struct __pyx_vtabstruct_12hft_backtest_6reader_DataReader *)__pyx_v_self->dataset->__pyx_vtab)->fetch_next(__pyx_v_self->dataset)); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 135, __pyx_L10_error)
+        __pyx_t_4 = ((PyObject *)((struct __pyx_vtabstruct_12hft_backtest_6reader_DataReader *)__pyx_v_self->dataset->__pyx_vtab)->fetch_next(__pyx_v_self->dataset)); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 126, __pyx_L10_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_DECREF_SET(__pyx_v_current_data, ((struct __pyx_obj_12hft_backtest_5event_Event *)__pyx_t_4));
         __pyx_t_4 = 0;
 
-        /* "hft_backtest/backtest.pyx":132
+        /* "hft_backtest/backtest.pyx":124
  *                     continue
  * 
  *                 if t_data == min_t:             # <<<<<<<<<<<<<<
  *                     self.server_engine.put(current_data)
- *                     #
+ *                     current_data = self.dataset.fetch_next()
 */
       }
       __pyx_L15_continue:;
     }
 
-    /* "hft_backtest/backtest.pyx":138
+    /* "hft_backtest/backtest.pyx":129
  * 
  *             # ---  ---
  *             while True:             # <<<<<<<<<<<<<<
  *                 #
- *                 if self.server2client_bus._queue.empty():
+ *                 t_s2c = self.server2client_bus.peek_trigger_time()
 */
     while (1) {
 
-      /* "hft_backtest/backtest.pyx":140
+      /* "hft_backtest/backtest.pyx":131
  *             while True:
  *                 #
- *                 if self.server2client_bus._queue.empty():             # <<<<<<<<<<<<<<
- *                     t_s2c = LLONG_MAX
- *                 else:
+ *                 t_s2c = self.server2client_bus.peek_trigger_time()             # <<<<<<<<<<<<<<
+ *                 t_c2s = self.client2server_bus.peek_trigger_time()
+ * 
 */
-      __pyx_t_7 = __pyx_v_self->server2client_bus->_queue.empty();
-      if (__pyx_t_7) {
+      __pyx_t_10 = ((struct __pyx_vtabstruct_12hft_backtest_8delaybus_DelayBus *)__pyx_v_self->server2client_bus->__pyx_base.__pyx_vtab)->peek_trigger_time(__pyx_v_self->server2client_bus); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 131, __pyx_L10_error)
+      __pyx_v_t_s2c = __pyx_t_10;
 
-        /* "hft_backtest/backtest.pyx":141
+      /* "hft_backtest/backtest.pyx":132
  *                 #
- *                 if self.server2client_bus._queue.empty():
- *                     t_s2c = LLONG_MAX             # <<<<<<<<<<<<<<
- *                 else:
- *                     t_s2c = self.server2client_bus._queue.front().trigger_time
-*/
-        __pyx_v_t_s2c = LLONG_MAX;
-
-        /* "hft_backtest/backtest.pyx":140
- *             while True:
- *                 #
- *                 if self.server2client_bus._queue.empty():             # <<<<<<<<<<<<<<
- *                     t_s2c = LLONG_MAX
- *                 else:
-*/
-        goto __pyx_L29;
-      }
-
-      /* "hft_backtest/backtest.pyx":143
- *                     t_s2c = LLONG_MAX
- *                 else:
- *                     t_s2c = self.server2client_bus._queue.front().trigger_time             # <<<<<<<<<<<<<<
- * 
- *                 if self.client2server_bus._queue.empty():
-*/
-      /*else*/ {
-        __pyx_t_10 = __pyx_v_self->server2client_bus->_queue.front().trigger_time;
-        __pyx_v_t_s2c = __pyx_t_10;
-      }
-      __pyx_L29:;
-
-      /* "hft_backtest/backtest.pyx":145
- *                     t_s2c = self.server2client_bus._queue.front().trigger_time
- * 
- *                 if self.client2server_bus._queue.empty():             # <<<<<<<<<<<<<<
- *                     t_c2s = LLONG_MAX
- *                 else:
-*/
-      __pyx_t_7 = __pyx_v_self->client2server_bus->_queue.empty();
-      if (__pyx_t_7) {
-
-        /* "hft_backtest/backtest.pyx":146
- * 
- *                 if self.client2server_bus._queue.empty():
- *                     t_c2s = LLONG_MAX             # <<<<<<<<<<<<<<
- *                 else:
- *                     t_c2s = self.client2server_bus._queue.front().trigger_time
-*/
-        __pyx_v_t_c2s = LLONG_MAX;
-
-        /* "hft_backtest/backtest.pyx":145
- *                     t_s2c = self.server2client_bus._queue.front().trigger_time
- * 
- *                 if self.client2server_bus._queue.empty():             # <<<<<<<<<<<<<<
- *                     t_c2s = LLONG_MAX
- *                 else:
-*/
-        goto __pyx_L30;
-      }
-
-      /* "hft_backtest/backtest.pyx":148
- *                     t_c2s = LLONG_MAX
- *                 else:
- *                     t_c2s = self.client2server_bus._queue.front().trigger_time             # <<<<<<<<<<<<<<
+ *                 t_s2c = self.server2client_bus.peek_trigger_time()
+ *                 t_c2s = self.client2server_bus.peek_trigger_time()             # <<<<<<<<<<<<<<
  * 
  *                 if t_s2c == LLONG_MAX and t_c2s == LLONG_MAX:
 */
-      /*else*/ {
-        __pyx_t_10 = __pyx_v_self->client2server_bus->_queue.front().trigger_time;
-        __pyx_v_t_c2s = __pyx_t_10;
-      }
-      __pyx_L30:;
+      __pyx_t_10 = ((struct __pyx_vtabstruct_12hft_backtest_8delaybus_DelayBus *)__pyx_v_self->client2server_bus->__pyx_base.__pyx_vtab)->peek_trigger_time(__pyx_v_self->client2server_bus); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 132, __pyx_L10_error)
+      __pyx_v_t_c2s = __pyx_t_10;
 
-      /* "hft_backtest/backtest.pyx":150
- *                     t_c2s = self.client2server_bus._queue.front().trigger_time
+      /* "hft_backtest/backtest.pyx":134
+ *                 t_c2s = self.client2server_bus.peek_trigger_time()
  * 
  *                 if t_s2c == LLONG_MAX and t_c2s == LLONG_MAX:             # <<<<<<<<<<<<<<
  *                     break
@@ -4572,24 +4446,24 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
       if (__pyx_t_8) {
       } else {
         __pyx_t_7 = __pyx_t_8;
-        goto __pyx_L32_bool_binop_done;
+        goto __pyx_L28_bool_binop_done;
       }
       __pyx_t_8 = (__pyx_v_t_c2s == LLONG_MAX);
       __pyx_t_7 = __pyx_t_8;
-      __pyx_L32_bool_binop_done:;
+      __pyx_L28_bool_binop_done:;
       if (__pyx_t_7) {
 
-        /* "hft_backtest/backtest.pyx":151
+        /* "hft_backtest/backtest.pyx":135
  * 
  *                 if t_s2c == LLONG_MAX and t_c2s == LLONG_MAX:
  *                     break             # <<<<<<<<<<<<<<
  * 
  *                 if t_s2c <= t_c2s:
 */
-        goto __pyx_L28_break;
+        goto __pyx_L26_break;
 
-        /* "hft_backtest/backtest.pyx":150
- *                     t_c2s = self.client2server_bus._queue.front().trigger_time
+        /* "hft_backtest/backtest.pyx":134
+ *                 t_c2s = self.client2server_bus.peek_trigger_time()
  * 
  *                 if t_s2c == LLONG_MAX and t_c2s == LLONG_MAX:             # <<<<<<<<<<<<<<
  *                     break
@@ -4597,7 +4471,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
 */
       }
 
-      /* "hft_backtest/backtest.pyx":153
+      /* "hft_backtest/backtest.pyx":137
  *                     break
  * 
  *                 if t_s2c <= t_c2s:             # <<<<<<<<<<<<<<
@@ -4607,28 +4481,28 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
       __pyx_t_7 = (__pyx_v_t_s2c <= __pyx_v_t_c2s);
       if (__pyx_t_7) {
 
-        /* "hft_backtest/backtest.pyx":154
+        /* "hft_backtest/backtest.pyx":138
  * 
  *                 if t_s2c <= t_c2s:
  *                      self.server2client_bus.process_until(t_s2c)             # <<<<<<<<<<<<<<
  *                 else:
  *                      self.client2server_bus.process_until(t_c2s)
 */
-        __pyx_t_4 = ((struct __pyx_vtabstruct_12hft_backtest_8delaybus_DelayBus *)__pyx_v_self->server2client_bus->__pyx_base.__pyx_vtab)->process_until(__pyx_v_self->server2client_bus, __pyx_v_t_s2c, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 154, __pyx_L10_error)
+        __pyx_t_4 = ((struct __pyx_vtabstruct_12hft_backtest_8delaybus_DelayBus *)__pyx_v_self->server2client_bus->__pyx_base.__pyx_vtab)->process_until(__pyx_v_self->server2client_bus, __pyx_v_t_s2c, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 138, __pyx_L10_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-        /* "hft_backtest/backtest.pyx":153
+        /* "hft_backtest/backtest.pyx":137
  *                     break
  * 
  *                 if t_s2c <= t_c2s:             # <<<<<<<<<<<<<<
  *                      self.server2client_bus.process_until(t_s2c)
  *                 else:
 */
-        goto __pyx_L34;
+        goto __pyx_L30;
       }
 
-      /* "hft_backtest/backtest.pyx":156
+      /* "hft_backtest/backtest.pyx":140
  *                      self.server2client_bus.process_until(t_s2c)
  *                 else:
  *                      self.client2server_bus.process_until(t_c2s)             # <<<<<<<<<<<<<<
@@ -4636,16 +4510,16 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
  *         finally:
 */
       /*else*/ {
-        __pyx_t_4 = ((struct __pyx_vtabstruct_12hft_backtest_8delaybus_DelayBus *)__pyx_v_self->client2server_bus->__pyx_base.__pyx_vtab)->process_until(__pyx_v_self->client2server_bus, __pyx_v_t_c2s, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 156, __pyx_L10_error)
+        __pyx_t_4 = ((struct __pyx_vtabstruct_12hft_backtest_8delaybus_DelayBus *)__pyx_v_self->client2server_bus->__pyx_base.__pyx_vtab)->process_until(__pyx_v_self->client2server_bus, __pyx_v_t_c2s, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 140, __pyx_L10_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       }
-      __pyx_L34:;
+      __pyx_L30:;
     }
-    __pyx_L28_break:;
+    __pyx_L26_break:;
   }
 
-  /* "hft_backtest/backtest.pyx":160
+  /* "hft_backtest/backtest.pyx":144
  *         finally:
  *             #
  *             for c_obj in chain(self.server_components, self.client_components):             # <<<<<<<<<<<<<<
@@ -4655,7 +4529,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
   /*finally:*/ {
     /*normal exit:*/{
       __pyx_t_1 = NULL;
-      __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_chain); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 160, __pyx_L1_error)
+      __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_mstate_global->__pyx_n_u_chain); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 144, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
       __pyx_t_5 = 1;
       #if CYTHON_UNPACK_METHODS
@@ -4674,7 +4548,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
         __pyx_t_4 = __Pyx_PyObject_FastCall((PyObject*)__pyx_t_3, __pyx_callargs+__pyx_t_5, (3-__pyx_t_5) | (__pyx_t_5*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
         __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 160, __pyx_L1_error)
+        if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 144, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_4);
       }
       if (likely(PyList_CheckExact(__pyx_t_4)) || PyTuple_CheckExact(__pyx_t_4)) {
@@ -4682,9 +4556,9 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
         __pyx_t_6 = 0;
         __pyx_t_11 = NULL;
       } else {
-        __pyx_t_6 = -1; __pyx_t_3 = PyObject_GetIter(__pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 160, __pyx_L1_error)
+        __pyx_t_6 = -1; __pyx_t_3 = PyObject_GetIter(__pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 144, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
-        __pyx_t_11 = (CYTHON_COMPILING_IN_LIMITED_API) ? PyIter_Next : __Pyx_PyObject_GetIterNextFunc(__pyx_t_3); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 160, __pyx_L1_error)
+        __pyx_t_11 = (CYTHON_COMPILING_IN_LIMITED_API) ? PyIter_Next : __Pyx_PyObject_GetIterNextFunc(__pyx_t_3); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 144, __pyx_L1_error)
       }
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       for (;;) {
@@ -4693,7 +4567,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
             {
               Py_ssize_t __pyx_temp = __Pyx_PyList_GET_SIZE(__pyx_t_3);
               #if !CYTHON_ASSUME_SAFE_SIZE
-              if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 160, __pyx_L1_error)
+              if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 144, __pyx_L1_error)
               #endif
               if (__pyx_t_6 >= __pyx_temp) break;
             }
@@ -4703,7 +4577,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
             {
               Py_ssize_t __pyx_temp = __Pyx_PyTuple_GET_SIZE(__pyx_t_3);
               #if !CYTHON_ASSUME_SAFE_SIZE
-              if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 160, __pyx_L1_error)
+              if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 144, __pyx_L1_error)
               #endif
               if (__pyx_t_6 >= __pyx_temp) break;
             }
@@ -4714,13 +4588,13 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
             #endif
             ++__pyx_t_6;
           }
-          if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 160, __pyx_L1_error)
+          if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 144, __pyx_L1_error)
         } else {
           __pyx_t_4 = __pyx_t_11(__pyx_t_3);
           if (unlikely(!__pyx_t_4)) {
             PyObject* exc_type = PyErr_Occurred();
             if (exc_type) {
-              if (unlikely(!__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) __PYX_ERR(0, 160, __pyx_L1_error)
+              if (unlikely(!__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) __PYX_ERR(0, 144, __pyx_L1_error)
               PyErr_Clear();
             }
             break;
@@ -4730,7 +4604,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
         __Pyx_XDECREF_SET(__pyx_v_c_obj, __pyx_t_4);
         __pyx_t_4 = 0;
 
-        /* "hft_backtest/backtest.pyx":161
+        /* "hft_backtest/backtest.pyx":145
  *             #
  *             for c_obj in chain(self.server_components, self.client_components):
  *                 c = <Component>c_obj             # <<<<<<<<<<<<<<
@@ -4741,16 +4615,16 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
         __Pyx_XDECREF_SET(__pyx_v_c, ((struct __pyx_obj_12hft_backtest_12event_engine_Component *)__pyx_t_4));
         __pyx_t_4 = 0;
 
-        /* "hft_backtest/backtest.pyx":162
+        /* "hft_backtest/backtest.pyx":146
  *             for c_obj in chain(self.server_components, self.client_components):
  *                 c = <Component>c_obj
  *                 c.stop()             # <<<<<<<<<<<<<<
 */
-        __pyx_t_4 = ((struct __pyx_vtabstruct_12hft_backtest_12event_engine_Component *)__pyx_v_c->__pyx_vtab)->stop(__pyx_v_c, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 162, __pyx_L1_error)
+        __pyx_t_4 = ((struct __pyx_vtabstruct_12hft_backtest_12event_engine_Component *)__pyx_v_c->__pyx_vtab)->stop(__pyx_v_c, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 146, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-        /* "hft_backtest/backtest.pyx":160
+        /* "hft_backtest/backtest.pyx":144
  *         finally:
  *             #
  *             for c_obj in chain(self.server_components, self.client_components):             # <<<<<<<<<<<<<<
@@ -4781,7 +4655,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
       __pyx_t_12 = __pyx_lineno; __pyx_t_13 = __pyx_clineno; __pyx_t_14 = __pyx_filename;
       {
         __pyx_t_4 = NULL;
-        __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_mstate_global->__pyx_n_u_chain); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 160, __pyx_L39_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_mstate_global->__pyx_n_u_chain); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 144, __pyx_L35_error)
         __Pyx_GOTREF(__pyx_t_1);
         __pyx_t_5 = 1;
         #if CYTHON_UNPACK_METHODS
@@ -4800,7 +4674,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
           __pyx_t_3 = __Pyx_PyObject_FastCall((PyObject*)__pyx_t_1, __pyx_callargs+__pyx_t_5, (3-__pyx_t_5) | (__pyx_t_5*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
           __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
           __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-          if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 160, __pyx_L39_error)
+          if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 144, __pyx_L35_error)
           __Pyx_GOTREF(__pyx_t_3);
         }
         if (likely(PyList_CheckExact(__pyx_t_3)) || PyTuple_CheckExact(__pyx_t_3)) {
@@ -4808,9 +4682,9 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
           __pyx_t_6 = 0;
           __pyx_t_11 = NULL;
         } else {
-          __pyx_t_6 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 160, __pyx_L39_error)
+          __pyx_t_6 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 144, __pyx_L35_error)
           __Pyx_GOTREF(__pyx_t_1);
-          __pyx_t_11 = (CYTHON_COMPILING_IN_LIMITED_API) ? PyIter_Next : __Pyx_PyObject_GetIterNextFunc(__pyx_t_1); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 160, __pyx_L39_error)
+          __pyx_t_11 = (CYTHON_COMPILING_IN_LIMITED_API) ? PyIter_Next : __Pyx_PyObject_GetIterNextFunc(__pyx_t_1); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 144, __pyx_L35_error)
         }
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         for (;;) {
@@ -4819,7 +4693,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
               {
                 Py_ssize_t __pyx_temp = __Pyx_PyList_GET_SIZE(__pyx_t_1);
                 #if !CYTHON_ASSUME_SAFE_SIZE
-                if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 160, __pyx_L39_error)
+                if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 144, __pyx_L35_error)
                 #endif
                 if (__pyx_t_6 >= __pyx_temp) break;
               }
@@ -4829,7 +4703,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
               {
                 Py_ssize_t __pyx_temp = __Pyx_PyTuple_GET_SIZE(__pyx_t_1);
                 #if !CYTHON_ASSUME_SAFE_SIZE
-                if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 160, __pyx_L39_error)
+                if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 144, __pyx_L35_error)
                 #endif
                 if (__pyx_t_6 >= __pyx_temp) break;
               }
@@ -4840,13 +4714,13 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
               #endif
               ++__pyx_t_6;
             }
-            if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 160, __pyx_L39_error)
+            if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 144, __pyx_L35_error)
           } else {
             __pyx_t_3 = __pyx_t_11(__pyx_t_1);
             if (unlikely(!__pyx_t_3)) {
               PyObject* exc_type = PyErr_Occurred();
               if (exc_type) {
-                if (unlikely(!__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) __PYX_ERR(0, 160, __pyx_L39_error)
+                if (unlikely(!__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) __PYX_ERR(0, 144, __pyx_L35_error)
                 PyErr_Clear();
               }
               break;
@@ -4856,7 +4730,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
           __Pyx_XDECREF_SET(__pyx_v_c_obj, __pyx_t_3);
           __pyx_t_3 = 0;
 
-          /* "hft_backtest/backtest.pyx":161
+          /* "hft_backtest/backtest.pyx":145
  *             #
  *             for c_obj in chain(self.server_components, self.client_components):
  *                 c = <Component>c_obj             # <<<<<<<<<<<<<<
@@ -4867,16 +4741,16 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
           __Pyx_XDECREF_SET(__pyx_v_c, ((struct __pyx_obj_12hft_backtest_12event_engine_Component *)__pyx_t_3));
           __pyx_t_3 = 0;
 
-          /* "hft_backtest/backtest.pyx":162
+          /* "hft_backtest/backtest.pyx":146
  *             for c_obj in chain(self.server_components, self.client_components):
  *                 c = <Component>c_obj
  *                 c.stop()             # <<<<<<<<<<<<<<
 */
-          __pyx_t_3 = ((struct __pyx_vtabstruct_12hft_backtest_12event_engine_Component *)__pyx_v_c->__pyx_vtab)->stop(__pyx_v_c, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 162, __pyx_L39_error)
+          __pyx_t_3 = ((struct __pyx_vtabstruct_12hft_backtest_12event_engine_Component *)__pyx_v_c->__pyx_vtab)->stop(__pyx_v_c, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 146, __pyx_L35_error)
           __Pyx_GOTREF(__pyx_t_3);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-          /* "hft_backtest/backtest.pyx":160
+          /* "hft_backtest/backtest.pyx":144
  *         finally:
  *             #
  *             for c_obj in chain(self.server_components, self.client_components):             # <<<<<<<<<<<<<<
@@ -4897,7 +4771,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
       __pyx_t_15 = 0; __pyx_t_16 = 0; __pyx_t_17 = 0; __pyx_t_18 = 0; __pyx_t_19 = 0; __pyx_t_20 = 0;
       __pyx_lineno = __pyx_t_12; __pyx_clineno = __pyx_t_13; __pyx_filename = __pyx_t_14;
       goto __pyx_L1_error;
-      __pyx_L39_error:;
+      __pyx_L35_error:;
       __Pyx_XGIVEREF(__pyx_t_18);
       __Pyx_XGIVEREF(__pyx_t_19);
       __Pyx_XGIVEREF(__pyx_t_20);
@@ -4915,7 +4789,7 @@ static PyObject *__pyx_f_12hft_backtest_8backtest_14BacktestEngine_run(struct __
  *             self.client_components.append(component)
  * 
  *     cpdef run(self):             # <<<<<<<<<<<<<<
- *         # 1.
+ *         # 1.  ()
  *         cdef Component c
 */
 
@@ -7074,7 +6948,7 @@ __Pyx_RefNannySetupContext("PyInit_backtest", 0);
  *             self.client_components.append(component)
  * 
  *     cpdef run(self):             # <<<<<<<<<<<<<<
- *         # 1.
+ *         # 1.  ()
  *         cdef Component c
 */
   __pyx_t_2 = __Pyx_CyFunction_New(&__pyx_mdef_12hft_backtest_8backtest_14BacktestEngine_5run, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_BacktestEngine_run, NULL, __pyx_mstate_global->__pyx_n_u_hft_backtest_backtest, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[1])); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 66, __pyx_L1_error)
@@ -7224,25 +7098,25 @@ static int __Pyx_InitCachedConstants(__pyx_mstatetype *__pyx_mstate) {
 static int __Pyx_InitConstants(__pyx_mstatetype *__pyx_mstate) {
   CYTHON_UNUSED_VAR(__pyx_mstate);
   {
-    const struct { const unsigned int length: 10; } index[] = {{1},{179},{1},{8},{7},{6},{2},{25},{9},{244},{14},{14},{32},{34},{28},{18},{20},{5},{13},{18},{5},{22},{18},{9},{7},{8},{5},{8},{12},{21},{18},{13},{9},{5},{9},{8},{10},{8},{7},{3},{14},{12},{11},{10},{29},{14},{12},{10},{17},{13},{3},{4},{22},{12},{10},{12},{19},{5},{8},{14},{6},{12},{6},{11},{31},{548},{164},{57}};
-    #if (CYTHON_COMPRESS_STRINGS) == 2 /* compression: bz2 (1197 bytes) */
-const char* const cstring = "BZh91AY&SY\032X\317\350\000\000\303\177\377\377\357\377\376\373\377\367\335\277\273u\204\277\377\377\377\300@@@@@@@@@@@@\000@\000P\004\017\030\256l\333d\243\203\004\251\245#\365@i\351\032d\032\032\001\243@\001\240\000\r\001\240\032\003\324\003@h\311\210\332A(\221\212z&\215\r4\325=<\251\221\223!\241\240\007\244\000\000\000\000\000\000hd\000\032h!\nC\324\375MG\244zL\324\036\246\201\220\001\241\240\000\000\000\000\000\000\323&\200\340\000\000\000\000\000\000\014\206\200\000\000\000\000\000\000\000\022\210\23252bS\322z\036\250\364\364\240\332L# d4h\000\3024\3022\003M\031\006\023L\232\036\243J\nU5(\"\003\240\337P\"\244\315\234$\311h-kH\273\234\234\3772\245\261\214c\031L\340\256%\271=\320\016\013\304\270\322(\205TUEXK\227q+\007\270!Us\241\0134\226l\026\270\210\210\343E\024\025U\032A\020TF\267\233Y(#\024\377$\365\334\331a\036\364B\263BP\231UDT-\216\202\010+\267\004&\t\302F\312\021=\303\234L\244D\262\355\007\027\350x\023:\335\327\325*\032\272\234\226\"js\375\272\274x\330A\314\031\254\300\030$=\372\302?5\304N\265\023\034\351'\n\360#\rr\326\253\226\264Ra~.\005k\017\217\032\331l\024\310\0164\311,\364\336\246\236\252\245T\246R\262&#/\031\354\310U\203\373V\033\210\245\344\217\034QK|HT\017F|4H\n\366\000\323\311\1774\004\251t2\"\332\365j\"+\262\t\375L\243\215\201)$\201\\\004\215\313Ki4\2629\243\\\3359\234\211{\273\345\213\013E\271%K\376d\355\366l.\221q1MV\"\013\325\3510A\226\205\000\372\254 &\003\225\331\351h\350\304%\352\346\316\3653\001\204\313x\025\247\0003X\025Y\201P\255\n\000\221\221\002L\2515$_\276\370\"Z\233\350l\210\265[\2617\007[\355p\215 \345d\314X\376\014u\330\301%c\n\\t\355Y\264h\005u\371\324\305\204\374s\202\206\232$\264\340\264\017\261\374'G$\314D,&o\251\212\260\201\372T\212\001\002 \232\324U#\252\30722\321}Ex\231)\nts\263\265\367@\2272\210\220\3129#bKI-\207g$\226\222\323\037\367\251\235n\005\027>\362\263\260\254\000d*jX(\036\240\241\014\342L\226X\321\350\025\241h%Z\\%*\220\016\223\363F}tJ\306\223/\243\350\203\252b\006\312\251\221U\352\305B\027\376\265\024F%\016>""\353\231\"\322\003\243+\244\254z\360\000\036\343e\317\032q\252\332\326\021-!\306\033q\300d\001\321-\326\230\031\n!\2562:cI\004\235U\324IT\022\302.\316YS\241\024\010@%.\225@h\2607\2021\316D\307$\203\320\034\245\361\231\217\226\342\026 \334\264LhZW\210\342\330\rY\361TJ\373\215\034\263!u\023?\006\207\005tWwlL(\030\024\232\210J\245\3268t\301\304u\000f\201J\246J\242:\332\243Y\020\214\254pX\023\026Vdn\024\2355\202\375\026 \235p\354cK\250\204\343EF?\350\2433\034\305\241\021\204\241:(\231\266\021\256\022;\350\340n\316\004MD\203\032\310\304U\242\n\331D.\253I\202\025\240\332.b\037-\242\307\300\224m\304#r\327\224m\254\277\373\224\260'\316dS\254\370\246c\341h.\260X\351TFZ\321;~\264R\221x$\034\n\230\217\007\217\340\252]\2002\355J\207\204\356\005cMDI\356\232xgyt\253\250\215\306\235k!\360FA;\033\375&\257\221\001\021T\020\032'\245\026\231\317\034\217\253\035\026k\023\005kt3\314\232oz\331\030>\265\343\345Q\201\340\272\336\217g\323\217\211\351\t\266\364\3427%O\307w?ORkx\004\251\370\215q\177v\336#\223\202\036,a'\010\263\364\314?\207\262\\j@\217\034\310\177\222\016\276hx\206\2060\346x\340bB\357!\225\004\020\200\355*/\014\252\001\322\037Y\n\221\3550\212B\276\013\343Pz\260\001r\356\332\367\275}}\376\324\263\263?\035\317\264f\035DK\tB2Axp\32544\224\314@\005\342Q0\275<\332\2070\022\010\250\n\2441\002\177^\307\022\262\305w\377\213\271\"\234(H\r,g\364\000";
-    PyObject *data = __Pyx_DecompressString(cstring, 1197, 2);
+    const struct { const unsigned int length: 9; } index[] = {{1},{179},{1},{8},{7},{6},{2},{25},{9},{244},{14},{14},{32},{34},{28},{18},{20},{5},{13},{18},{5},{22},{18},{9},{7},{8},{5},{8},{12},{21},{18},{13},{9},{5},{9},{8},{10},{8},{7},{3},{14},{12},{11},{10},{29},{14},{12},{10},{17},{13},{3},{4},{22},{12},{10},{12},{19},{5},{8},{14},{6},{12},{6},{11},{31},{460},{164},{57}};
+    #if (CYTHON_COMPRESS_STRINGS) == 2 /* compression: bz2 (1178 bytes) */
+const char* const cstring = "BZh91AY&SYO\212\332\230\000\000\263\177\377\377\357\376\376\373\337\367\335\377\273u\204\277\377\377\377\300@@@@@@@@@@@@\000@\000P\003\373\243\2753l\222\241\341\202T\324\24043Q\243\324\320\000h\003FF\200\320\r\000\r\000z\2316\240\365\001\246\20354\364A\222L&\202=T\3750\200$\321\350\232i\246\200\321\240\000\000\000\000\032\0004\000\320\tA\032B)\372L\246L\230F\206\215\000\000\000\000\000\000\000\000\006\207\244h\002&\2516\232\214\232\r2b`\023L\230&&\000\000\010\300F\004h\320\3024\311\223\001\2405&\204\322z\236\201\224\362\207\210\324\311\204\032\006\206\214L\231\031\030\231\000d\320\000hh4a\003\374\211]@\252\212\341\326@T\320\374\351\013\370\302\247\350wgV\350\365;\276\035\014:1\021\021\007v\2017\t\207\3009\220\220\211\010a\242\026X\010\220D\202%\001\235%\211\240:P\001\301\022\2128\001\231\2533.\231\277\342\205\211`*\252\2509*\005h\357\235\210\231%\202\226\337\225\331\224\240\027\234.\210k\344\357m\367\330\205k)\332J\2112\352\222+%\262 \2770\323\334\213\326\323\036\230t9,\211\241\317\367a\344I\212\341\206\321`\030J\376\032\"S[\003\305N\321\026@\014\027\n\205\344\306\211\215)\254T\354\032\230Q\377\0164\300,j\210\360\353B\252\255\001\324Q\262\243|\302\232R\025\330\230\006q\262\006\032\237\251.\350\206\004\310r\346\244s\321\2028j\035\212\033\"\0004mAp\2611\244)\303)\t\276yFj\013]\345_\247:Q&(\301\211\211\\\325\215=V\2601\254\341N\322v]\317,U0%\251.\247\371Pg\2576\330d\r\304|\244\213$\330\210\021\244P\201\256\246\021Vd\225\263\377zZS\232c\331G\224\253w\rz\306\354g\244\301\336\340\314\356+\014\363`!aB\035\222\214\252eeU*-\177t=\202-\327\365[\207\201\360\375\226$\263xv\205o\202\236\260(#\202\224><Fi\226\203\014u\030\026\302\027v\300P\361\226\021U6\340 \312\022\232\271'Q#\010\235\232\312D{\307\355\014O\001\342 '\216+\013l\2759Tb\204\010\340\234<`\334m3\263\265W\200\271\233\212\350g\256\254\327*\274&\t\311\344\252\252\360\325e\376\257\322\311\005M\243\216\317',\001`\255\352\3065%J\n\021xKS-\234\251\003\022\034\014\330\330\0164+\014\227\357{\255A0\032j\240\272\227\266\352\210""\031n\316Q\034\212B\037G\322\350\245`\322\321\370L\311\022\260\003V$\215\262\256L\300\002\341\026\223\256\271\225hH\t\241\002\306\\\031`\350\022D\301\222\2635LM\361\035$\231\020\204I\232LC0\252\344\361i\031\364\251J\204PULUd\026\245\254\336\010\321\010\2316XQ\002\024\3006m.Z\203\021\014\310M\362#G\002\3210\001\211\013.\211]i\201\2519\026\311\316\271\237\301M\024\336L&2\006\235M6-w\024\274\320E\005\273&\002\225B\253\";_c\"sGg\\\222\003Cd\305\242\244I\245\027\343H\200\266\224\354\326m\222 \030\020\251\332\350\025\221\252K\204\250J\004\n\003\233\204-*\013\240\264\006g\274D\302^\246)`\242R\364d\240\213h\3018\017\300C)\265`t\261\214.x\2242\321\013j`\2764p\321\261(\304\0046\212\212\t\013'S\237\030\026\324\021u\241-\310\271\353R\022\212\322\0317\023j@B\274\207\355x\006\345'Cr\366\335\372\353\346\243\264\313\327\221\233\222\251D\216t\355X\305\344\220\202Kj\200\342\307B*\222\002\343\251O\2542\330\316\303(\262\310\021\311\302\243\311\250\363'\2342\256\014\217[A\205x\245\227g\263\016\023\035L&\232\327\316\2275Vc\330?0\022|\270G\333\261\027\346\240\326\032Q\304\211\306#\202,~\232\005\001\374\332/\274\204]\330\254-2\226\2242\214b\025\373F\010\360\201X\217 \221i\007\30457\3518\331/\260\r2\350;\237X\206\014\346\366\267\247\271\327\216\016\307\353\331\372Od\266\3165\212\212f\013)\310v+Y\2740\253A\325e\023\240\334\376A57\322.\211\374\262$\\\255\307\263\376.\344\212p\241 \237\025\2650";
+    PyObject *data = __Pyx_DecompressString(cstring, 1178, 2);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #elif (CYTHON_COMPRESS_STRINGS) != 0 /* compression: zlib (1058 bytes) */
-const char* const cstring = "x\332\215SKS\033G\020F\212b\213\342a\311\210 \022\\\031\231\262\311\303\226-\n\233TH\221\302\301\246H\312\024P\224sI\325\324hw$-\254f\305\316,\226\354\340p\324q\217s\334\343\036\367\250#G\037\367\270\307\375\t\374\204\364\240GI\001b\037v\272\247\347\353\236o\272\277-\356X\202\"Q#\002\375\326\0225\213!\203#\235\232F\231\332DP\263\205\270\260\rMP[\201\030\332}\271\373x\345\247\025D\230\216lzH5\301\021w\312\232I8\247\034Y\025Tv\014S\030\014\211V\203\362\"\332\256\240\226\345 F\251\216\204\205\032\200\033N\0205\312\020\247B9h\2110f\t\"\014\213aH7Xu\t\351\206\r\227\030'Te\277\"&\247\305_\211\256c\000R\335\340\244lR\312\324Z\325j\025\201\313D;\022\224\213'}\247\330h5\r\336\205\350\234\232\225\242f\032\224\211eN\355\023j\343\262\303\325\223\241\034\332\261\030E\226\215\206PX\263\352\r\0103\361\277(\312\252\006D\257C\350D\020\365\276\353\316\272\024\226{Enb\322#\372\t&=\324U&\277\250\001\262*\267\034[\243\353/zmyy\211\033\335\0251\266\251\356h\024k\227R\300\370\3129\274\204\303\200nD\250\311\014\210\376\347\314v\000\277\333j\302\267\t\212\302;\264)\366i\345\300\250\203\324\206\363\010o1\315\260\212\232e[\016H\211r\255F\0146:7\320(iA\313 \312(6@06\321\250\232\372\240N\257\365\030\353\352\272\276\2518L\203\r\256\366\237\202\207uS\354;#A\2418b\203\343\001%\360\273D\014A\353\034\026[X\226\3111\256\003SU\276n\351\216I\225\307H\275k\351[\214\033V\003\026h\202V\243\332\021w\352\335\235M\271c\212\256\337c\245\\\365\017u=\2075\014\355\010\n\2166\265{x\"\224\272\325\035\307\0161\373\367\365f\211\257Lu\020\240Mp\035\246\3643*\305~s/\007\336{\000x:\255\220K\232\003\031\340k$\321;Q$a\355v\216A\203N\210\3514`&\324\341t\220\245\202\224\237%\242\324#\177\303\177\023\224\3166\242\364D\273\024Mf\302\314}o\311\317\372\205x\310?\333\270\27056>\325\336v\017d\026@\356\204\004\354T\373\215[r7e\"JO\336t\244\362\026 \222\376Z\026z\313\267\3628N\337\367\nqz<\236\374F\256\310\246\367>(\000p*\323>\225[\3363?\345o\006\211(sO\376\345gU|\306},\337z$\312\314\313\005o\017\"\331\234\273\022\316}\357\317""\005\267\002\022\345\026\344F\014\313f\210\226\203\245\316W\035\373<\033gf>\005Qu\346\201< \237\313\273r\325\373\316/\\\331\254\311\262w\333k\372\307\335[\237\313\031\271\021\345\362a\376\007\277\330It\262Qn6\276\314\271>\276&5/\033\347\362r\332\323\375\202\377,H\004\260\235s\005\264$\377P\305\342\374\003o\257\207^\225\213\022\374>\272\024\347\026\275\025\270\374}\347\262=\323\237\361\250\317\204(\276\277\303%\017\203/\202\322\310\033f\347\303\371\037\375\365N\266S\210\207\374\213\364\330T\326\035\227\263\222H\021.\256\006\242S\21229\367\017y\034e\262\356\254K\316\022\200\371r\272}\020f\037x\007\376\275@\017\177\336\371\250\207\373\225\260r\030\036\276\013\337}\270\030\033\373'\261\235\004\263\235|\255\314\353$Q\206$\25124\331R\246\225<U\3464\371!\031\245&\333[ \244W\362\021\214?u\373\354\244\375\247\373R\346\240K\351\273.hi\316\005-\345a\210pv\034\245\357\204w\236\370\"(\005[\235\265\363\352\307\275x4\002\034\343\024\310/DO\203\t\330\037\205{\373Qj\306]\367\362J\345\252\310\3370\004\250\3734H\204\245\027\347\305pw/J\301\217\361/\007A\365+";
-    PyObject *data = __Pyx_DecompressString(cstring, 1058, 1);
+    #elif (CYTHON_COMPRESS_STRINGS) != 0 /* compression: zlib (1036 bytes) */
+const char* const cstring = "x\332\205SMS\033G\020E\212\022\213\342\303\222\021e\221\340\312\310\224M*\261\327\226\013\207TH\221\340`S$e\nQ\224sI\325\324hw$-\254f\305\316,\226\354\340p\324q\217s\334\343\036\367\250#G\037\367\270G\375\004~Bz\364e)@r\320tO\367\353\331\327\335O\332\236-(\0225\"\320\257-Q\263\031292\250e\226\251C\004\265Z\210\013\307\324\005u\024\210\241\375\227\373\217\327~XC\204\031\310\241GT\027\034q\267\254[\204s\312\221]Ae\327\264\204\311\220h5(\327\320n\005\265l\0271J\r$l\324\000\334x\201\250Q\2068\025\312A\253\2041[\020a\332\014C\271\311\252\253\3100\035\370\210yJU\365+bq\252\375L\014\003\003\220\032&'e\213R\246\316\252^\253\010\\&\372\261\240\\<\031:Z\243\3254y\037bpjU4\3352)\023\3178uN\251\203\313.W-\303sh\317f\024\331\016\032Ca\335\2567 \314\304\177\242(\253\232\020\275\016a\020AT\177\327\345\372\024\236\r\036\271\211\311\200\350\3770\031\240\2562\371I-\220U\271\355::\335|1\030\313\313\036n\362\246a\354P\303\325)\326{R\300\370J\036:\341\260\240\033\021j3#\242\377\3129.\340\367[M\370m\203\242\360\036m\212\003Z94\353 \265\361:\302[L7mM\267\035\333\005)Q\256\327\210\311&\367\006\032%-\030\031D\031\305&\010\306!:U[\037\2753\030=\306\206\372\334\320T\\\246\303\005W\207\255\340q\335hCg\"(\024Glr<\242\004~\237\210)h\235\303\341\010\333\2668\306u`\252\236\257\333\206kQ\3451R\357[\372\026\343\206\335\200\003\206\240\327\250~\314\335z\377\346P\356Z\242\357\017X)W\375\207\372\236\313\032\246~\014\017N\016\265\237<\025J\335\352\033'.\261\206\337\033\354\022_\331\352(@\233\340\272L\351gR\212\303\341\366\026>h\000<\203VH\217\346H\006\370\032I\0142\212$\234\375\3111\030\320)\261\334\006\354\204\272\234\216\252T\220\362\363D\234z\024l\005o\302\342\371V\234\236i\027\343\331L\224\271\357\257\006\331\240\320\035\363\317\267.\277\230\232\236k\357z\2072\013 oF\002v\256\375\306+z\3332\021\247goJ\251\272e\210\244\277\224\205\301\361\265<\351\246\357\373\205nz\272;\373\225\\\223M\377}X\000\340\\\246}&w\374\347A*\330\016\023q\346\236\3743\310\252\370\202\367X\276\365I\234Y\222\313~\3512=\225]""\222\251hY\213\264_.\000\227\377t\0014\344 \266\340}/\357\310u\377\233\240p\345\262!\313\376-\277\031\234(t\016r\013r+\316\345\243\374\267\201\326It\262qn\261\333\253\271>\276!u\037\374\274\234\367\215\240\020<\017\023!\\\357z\002\332\314?T\261n\376\201_\032\240\327\345\212,}B\027\343\334\212\277\006\037\177\337\351\265<\337\035\247?\321\313\220\303oP\3700\374,,N\360Z\\\212\226\276\0136;\331N\241;\346\303p\346\262\336\264\\\224D\212he=\024\235b\234\311y\277\313\2238\223\365\026=r\236\000\314\347\363\355\303(\373\300?\014\356\205F\364\343\336G#:\250D\225\243\350\350]\364\356\303\345\324\324\337\211\335$\230\335\344ke^'\2112$I\225\241\311\2262\255\344\2312g\311\017\31185\333\336\201\205\277\222\217`M\251[\347\247\355?\274\2272\007\235\247\357x\260\363\273\036\354<\017\213\201\334I\234\276\035\335~\022\210\260\030\356t6.\252\037K\335\311\010p\354\246@&\021z\032\316\300\3758*\035\304\251\005o\323\317+5\252G\376\202\301\302\273O\303DT|q\241E\373\2458\005\002\376\007\234*\320I";
+    PyObject *data = __Pyx_DecompressString(cstring, 1036, 1);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #else /* compression: none (1969 bytes) */
-const char* const bytes = ".Note that Cython is deliberately stricter than PEP-484 and rejects subclasses of builtin types. If you need to pass subclasses then set the 'annotation_typing' directive to False.?add_notedisableenablegchft_backtest/backtest.pyxisenabledself.client2server_bus is not None or self.client_components is not None or self.client_engine is not None or self.dataset is not None or self.server2client_bus is not None or self.server_components is not None or self.server_engine is not None<stringsource>BacktestEngineBacktestEngine.__reduce_cython__BacktestEngine.__setstate_cython__BacktestEngine.add_componentBacktestEngine.run__Pyx_PyDict_NextRefTimeradd_componentasyncio.coroutineschainclient2server_delaybuscline_in_tracebackcomponentdataset__dict___dict__func____getstate__hft_backtest.backtesthft_backtest.timer_is_coroutineis_serveritemsitertools__main____module____name____new__pop__pyx_checksum__pyx_result__pyx_state__pyx_type__pyx_unpickle_BacktestEngine__pyx_vtable____qualname____reduce____reduce_cython____reduce_ex__runselfserver2client_delaybus__set_name__setdefault__setstate____setstate_cython__state__test__timer_intervalupdateuse_setstatevalues\200\001\330\004,\250A\250V\2601\200A\330\010\013\2101\330\014\020\320\020\"\240'\250\021\250!\340\014\020\320\020\"\240'\250\021\250!\200A\360\006\000\t\r\210I\220T\230\021\330\014\020\220\013\2301\330\014\r\210V\2201\220D\230\001\330\010\014\210I\220T\230\021\330\014\020\220\013\2301\330\014\r\210V\2201\220D\230\001\360\006\000\t\034\2301\330\010\032\230!\330\010\032\230!\330\010\037\230q\340\010\"\240!\340\010\t\340\014\033\2304\230x\240{\260!\360\006\000\r\020\210}\230G\2405\250\004\250D\260\001\330\020\035\230\\\250\021\360\006\000\r\023\220-\230w\240a\330\020\031\230\034\240Q\360\006\000\021\024\2204\320\027)\250\027\260\006\260a\330\024\034\230A\340\024\034\230D\320 2\260'\270\026\270r\300\021\340\020\023\2204\320\027)\250\027\260\006\260a\330\024\034\230A\340\024\034\230D\320 2\260'\270\026\270r\300\021\360\006\000\021""\031\230\001\330\020\023\2206\230\022\2307\240(\250!\330\020\023\2206\230\022\2307\240(\250!\330\020\023\220;\230b\240\007\240x\250q\360\006\000\021\024\2206\230\023\230A\330\024\030\320\030*\250.\270\001\270\021\330\024\025\340\020\023\2206\230\023\230A\330\024\030\320\030*\250.\270\001\270\021\330\024\025\340\020\023\220;\230c\240\021\340\024\030\230\016\240d\250!\2505\260\001\260\021\340\024\027\220t\2301\330\030&\240d\250!\340\030%\240Q\330\024\025\340\020\023\2207\230#\230Q\330\024\030\230\016\240d\250!\2501\340\024#\2404\240x\250{\270!\360\006\000\r\016\340\020\023\2204\320\027)\250\027\260\006\260a\330\024\034\230A\340\024\034\230D\320 2\260'\270\026\270r\300\021\340\020\023\2204\320\027)\250\027\260\006\260a\330\024\034\230A\340\024\034\230D\320 2\260'\270\026\270r\300\021\340\020\023\2206\230\023\230J\240d\250&\260\003\2601\330\024\025\340\020\023\2206\230\023\230A\330\025\031\320\031+\250>\270\021\270!\340\025\031\320\031+\250>\270\021\270!\360\010\000\r\021\220\t\230\025\230a\230t\320#7\260t\2701\330\020\024\220K\230q\330\020\021\220\025\220a\200\001\360\010\000\005\016\210T\320\021%\240T\250\035\260d\320:N\310d\320Rf\320fj\320jz\320z~\360\000\000\177\001I\002\360\000\000I\002M\002\360\000\000M\002a\002\360\000\000a\002e\002\360\000\000e\002y\002\360\000\000y\002}\002\360\000\000}\002~\002\330\004\014\210G\2201\220F\230,\240a\330\004\007\200v\210W\220E\230\024\230Q\330\010\022\220!\330\010\027\220q\340\010\030\230\001\330\004\007\200q\330\010\017\320\017/\250t\2601\260G\270;\300g\310Q\340\010\017\320\017/\250t\2601\260G\270;\300a\200\001\340\004\037\230q\320 0\260\013\270;\300k\320QR\330\004\023\220>\240\030\250\021\250!\330\004\007\200|\2207\230!\330\0100\260\001\3201B\300.\320PQ\330\004\013\2101";
+    #else /* compression: none (1881 bytes) */
+const char* const bytes = ".Note that Cython is deliberately stricter than PEP-484 and rejects subclasses of builtin types. If you need to pass subclasses then set the 'annotation_typing' directive to False.?add_notedisableenablegchft_backtest/backtest.pyxisenabledself.client2server_bus is not None or self.client_components is not None or self.client_engine is not None or self.dataset is not None or self.server2client_bus is not None or self.server_components is not None or self.server_engine is not None<stringsource>BacktestEngineBacktestEngine.__reduce_cython__BacktestEngine.__setstate_cython__BacktestEngine.add_componentBacktestEngine.run__Pyx_PyDict_NextRefTimeradd_componentasyncio.coroutineschainclient2server_delaybuscline_in_tracebackcomponentdataset__dict___dict__func____getstate__hft_backtest.backtesthft_backtest.timer_is_coroutineis_serveritemsitertools__main____module____name____new__pop__pyx_checksum__pyx_result__pyx_state__pyx_type__pyx_unpickle_BacktestEngine__pyx_vtable____qualname____reduce____reduce_cython____reduce_ex__runselfserver2client_delaybus__set_name__setdefault__setstate____setstate_cython__state__test__timer_intervalupdateuse_setstatevalues\200\001\330\004,\250A\250V\2601\200A\330\010\013\2101\330\014\020\320\020\"\240'\250\021\250!\340\014\020\320\020\"\240'\250\021\250!\200A\360\006\000\t\r\210I\220T\230\021\330\014\020\220\013\2301\330\014\r\210V\2201\220D\230\001\330\010\014\210I\220T\230\021\330\014\020\220\013\2301\330\014\r\210V\2201\220D\230\001\360\006\000\t\034\2301\330\010\032\230!\330\010\032\230!\330\010\037\230q\340\010\"\240!\340\010\t\340\014\033\2304\230x\240{\260!\360\006\000\r\020\210}\230G\2405\250\004\250D\260\001\330\020\035\230\\\250\021\360\006\000\r\023\220-\230w\240a\330\020\031\230\034\240Q\360\010\000\021\031\230\004\320\034.\320.@\300\001\330\020\030\230\004\320\034.\320.@\300\001\360\006\000\021\031\230\001\330\020\023\2206\230\022\2307\240(\250!\330\020\023\2206\230\022\2307\240(\250!\330\020\023\220;\230b\240\007\240x\250q\360\006""\000\021\024\2206\230\023\230A\330\024\030\320\030*\250.\270\001\270\021\330\024\025\340\020\023\2206\230\023\230A\330\024\030\320\030*\250.\270\001\270\021\330\024\025\340\020\023\220;\230c\240\021\330\024\030\230\016\240d\250!\2505\260\001\260\021\330\024\027\220t\2301\330\030&\240d\250!\340\030%\240Q\330\024\025\340\020\023\2207\230#\230Q\330\024\030\230\016\240d\250!\2501\330\024#\2404\240x\250{\270!\360\006\000\r\016\340\020\030\230\004\320\034.\320.@\300\001\330\020\030\230\004\320\034.\320.@\300\001\340\020\023\2206\230\023\230J\240d\250&\260\003\2601\330\024\025\340\020\023\2206\230\023\230A\330\025\031\320\031+\250>\270\021\270!\340\025\031\320\031+\250>\270\021\270!\360\010\000\r\021\220\t\230\025\230a\230t\320#7\260t\2701\330\020\024\220K\230q\330\020\021\220\025\220a\200\001\360\010\000\005\016\210T\320\021%\240T\250\035\260d\320:N\310d\320Rf\320fj\320jz\320z~\360\000\000\177\001I\002\360\000\000I\002M\002\360\000\000M\002a\002\360\000\000a\002e\002\360\000\000e\002y\002\360\000\000y\002}\002\360\000\000}\002~\002\330\004\014\210G\2201\220F\230,\240a\330\004\007\200v\210W\220E\230\024\230Q\330\010\022\220!\330\010\027\220q\340\010\030\230\001\330\004\007\200q\330\010\017\320\017/\250t\2601\260G\270;\300g\310Q\340\010\017\320\017/\250t\2601\260G\270;\300a\200\001\340\004\037\230q\320 0\260\013\270;\300k\320QR\330\004\023\220>\240\030\250\021\250!\330\004\007\200|\2207\230!\330\0100\260\001\3201B\300.\320PQ\330\004\013\2101";
     PyObject *data = NULL;
     CYTHON_UNUSED_VAR(__Pyx_DecompressString);
     #endif

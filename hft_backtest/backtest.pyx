@@ -64,7 +64,7 @@ cdef class BacktestEngine:
             self.client_components.append(component)
             
     cpdef run(self):
-        # 1. 启动所有组件
+        # 1. 启动组件 (保持不变)
         cdef Component c
         for c_obj in self.server_components:
             c = <Component>c_obj
@@ -73,7 +73,7 @@ cdef class BacktestEngine:
             c = <Component>c_obj
             c.start(self.client_engine)
             
-        # 2. 声明 C 变量 (放在循环外)
+        # 2. 声明 C 变量
         cdef long t_data = LLONG_MAX
         cdef long t_s2c = LLONG_MAX
         cdef long t_c2s = LLONG_MAX
@@ -93,36 +93,28 @@ cdef class BacktestEngine:
             while current_data is not None:
                 t_data = current_data.timestamp
                 
-                # 【极速优化】直接检查 C++ vector 是否为空，避免 Python 属性调用
-                if self.server2client_bus._queue.empty():
-                    t_s2c = LLONG_MAX
-                else:
-                    t_s2c = self.server2client_bus._queue.front().trigger_time
+                # 【重构后】直接获取触发时间，空队列自动返回 LLONG_MAX
+                # 不再直接访问 ._queue
+                t_s2c = self.server2client_bus.peek_trigger_time()
+                t_c2s = self.client2server_bus.peek_trigger_time()
                     
-                if self.client2server_bus._queue.empty():
-                    t_c2s = LLONG_MAX
-                else:
-                    t_c2s = self.client2server_bus._queue.front().trigger_time
-                    
-                # 手写 min 比较 (比 Python min() 快)
+                # 手写 min 比较
                 min_t = t_data
                 if t_s2c < min_t: min_t = t_s2c
                 if t_c2s < min_t: min_t = t_c2s
                 if next_timer < min_t: min_t = next_timer
-                
+        
                 # 优先级处理
                 if t_s2c <= min_t:
                     self.server2client_bus.process_until(t_s2c)
                     continue
-                    
+                
                 if t_c2s <= min_t:
                     self.client2server_bus.process_until(t_c2s)
                     continue
                     
                 if next_timer <= min_t:
-                    # 实例化 Timer (这是少数还要调用 Python 的地方，无法避免)
                     self.client_engine.put(Timer(next_timer))
-                    
                     if self._use_timer:
                         next_timer += self._timer_interval_v
                     else:
@@ -131,21 +123,13 @@ cdef class BacktestEngine:
                     
                 if t_data == min_t:
                     self.server_engine.put(current_data)
-                    # 高速读取下一条
                     current_data = self.dataset.fetch_next()
             
             # --- 收尾逻辑 ---
             while True:
-                # 再次检查剩余的延迟消息
-                if self.server2client_bus._queue.empty():
-                    t_s2c = LLONG_MAX
-                else:
-                    t_s2c = self.server2client_bus._queue.front().trigger_time
-                    
-                if self.client2server_bus._queue.empty():
-                    t_c2s = LLONG_MAX
-                else:
-                    t_c2s = self.client2server_bus._queue.front().trigger_time
+                # 【重构后】收尾阶段同样使用新接口
+                t_s2c = self.server2client_bus.peek_trigger_time()
+                t_c2s = self.client2server_bus.peek_trigger_time()
                     
                 if t_s2c == LLONG_MAX and t_c2s == LLONG_MAX:
                     break

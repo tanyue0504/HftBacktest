@@ -6,6 +6,7 @@
 # cython: cdivision=True
 
 from cpython.ref cimport Py_INCREF, Py_DECREF
+from libc.limits cimport LLONG_MAX
 import math
 
 # 导入 Component 供继承
@@ -71,18 +72,16 @@ cdef class DelayBus(Component):
         if event.source != self._source_id:
             return
 
-        # 【核心修复 START】================================================
-        # 在接收端立即进行物理克隆（Snapshot），切断引用。
-        # 这样即使发送方在延迟期间修改了原 event 对象，也不会影响已经在总线中的副本。
+        # 【核心修复】使用 derive (现已基于 copy.copy) 创建副本
+        # 这确保了如果发送方后续修改对象，不会影响延迟总线中的副本
         cdef Event snapshot = event.derive()
         
-        # 还原元数据 (derive 通常会重置这些路由信息，作为网线我们需要保留)
+        # 还原元数据 (因为 derive 会重置这些路由信息，作为网线我们需要保留原始信息)
         snapshot.timestamp = event.timestamp
         snapshot.source = event.source
         snapshot.producer = event.producer
-        # 【核心修复 END】==================================================
 
-        # 2. 计算延迟 (使用原事件或副本均可，这里用原事件计算)
+        # 2. 计算延迟 (使用原事件或副本均可)
         cdef long delay = self.model.get_delay(event)
         cdef long trigger_time = event.timestamp + delay
         
@@ -110,6 +109,24 @@ cdef class DelayBus(Component):
             return float('inf')
         return self._queue.front().trigger_time
 
+    # ====================================================
+    # 解耦接口 (C-API)
+    # 供 BacktestEngine 直接调用，避免直接访问 _queue
+    # ====================================================
+    
+    cdef bint is_empty(self):
+        """C 级快速判空"""
+        return self._queue.empty()
+
+    cdef long peek_trigger_time(self):
+        """
+        C 级快速查看堆顶时间。
+        如果队列为空，返回 LLONG_MAX，方便比较逻辑。
+        """
+        if self._queue.empty():
+            return LLONG_MAX
+        return self._queue.front().trigger_time
+
     # ----------------------------------------------------
     #  Min-Heap Logic (C++ Vector)
     # ----------------------------------------------------
@@ -120,7 +137,8 @@ cdef class DelayBus(Component):
         item.event = <PyObject*>event
         
         # [关键] 增加引用计数，防止 Event 在传输过程中被 GC
-        # 这里的 event 已经是 on_event 里传进来的 snapshot 了
+        # 即使 derive 改用了 copy.copy，这里依然需要 INCREF，
+        # 因为 std::vector 存的是裸指针，不懂 Python 的生命周期。
         Py_INCREF(event)
         
         self._queue.push_back(item)
@@ -129,7 +147,6 @@ cdef class DelayBus(Component):
     cdef void _pop_and_process(self):
         # 1. 取出堆顶
         cdef BusItem top = self._queue.front()
-        # 此时取出的已经是之前 clone 好的 snapshot
         cdef Event event = <Event>top.event
         
         # 2. 移除并保持堆序
@@ -146,10 +163,11 @@ cdef class DelayBus(Component):
             self.target_engine.timestamp = top.trigger_time
 
         # 【直接推送】
-        # 因为在 on_event 已经做过 clone，这里拿到的 event 已经是独占副本，可以直接推送
         self.target_engine.put(event)
         
-        # 释放堆中持有的引用 (Queue 不再持有，Target Engine 会接手或处理完释放)
+        # [关键] 释放堆中持有的引用
+        # 此时 target_engine 可能已经接手了该对象（增加了它的引用），
+        # 或者处理完不再需要了。我们需要释放 DelayBus 持有的那份引用。
         Py_DECREF(event)
 
     cdef void _sift_up(self, size_t idx):

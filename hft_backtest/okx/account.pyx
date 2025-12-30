@@ -7,6 +7,7 @@ from collections import defaultdict
 from hft_backtest.event_engine cimport EventEngine
 from hft_backtest.order cimport Order
 from hft_backtest.okx.event cimport OKXTrades, OKXFundingRate, OKXDelivery
+from hft_backtest.account cimport Account
 
 cdef class OKXAccount(Account):
     def __init__(self, double initial_balance = 0.0):

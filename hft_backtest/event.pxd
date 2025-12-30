@@ -6,6 +6,4 @@ cdef class Event:
     cdef public unsigned long source
     cdef public unsigned long producer
 
-    # 声明 C 方法 (必须在此声明，否则 .pyx 无法实现)
-    cdef Event _c_clone(self)
     cpdef Event derive(self)

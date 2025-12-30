@@ -40,7 +40,7 @@ class TestEvent:
         assert e1 < e2
         assert not (e2 < e1)
 
-    @pytest.mark.xfail(reason="Event.derive() uses raw memcpy and ignores Python __dict__ attributes", strict=True)
+    # @pytest.mark.xfail(reason="Event.derive() uses raw memcpy and ignores Python __dict__ attributes", strict=True)
     def test_python_subclass_attributes(self):
         """
         测试 Python 子类的属性处理
@@ -60,7 +60,7 @@ class TestEvent:
         # 但目前不支持，所以预期会抛出 AttributeError
         assert e_derived.payload is data
 
-    @pytest.mark.xfail(reason="Event.derive() does not support dynamic attributes", strict=True)
+    # @pytest.mark.xfail(reason="Event.derive() does not support dynamic attributes", strict=True)
     def test_memory_safety_stress(self):
         """
         压力测试：检测内存泄漏或非法访问

@@ -1634,7 +1634,6 @@ struct __pyx_obj_12hft_backtest_14merged_dataset_MergedDataset {
 */
 
 struct __pyx_vtabstruct_12hft_backtest_5event_Event {
-  struct __pyx_obj_12hft_backtest_5event_Event *(*_c_clone)(struct __pyx_obj_12hft_backtest_5event_Event *);
   struct __pyx_obj_12hft_backtest_5event_Event *(*derive)(struct __pyx_obj_12hft_backtest_5event_Event *, int __pyx_skip_dispatch);
 };
 static struct __pyx_vtabstruct_12hft_backtest_5event_Event *__pyx_vtabptr_12hft_backtest_5event_Event;

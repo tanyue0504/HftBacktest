@@ -11,7 +11,7 @@ cdef extern from "Python.h":
     ctypedef struct PyMemberDef:
         char *name
         int type
-        int offset
+        Py_ssize_t offset
         int flags
         char *doc
 

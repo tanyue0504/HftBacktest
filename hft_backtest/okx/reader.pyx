@@ -14,35 +14,57 @@ from hft_backtest.okx.event cimport OKXTrades, OKXBookticker
 np.import_array()
 
 cdef class OKXTradesArrayReader(DataReader):
-    def __init__(self, df):
-        # 预先提取 Numpy 数组并转换为 C MemoryView
-        # 强制转换类型以确保 C 级别访问安全
-        self.created_times = df['created_time'].values.astype(np.int64)
-        self.trade_ids = df['trade_id'].values.astype(np.int64)
-        self.prices = df['price'].values.astype(np.float64)
-        self.sizes = df['size'].values.astype(np.float64)
-        
-        # 字符串列 (Object 数组)
-        self.instrument_names = df['instrument_name'].values
-        self.sides = df['side'].values
-        
-        self.length = len(self.created_times)
+    def __init__(self, dataset):
+        """
+        :param dataset: 任何迭代返回 DataFrame 的对象 (如 ParquetDataset(mode='batch'))
+        """
+        self.batch_iterator = iter(dataset)
+        self.length = 0
         self.idx = 0
+        self.current_df = None
+        # 初始化时尝试加载第一批
+        self.load_next_batch()
+
+    cdef void load_next_batch(self):
+        try:
+            # 1. 跨语言调用：获取下一个 DataFrame Batch
+            df = next(self.batch_iterator)
+            
+            # 2. 绑定内存视图 (极快)
+            self.created_times = df['created_time'].values.astype(np.int64)
+            self.trade_ids = df['trade_id'].values.astype(np.int64)
+            self.prices = df['price'].values.astype(np.float64)
+            self.sizes = df['size'].values.astype(np.float64)
+            self.instrument_names = df['instrument_name'].values
+            self.sides = df['side'].values
+            
+            # 3. 更新状态
+            self.current_df = df # 重要：保活
+            self.length = len(df)
+            self.idx = 0
+            
+        except StopIteration:
+            self.length = 0
+            self.current_df = None
 
     cdef Event fetch_next(self):
+        cdef OKXTrades evt
+        
+        # 1. 检查库存
         if self.idx >= self.length:
+            self.load_next_batch()
+            
+        # 2. 检查是否读完
+        if self.length == 0:
             return None
             
-        # 1. 极速创建对象 (绕过 __init__)
-        cdef OKXTrades evt = OKXTrades.__new__(OKXTrades)
+        # 3. 极速创建与赋值
+        evt = OKXTrades.__new__(OKXTrades)
         
-        # 2. C 级别直接赋值
         evt.timestamp = self.created_times[self.idx]
         evt.trade_id = self.trade_ids[self.idx]
         evt.price = self.prices[self.idx]
         evt.size = self.sizes[self.idx]
-        
-        # 3. 字符串引用赋值
         evt.symbol = self.instrument_names[self.idx]
         evt.side = self.sides[self.idx]
         
@@ -50,55 +72,82 @@ cdef class OKXTradesArrayReader(DataReader):
         return evt
 
 cdef class OKXBooktickerArrayReader(DataReader):
-    def __init__(self, df):
-        self.timestamps = df['timestamp'].values.astype(np.int64)
-        self.symbols = df['symbol'].values
-        
-        if 'local_timestamp' in df.columns:
-            self.local_timestamps = df['local_timestamp'].values.astype(np.int64)
-        else:
-            self.local_timestamps = np.zeros(len(df), dtype=np.int64)
+    def __init__(self, dataset):
+        self.batch_iterator = iter(dataset)
+        self.length = 0
+        self.idx = 0
+        self.current_df = None
+        # 初始化数据指针数组为 NULL
+        for i in range(100):
+            self.data_ptrs[i] = NULL
+        self.load_next_batch()
 
-        self._keep_alive_refs = []
-        
-        # 准备深度数据列的指针
-        # 顺序必须与 fetch_next 中的字段赋值顺序严格一致
+    cdef void load_next_batch(self):
+        # 【修正】声明必须提到函数顶部
         cdef int ptr_idx = 0
         cdef double[:] view
         
-        # 遍历 1-25 档
-        for i in range(1, 26):
-            for col_name in [f'ask_price_{i}', f'ask_amount_{i}', f'bid_price_{i}', f'bid_amount_{i}']:
-                if col_name in df.columns:
-                    arr = df[col_name].values.astype(np.float64)
-                else:
-                    arr = np.zeros(len(df), dtype=np.float64)
-                
-                self._keep_alive_refs.append(arr)
-                
-                view = arr
-                if view.shape[0] > 0:
-                    self.data_ptrs[ptr_idx] = &view[0]
-                else:
-                    self.data_ptrs[ptr_idx] = NULL
-                ptr_idx += 1
-                
-        self.length = len(self.timestamps)
-        self.idx = 0
+        try:
+            df = next(self.batch_iterator)
+            
+            # 基础列绑定
+            self.timestamps = df['timestamp'].values.astype(np.int64)
+            self.symbols = df['symbol'].values
+            if 'local_timestamp' in df.columns:
+                self.local_timestamps = df['local_timestamp'].values.astype(np.int64)
+            else:
+                self.local_timestamps = np.zeros(len(df), dtype=np.int64)
+
+            # 绑定深度数据指针
+            self._keep_alive_refs = [] # 清空旧引用
+            ptr_idx = 0 # 重置索引
+            
+            # 遍历 1-25 档
+            for i in range(1, 26):
+                for col_name in [f'ask_price_{i}', f'ask_amount_{i}', f'bid_price_{i}', f'bid_amount_{i}']:
+                    if col_name in df.columns:
+                        arr = df[col_name].values.astype(np.float64)
+                    else:
+                        arr = np.zeros(len(df), dtype=np.float64)
+                    
+                    # 放入列表防止 GC
+                    self._keep_alive_refs.append(arr)
+                    
+                    # 获取 C 指针
+                    view = arr
+                    if view.shape[0] > 0:
+                        self.data_ptrs[ptr_idx] = &view[0]
+                    else:
+                        self.data_ptrs[ptr_idx] = NULL
+                    ptr_idx += 1
+            
+            self.current_df = df
+            self.length = len(df)
+            self.idx = 0
+            
+        except StopIteration:
+            self.length = 0
+            self.current_df = None
 
     cdef Event fetch_next(self):
+        cdef OKXBookticker evt
+        cdef Py_ssize_t i
+        
         if self.idx >= self.length:
+            self.load_next_batch()
+            
+        if self.length == 0:
             return None
 
-        cdef OKXBookticker evt = OKXBookticker.__new__(OKXBookticker)
-        cdef Py_ssize_t i = self.idx
+        # 【修正】声明提至顶部，这里只赋值
+        evt = OKXBookticker.__new__(OKXBookticker)
+        i = self.idx
         
         evt.timestamp = self.timestamps[i]
         evt.symbol = self.symbols[i]
         evt.local_timestamp = self.local_timestamps[i]
         
-        # 暴力赋值 1-25 档数据
-        # 使用指针数组直接访问: self.data_ptrs[列索引][行索引]
+        # 暴力赋值 1-25 档
         if self.data_ptrs[0] != NULL:
             # Depth 1
             evt.ask_price_1 = self.data_ptrs[0][i]; evt.ask_amount_1 = self.data_ptrs[1][i]

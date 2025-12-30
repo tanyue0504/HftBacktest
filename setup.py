@@ -96,6 +96,11 @@ extensions = [
         ["hft_backtest/okx/matcher.pyx"],
         define_macros=define_macros,
     ),
+    Extension(
+        "hft_backtest.okx.reader",
+        ["hft_backtest/okx/reader.pyx"],
+        define_macros=define_macros,
+    ),
 ]
 
 setup(

@@ -82,6 +82,8 @@ graph TD
     BusC2S --> ServerEngine
 ```
 
+务必记得用3.11以下的版本，否则event中pyobject的对象有改动
+
 ## 🚀 快速开始
 
 ### 1. 安装

@@ -101,6 +101,11 @@ extensions = [
         ["hft_backtest/okx/reader.pyx"],
         define_macros=define_macros,
     ),
+    Extension(
+        "hft_backtest.okx.benchmark_event",
+        ["hft_backtest/okx/benchmark_event.pyx"],
+        define_macros=define_macros,
+    ),
 ]
 
 setup(

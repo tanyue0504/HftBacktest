@@ -1,3 +1,4 @@
+# hft_backtest/okx/event.pyx
 # cython: language_level=3
 # cython: boundscheck=False
 # cython: wraparound=False
@@ -5,7 +6,9 @@
 
 from hft_backtest.event cimport Event
 
-# ... (OKXBookticker 类保持不变，略) ...
+# =============================================================================
+# OKXBookticker
+# =============================================================================
 cdef class OKXBookticker(Event):
     def __init__(
         self, 
@@ -68,12 +71,57 @@ cdef class OKXBookticker(Event):
         self.ask_price_24 = ask_price_24; self.ask_amount_24 = ask_amount_24; self.bid_price_24 = bid_price_24; self.bid_amount_24 = bid_amount_24
         self.ask_price_25 = ask_price_25; self.ask_amount_25 = ask_amount_25; self.bid_price_25 = bid_price_25; self.bid_amount_25 = bid_amount_25
 
+    # 【优化】手动实现 derive，绕过 copy.copy
+    cpdef Event derive(self):
+        cdef OKXBookticker evt = OKXBookticker.__new__(OKXBookticker)
+        
+        # 1. Reset Header
+        evt.timestamp = 0
+        evt.source = 0
+        evt.producer = 0
+        
+        # 2. Copy Fields
+        evt.symbol = self.symbol
+        evt.local_timestamp = self.local_timestamp
+        
+        # 3. Copy 25 Levels (Unrolled Loop for Max Speed)
+        evt.ask_price_1 = self.ask_price_1; evt.ask_amount_1 = self.ask_amount_1; evt.bid_price_1 = self.bid_price_1; evt.bid_amount_1 = self.bid_amount_1
+        evt.ask_price_2 = self.ask_price_2; evt.ask_amount_2 = self.ask_amount_2; evt.bid_price_2 = self.bid_price_2; evt.bid_amount_2 = self.bid_amount_2
+        evt.ask_price_3 = self.ask_price_3; evt.ask_amount_3 = self.ask_amount_3; evt.bid_price_3 = self.bid_price_3; evt.bid_amount_3 = self.bid_amount_3
+        evt.ask_price_4 = self.ask_price_4; evt.ask_amount_4 = self.ask_amount_4; evt.bid_price_4 = self.bid_price_4; evt.bid_amount_4 = self.bid_amount_4
+        evt.ask_price_5 = self.ask_price_5; evt.ask_amount_5 = self.ask_amount_5; evt.bid_price_5 = self.bid_price_5; evt.bid_amount_5 = self.bid_amount_5
+        evt.ask_price_6 = self.ask_price_6; evt.ask_amount_6 = self.ask_amount_6; evt.bid_price_6 = self.bid_price_6; evt.bid_amount_6 = self.bid_amount_6
+        evt.ask_price_7 = self.ask_price_7; evt.ask_amount_7 = self.ask_amount_7; evt.bid_price_7 = self.bid_price_7; evt.bid_amount_7 = self.bid_amount_7
+        evt.ask_price_8 = self.ask_price_8; evt.ask_amount_8 = self.ask_amount_8; evt.bid_price_8 = self.bid_price_8; evt.bid_amount_8 = self.bid_amount_8
+        evt.ask_price_9 = self.ask_price_9; evt.ask_amount_9 = self.ask_amount_9; evt.bid_price_9 = self.bid_price_9; evt.bid_amount_9 = self.bid_amount_9
+        evt.ask_price_10 = self.ask_price_10; evt.ask_amount_10 = self.ask_amount_10; evt.bid_price_10 = self.bid_price_10; evt.bid_amount_10 = self.bid_amount_10
+        evt.ask_price_11 = self.ask_price_11; evt.ask_amount_11 = self.ask_amount_11; evt.bid_price_11 = self.bid_price_11; evt.bid_amount_11 = self.bid_amount_11
+        evt.ask_price_12 = self.ask_price_12; evt.ask_amount_12 = self.ask_amount_12; evt.bid_price_12 = self.bid_price_12; evt.bid_amount_12 = self.bid_amount_12
+        evt.ask_price_13 = self.ask_price_13; evt.ask_amount_13 = self.ask_amount_13; evt.bid_price_13 = self.bid_price_13; evt.bid_amount_13 = self.bid_amount_13
+        evt.ask_price_14 = self.ask_price_14; evt.ask_amount_14 = self.ask_amount_14; evt.bid_price_14 = self.bid_price_14; evt.bid_amount_14 = self.bid_amount_14
+        evt.ask_price_15 = self.ask_price_15; evt.ask_amount_15 = self.ask_amount_15; evt.bid_price_15 = self.bid_price_15; evt.bid_amount_15 = self.bid_amount_15
+        evt.ask_price_16 = self.ask_price_16; evt.ask_amount_16 = self.ask_amount_16; evt.bid_price_16 = self.bid_price_16; evt.bid_amount_16 = self.bid_amount_16
+        evt.ask_price_17 = self.ask_price_17; evt.ask_amount_17 = self.ask_amount_17; evt.bid_price_17 = self.bid_price_17; evt.bid_amount_17 = self.bid_amount_17
+        evt.ask_price_18 = self.ask_price_18; evt.ask_amount_18 = self.ask_amount_18; evt.bid_price_18 = self.bid_price_18; evt.bid_amount_18 = self.bid_amount_18
+        evt.ask_price_19 = self.ask_price_19; evt.ask_amount_19 = self.ask_amount_19; evt.bid_price_19 = self.bid_price_19; evt.bid_amount_19 = self.bid_amount_19
+        evt.ask_price_20 = self.ask_price_20; evt.ask_amount_20 = self.ask_amount_20; evt.bid_price_20 = self.bid_price_20; evt.bid_amount_20 = self.bid_amount_20
+        evt.ask_price_21 = self.ask_price_21; evt.ask_amount_21 = self.ask_amount_21; evt.bid_price_21 = self.bid_price_21; evt.bid_amount_21 = self.bid_amount_21
+        evt.ask_price_22 = self.ask_price_22; evt.ask_amount_22 = self.ask_amount_22; evt.bid_price_22 = self.bid_price_22; evt.bid_amount_22 = self.bid_amount_22
+        evt.ask_price_23 = self.ask_price_23; evt.ask_amount_23 = self.ask_amount_23; evt.bid_price_23 = self.bid_price_23; evt.bid_amount_23 = self.bid_amount_23
+        evt.ask_price_24 = self.ask_price_24; evt.ask_amount_24 = self.ask_amount_24; evt.bid_price_24 = self.bid_price_24; evt.bid_amount_24 = self.bid_amount_24
+        evt.ask_price_25 = self.ask_price_25; evt.ask_amount_25 = self.ask_amount_25; evt.bid_price_25 = self.bid_price_25; evt.bid_amount_25 = self.bid_amount_25
+        
+        return evt
+
+# =============================================================================
+# OKXTrades
+# =============================================================================
 cdef class OKXTrades(Event):
     def __init__(
         self,
         long long timestamp = 0,
         str symbol = "",
-        long long trade_id = 0,  # <--- 修改为 int 类型，默认 0
+        long long trade_id = 0,
         double price = 0.0,
         double size = 0.0,
         str side = "",
@@ -88,6 +136,27 @@ cdef class OKXTrades(Event):
     def __repr__(self):
         return (f"OKXTrades(timestamp={self.timestamp}, symbol={self.symbol}, "
                 f"trade_id={self.trade_id}, price={self.price}, size={self.size}, side={self.side})")
+
+    # 【优化】手动实现 derive
+    cpdef Event derive(self):
+        cdef OKXTrades evt = OKXTrades.__new__(OKXTrades)
+        
+        evt.timestamp = 0
+        evt.source = 0
+        evt.producer = 0
+        
+        evt.symbol = self.symbol
+        evt.trade_id = self.trade_id
+        evt.price = self.price
+        evt.size = self.size
+        evt.side = self.side
+        
+        return evt
+
+# =============================================================================
+# 其他 Events (FundingRate, Delivery, Premium)
+# 暂时保持默认行为，或按需添加 derive
+# =============================================================================
 
 cdef class OKXFundingRate(Event):
     def __init__(

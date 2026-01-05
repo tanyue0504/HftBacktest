@@ -107,6 +107,17 @@ cdef class OKXBookticker(Event):
         evt.ask_price_25 = self.ask_price_25; evt.ask_amount_25 = self.ask_amount_25; evt.bid_price_25 = self.bid_price_25; evt.bid_amount_25 = self.bid_amount_25
         return evt
 
+    def __repr__(self):
+        return (
+            f"OKXBookticker(timestamp={self.timestamp}, symbol='{self.symbol}', "
+            f"bids=[({self.bid_price_1}, {self.bid_amount_1}), ({self.bid_price_2}, {self.bid_amount_2}), "
+            f"({self.bid_price_3}, {self.bid_amount_3}), ({self.bid_price_4}, {self.bid_amount_4}), "
+            f"({self.bid_price_5}, {self.bid_amount_5})], "
+            f"asks=[({self.ask_price_1}, {self.ask_amount_1}), ({self.ask_price_2}, {self.ask_amount_2}), "
+            f"({self.ask_price_3}, {self.ask_amount_3}), ({self.ask_price_4}, {self.ask_amount_4}), "
+            f"({self.ask_price_5}, {self.ask_amount_5})])"
+        )
+
 # =============================================================================
 # OKXTrades (已优化)
 # =============================================================================

@@ -29,3 +29,6 @@ cdef class Timer(Event):
         evt.producer = 0
         
         return evt
+
+    def __repr__(self):
+        return f"<Timer Event | timestamp: {self.timestamp}>"

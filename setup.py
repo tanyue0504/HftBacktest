@@ -102,8 +102,8 @@ extensions = [
         define_macros=define_macros,
     ),
     Extension(
-        "hft_backtest.okx.benchmark_event",
-        ["hft_backtest/okx/benchmark_event.pyx"],
+        "hft_backtest.timer",
+        ["hft_backtest/timer.pyx"],
         define_macros=define_macros,
     ),
 ]

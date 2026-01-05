@@ -7,7 +7,7 @@
 from hft_backtest.event cimport Event
 
 # =============================================================================
-# OKXBookticker
+# OKXBookticker (已优化)
 # =============================================================================
 cdef class OKXBookticker(Event):
     def __init__(
@@ -70,21 +70,16 @@ cdef class OKXBookticker(Event):
         self.ask_price_23 = ask_price_23; self.ask_amount_23 = ask_amount_23; self.bid_price_23 = bid_price_23; self.bid_amount_23 = bid_amount_23
         self.ask_price_24 = ask_price_24; self.ask_amount_24 = ask_amount_24; self.bid_price_24 = bid_price_24; self.bid_amount_24 = bid_amount_24
         self.ask_price_25 = ask_price_25; self.ask_amount_25 = ask_amount_25; self.bid_price_25 = bid_price_25; self.bid_amount_25 = bid_amount_25
-
-    # 【优化】手动实现 derive，绕过 copy.copy
+    
     cpdef Event derive(self):
         cdef OKXBookticker evt = OKXBookticker.__new__(OKXBookticker)
-        
-        # 1. Reset Header
         evt.timestamp = 0
         evt.source = 0
         evt.producer = 0
         
-        # 2. Copy Fields
         evt.symbol = self.symbol
         evt.local_timestamp = self.local_timestamp
         
-        # 3. Copy 25 Levels (Unrolled Loop for Max Speed)
         evt.ask_price_1 = self.ask_price_1; evt.ask_amount_1 = self.ask_amount_1; evt.bid_price_1 = self.bid_price_1; evt.bid_amount_1 = self.bid_amount_1
         evt.ask_price_2 = self.ask_price_2; evt.ask_amount_2 = self.ask_amount_2; evt.bid_price_2 = self.bid_price_2; evt.bid_amount_2 = self.bid_amount_2
         evt.ask_price_3 = self.ask_price_3; evt.ask_amount_3 = self.ask_amount_3; evt.bid_price_3 = self.bid_price_3; evt.bid_amount_3 = self.bid_amount_3
@@ -110,11 +105,10 @@ cdef class OKXBookticker(Event):
         evt.ask_price_23 = self.ask_price_23; evt.ask_amount_23 = self.ask_amount_23; evt.bid_price_23 = self.bid_price_23; evt.bid_amount_23 = self.bid_amount_23
         evt.ask_price_24 = self.ask_price_24; evt.ask_amount_24 = self.ask_amount_24; evt.bid_price_24 = self.bid_price_24; evt.bid_amount_24 = self.bid_amount_24
         evt.ask_price_25 = self.ask_price_25; evt.ask_amount_25 = self.ask_amount_25; evt.bid_price_25 = self.bid_price_25; evt.bid_amount_25 = self.bid_amount_25
-        
         return evt
 
 # =============================================================================
-# OKXTrades
+# OKXTrades (已优化)
 # =============================================================================
 cdef class OKXTrades(Event):
     def __init__(
@@ -137,10 +131,8 @@ cdef class OKXTrades(Event):
         return (f"OKXTrades(timestamp={self.timestamp}, symbol={self.symbol}, "
                 f"trade_id={self.trade_id}, price={self.price}, size={self.size}, side={self.side})")
 
-    # 【优化】手动实现 derive
     cpdef Event derive(self):
         cdef OKXTrades evt = OKXTrades.__new__(OKXTrades)
-        
         evt.timestamp = 0
         evt.source = 0
         evt.producer = 0
@@ -150,14 +142,11 @@ cdef class OKXTrades(Event):
         evt.price = self.price
         evt.size = self.size
         evt.side = self.side
-        
         return evt
 
 # =============================================================================
-# 其他 Events (FundingRate, Delivery, Premium)
-# 暂时保持默认行为，或按需添加 derive
+# OKXFundingRate (【本次新增优化】)
 # =============================================================================
-
 cdef class OKXFundingRate(Event):
     def __init__(
         self,
@@ -171,6 +160,21 @@ cdef class OKXFundingRate(Event):
         self.funding_rate = funding_rate
         self.price = price
 
+    cpdef Event derive(self):
+        # 极速拷贝
+        cdef OKXFundingRate evt = OKXFundingRate.__new__(OKXFundingRate)
+        evt.timestamp = 0
+        evt.source = 0
+        evt.producer = 0
+        
+        evt.symbol = self.symbol
+        evt.funding_rate = self.funding_rate
+        evt.price = self.price
+        return evt
+
+# =============================================================================
+# OKXDelivery (【本次新增优化】)
+# =============================================================================
 cdef class OKXDelivery(Event):
     def __init__(
         self,
@@ -182,6 +186,19 @@ cdef class OKXDelivery(Event):
         self.symbol = symbol
         self.price = price
 
+    cpdef Event derive(self):
+        cdef OKXDelivery evt = OKXDelivery.__new__(OKXDelivery)
+        evt.timestamp = 0
+        evt.source = 0
+        evt.producer = 0
+        
+        evt.symbol = self.symbol
+        evt.price = self.price
+        return evt
+
+# =============================================================================
+# OKXPremium (【本次新增优化】)
+# =============================================================================
 cdef class OKXPremium(Event):
     def __init__(
         self,
@@ -192,3 +209,13 @@ cdef class OKXPremium(Event):
         self.timestamp = timestamp
         self.symbol = symbol
         self.premium = premium
+
+    cpdef Event derive(self):
+        cdef OKXPremium evt = OKXPremium.__new__(OKXPremium)
+        evt.timestamp = 0
+        evt.source = 0
+        evt.producer = 0
+        
+        evt.symbol = self.symbol
+        evt.premium = self.premium
+        return evt

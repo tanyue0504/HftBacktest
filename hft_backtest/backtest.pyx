@@ -26,7 +26,9 @@ cdef class BacktestEngine:
         dataset, 
         DelayBus server2client_delaybus, 
         DelayBus client2server_delaybus, 
-        timer_interval=1000
+        timer_interval=1000,
+        long long start_time=0,
+        long long end_time=LLONG_MAX
     ):
         self.server_engine = EventEngine()
         self.client_engine = EventEngine()
@@ -49,6 +51,10 @@ cdef class BacktestEngine:
         else:
             self._use_timer = True
             self._timer_interval_v = timer_interval
+
+        # 3. 【新增】记录起止时间
+        self.start_time = start_time
+        self.end_time = end_time
             
         # 3. 自动接线
         self.server2client_bus.set_target_engine(self.client_engine)
@@ -84,6 +90,10 @@ cdef class BacktestEngine:
         try:
             # 预读第一条数据
             current_data = self.dataset.fetch_next()
+            # 【新增】逻辑 1：快进到 start_time
+            # 如果有数据且早于 start_time，就一直读并丢弃
+            while current_data is not None and current_data.timestamp < self.start_time:
+                current_data = self.dataset.fetch_next()
             
             # Timer 初始化
             if current_data is not None and self._use_timer:
@@ -103,6 +113,11 @@ cdef class BacktestEngine:
                 if t_s2c < min_t: min_t = t_s2c
                 if t_c2s < min_t: min_t = t_c2s
                 if next_timer < min_t: min_t = next_timer
+
+                # 【新增】逻辑 2：熔断检查
+                # 如果系统推动到的最小时间已经超过了 end_time，直接结束回测
+                if min_t > self.end_time:
+                    break
         
                 # 优先级处理
                 if t_s2c <= min_t:
@@ -132,6 +147,16 @@ cdef class BacktestEngine:
                 t_c2s = self.client2server_bus.peek_trigger_time()
                     
                 if t_s2c == LLONG_MAX and t_c2s == LLONG_MAX:
+                    break
+
+                # 计算收尾阶段的 min_t
+                if t_s2c <= t_c2s:
+                    min_t = t_s2c
+                else:
+                    min_t = t_c2s
+                
+                # 【新增】收尾阶段也要熔断
+                if min_t > self.end_time:
                     break
                     
                 if t_s2c <= t_c2s:

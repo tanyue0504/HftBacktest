@@ -24,6 +24,10 @@ cdef class BacktestEngine:
     # Bus (强类型定义，以便直接访问内部队列)
     cdef public DelayBus server2client_bus
     cdef public DelayBus client2server_bus
+
+    # 【新增】起止时间控制
+    cdef public long long start_time
+    cdef public long long end_time
     
     # 方法
     cpdef add_component(self, Component component, bint is_server)

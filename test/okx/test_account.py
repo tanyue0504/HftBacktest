@@ -215,6 +215,54 @@ class TestOKXAccount:
         # Total = 1000. Correct.
         assert account.get_total_trade_pnl() == pytest.approx(1000.0)
 
+    def test_race_condition_zombie_order(self, account):
+        """
+        核心测试：验证事件乱序（FILLED 先于 RECEIVED 到达）是否会导致僵尸单复活
+        这是导致策略死寂的关键场景。
+        """
+        symbol = "BTC-USDT-SWAP"
+        order_id = 999
+        quantity = 1.0
+        price = 50000.0
+        fee = 5.0
+
+        # --- 场景还原 ---
+        
+        # 1. 构造“成交事件” (FILLED)
+        # 理论上这是后发生的，但在异步系统中可能先被 Account 处理
+        order_fill = Order.create_limit(symbol, quantity, price)
+        order_fill.order_id = order_id
+        order_fill.state = Order.ORDER_STATE_FILLED
+        order_fill.filled_price = price
+        order_fill.commission_fee = fee
+        
+        # 2. 构造“确认事件” (RECEIVED)
+        # 理论上这是先发生的，但它迟到了
+        order_recv = Order.create_limit(symbol, quantity, price)
+        order_recv.order_id = order_id
+        order_recv.state = Order.ORDER_STATE_RECEIVED
+        
+        # --- 执行测试 ---
+
+        # 步骤 A: 先推送 FILLED
+        account.on_order(order_fill)
+        
+        # 检查 A: 订单应当从活跃列表中移除，资金应当变动
+        assert order_id not in account.get_orders()
+        assert account.get_balance() == pytest.approx(10000 - 50000 - 5)
+        
+        # 步骤 B: 后推送迟到的 RECEIVED (幽灵消息)
+        account.on_order(order_recv)
+        
+        # 检查 B (关键验证): 
+        # 如果 Bug 修复了，Account 应该知道 ID 999 已经终结，直接忽略这个 RECEIVED。
+        # 如果 Bug 存在，Account 会以为这是个新单，把它加回 get_orders()，导致僵尸单。
+        active_orders = account.get_orders()
+        assert order_id not in active_orders, \
+            f"严重错误：已成交的订单 {order_id} 被迟到的 RECEIVED 事件复活了！导致僵尸单。"
+
+        print("Race condition test passed: Zombie order prevented.")
+
 
 if __name__ == "__main__":
     # 方式 A: 调用 pytest 运行当前文件 (推荐)

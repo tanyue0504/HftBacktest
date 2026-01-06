@@ -18,7 +18,10 @@ cdef class OKXAccount(Account):
         self.position_dict = defaultdict(int)
         self.order_dict = {}
         
-        # 【优化】使用普通 dict
+        # 【新增】已终结订单集合 (防止乱序事件导致僵尸单复活)
+        # 存储 order_id
+        self.finished_order_ids = set()
+
         self.price_dict = {}
 
         # --- 累计统计 ---
@@ -45,35 +48,48 @@ cdef class OKXAccount(Account):
         cdef double cash_flow
         cdef str symbol
 
+        # 1. 过滤掉单纯的撤单请求 (Type=CANCEL, State=None/Created)
+        # 注意：如果你修改了 Matcher 发送 LIMIT 类型的 CANCELED 回报，这里不会拦截回报
         if order.is_cancel_order:
             return
 
+        # 2. 【核心修复】如果订单已知已终结，忽略任何后续消息 (如迟到的 RECEIVED)
+        if order.order_id in self.finished_order_ids:
+            return
+
+        # 3. 处理终结状态 (FILLED / CANCELED / REJECTED)
+        if order.is_filled or order.is_canceled or order.is_rejected:
+            # 标记为已终结
+            self.finished_order_ids.add(order.order_id)
+            
+            # 从活跃列表移除
+            if order.order_id in self.order_dict:
+                del self.order_dict[order.order_id]
+
+            # 如果是成交，处理资金
+            if order.is_filled:
+                symbol = order.symbol
+                self.total_turnover[symbol] += abs(order.quantity * order.filled_price)
+                self.total_commission[symbol] += order.commission_fee
+                self.total_trade_count[symbol] += 1
+                
+                cash_flow = -1 * order.quantity * order.filled_price
+                self.net_cash_flow[symbol] += cash_flow
+                self.cash_balance += cash_flow
+                self.cash_balance -= order.commission_fee
+
+                self.position_dict[symbol] += order.quantity_int
+                if self.position_dict[symbol] == 0:
+                    del self.position_dict[symbol]
+            return
+
+        # 4. 处理活跃状态 (SUBMITTED / RECEIVED)
         if order.is_submitted or order.is_received:
+            # 只有不在终结集合里才添加 (上面已检查)
             self.order_dict[order.order_id] = order
             return
-        
-        if order.is_filled:
-            symbol = order.symbol
-            
-            self.total_turnover[symbol] += abs(order.quantity * order.filled_price)
-            self.total_commission[symbol] += order.commission_fee
-            self.total_trade_count[symbol] += 1
-            
-            cash_flow = -1 * order.quantity * order.filled_price
-            
-            self.net_cash_flow[symbol] += cash_flow
-            self.cash_balance += cash_flow
-            self.cash_balance -= order.commission_fee
-
-            self.position_dict[symbol] += order.quantity_int
-            if self.position_dict[symbol] == 0:
-                del self.position_dict[symbol]
-
-        if order.order_id in self.order_dict:
-            del self.order_dict[order.order_id]
 
     cpdef void on_trade_data(self, OKXTrades event):
-        # 普通 dict 赋值，Cython 优化
         self.price_dict[event.symbol] = event.price
 
     cpdef void on_funding_data(self, OKXFundingRate event):
@@ -100,15 +116,18 @@ cdef class OKXAccount(Account):
         
         del self.position_dict[event.symbol]
 
+        # 清理相关订单
         cdef list keys = list(self.order_dict.keys())
         cdef Order order
         for oid in keys:
             order = self.order_dict[oid]
             if order.symbol == event.symbol:
                 del self.order_dict[oid]
+                # 也要加入终结集合，防止后续诈尸
+                self.finished_order_ids.add(oid)
 
     # ==========================
-    # 查询接口
+    # 查询接口 (保持不变)
     # ==========================
 
     cpdef dict get_orders(self):
@@ -118,7 +137,6 @@ cdef class OKXAccount(Account):
         return {k: v / <double>Order.SCALER for k, v in self.position_dict.items()}
     
     cpdef dict get_prices(self):
-        # 【优化】本身就是 dict，直接 copy 即可
         return self.price_dict.copy()
     
     cpdef double get_balance(self):
@@ -131,7 +149,6 @@ cdef class OKXAccount(Account):
         cdef double price
         
         for sym, qty_int in self.position_dict.items():
-            # 【优化】使用 dict.get(key, default)
             price = self.price_dict.get(sym, 0.0)
             total += (qty_int / <double>Order.SCALER) * price
         return total
@@ -148,7 +165,6 @@ cdef class OKXAccount(Account):
         cdef long qty_int
         
         for sym, qty_int in self.position_dict.items():
-            # 【优化】使用 dict.get(key, default)
             total += (abs(qty_int) / <double>Order.SCALER) * self.price_dict.get(sym, 0.0)
         return total
     

@@ -1,37 +1,41 @@
-# cython: language_level=3
-
 from hft_backtest.account cimport Account
+from hft_backtest.event_engine cimport EventEngine
 from hft_backtest.order cimport Order
 from hft_backtest.okx.event cimport OKXTrades, OKXFundingRate, OKXDelivery
 
 cdef class OKXAccount(Account):
-    # --- 核心状态 ---
     cdef public double cash_balance
-    
-    # position_dict 仍需保持 object (defaultdict)，因为依赖 += 操作的自动初始化
     cdef public object position_dict
+    cdef public object order_dict
+    # 【新增声明】必须在这里声明，否则 .pyx 里无法使用
+    cdef public object finished_order_ids 
+    cdef public object price_dict
     
-    cdef public dict order_dict
-    
-    # 【优化】改为 dict，性能更好
-    cdef public dict price_dict
-
-    # --- 累计统计 (保持 object/defaultdict) ---
     cdef public object total_turnover
     cdef public object total_commission
     cdef public object total_funding_fee
     cdef public object net_cash_flow
     cdef public object total_trade_count
 
-    # --- 声明 C 方法 ---
+    cpdef start(self, EventEngine engine)
+    cpdef stop(self)
+    cpdef void on_order(self, Order order)
     cpdef void on_trade_data(self, OKXTrades event)
     cpdef void on_funding_data(self, OKXFundingRate event)
     cpdef void on_delivery_data(self, OKXDelivery event)
     
-    # --- cpdef 方法声明 ---
+    cpdef dict get_orders(self)
+    cpdef dict get_positions(self)
     cpdef dict get_prices(self)
+    cpdef double get_balance(self)
     cpdef double get_position_cashvalue(self)
+    cpdef double get_equity(self)
     cpdef double get_total_margin(self)
     
-    # 辅助计算方法 (C 内部调用)
+    cpdef double get_total_turnover(self)
+    cpdef int get_total_trade_count(self)
+    cpdef double get_total_commission(self)
+    cpdef double get_total_funding_fee(self)
+    cpdef double get_total_trade_pnl(self)
+    
     cdef double _get_position_cashvalue(self)

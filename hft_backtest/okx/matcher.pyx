@@ -94,6 +94,7 @@ cdef class OKXMatcher(MatchEngine):
         cdef Order new_order
         if self._remove_order(order):
             new_order = order.derive()
+            new_order.order_type = ORDER_TYPE_LIMIT
             new_order.state = ORDER_STATE_CANCELED
             self.event_engine.put(new_order)
 

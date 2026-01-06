@@ -30,7 +30,7 @@ cdef class Order(Event):
     ORDER_STATE_SUBMITTED = 1  # 已提交，等待交易所确认
     ORDER_STATE_RECEIVED = 2    # 交易所已接收，等待成交
     ORDER_STATE_FILLED = 3      # 已成交
-    ORDER_STATE_CANCELED = 4    # 已撤销 
+    ORDER_STATE_CANCELED = 4    # 已撤销
     ORDER_STATE_REJECTED = 5    # 已拒单
     
     # --- 2. 初始化 ---
@@ -185,7 +185,48 @@ cdef class Order(Event):
             -1
         )
 
-    # 撤单指令必须从order derive出来, 然后修改type为CANCEL, 不提供工厂方法
+    @staticmethod
+    def create_cancel(Order order):
+        """
+        创建一个撤单指令。
+        从原订单 derive 出来，保留原订单ID等信息，但类型改为 CANCEL，状态重置。
+        """
+        cdef Order evt = <Order>order.derive()
+        evt.order_type = ORDER_TYPE_CANCEL
+        evt.state = ORDER_STATE_NONE # 重置为初始状态
+        return evt
+
+    # --- 6. 性能优化 (derive) ---
+    cpdef Event derive(self):
+        # 绕过 __init__ 直接创建对象，性能极高
+        cdef Order evt = Order.__new__(Order)
+        
+        # 重置 Event 基础字段
+        evt.timestamp = 0
+        evt.source = 0
+        evt.producer = 0
+        
+        # 复制 Order 核心字段
+        evt.order_id = self.order_id
+        evt.order_type = self.order_type
+        evt.state = self.state
+        evt.symbol = self.symbol
+        evt._quantity = self._quantity
+        evt._price = self._price
+        
+        # 复制撮合/成交相关字段
+        evt.rank = self.rank
+        evt.traded = self.traded
+        evt.filled_price = self.filled_price
+        evt.commission_fee = self.commission_fee
+        
+        # 复制缓存状态 (直接复制比重新计算快)
+        evt._quantity_cache_valid = self._quantity_cache_valid
+        evt._price_cache_valid = self._price_cache_valid
+        evt._quantity_int_cache = self._quantity_int_cache
+        evt._price_int_cache = self._price_int_cache
+        
+        return evt
 
     def __repr__(self):
         # 仅用于打印调试，性能不敏感

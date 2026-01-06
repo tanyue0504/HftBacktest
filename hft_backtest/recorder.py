@@ -145,3 +145,56 @@ class AccountRecorder(Recorder):
         # 如果缓冲区满了，写入文件
         if len(self.buffer) >= self.buffer_size:
             self.flush()
+
+class OrderRecorder(Recorder):
+    """
+    订单记录器
+    负责记录所有订单的全生命周期状态变化，用于 Debug
+    """
+    def __init__(self, path: str, account: Account, buffer_size: int = 1000):
+        super().__init__(path, account)
+        self.buffer_size = buffer_size
+        self.buffer = []
+
+    def start(self, event_engine: EventEngine):
+        # 注册 Order 事件监听
+        event_engine.register(Order, self.on_order)
+        # 初始化文件并打开
+        self.file = open(self.path, "w", encoding="utf-8-sig")
+        # 写入表头：增加了 type 和 state
+        self.buffer.append("timestamp,order_id,symbol,type,state,price,quantity,filled_price,commission\n")
+
+    def stop(self):
+        self.flush(flush_to_disk=True)
+        self.file.close()
+
+    def on_order(self, order: Order):
+        # 不做任何过滤，记录所有收到的 Order 事件
+        # 注意：order.order_type 和 order.state 通常是整数枚举值，直接记录即可
+        line = (
+            f"{order.timestamp},"
+            f"{order.order_id},"
+            f"{order.symbol},"
+            f"{order.order_type},"
+            f"{order.state},"
+            f"{order.price},"
+            f"{order.quantity},"
+            f"{order.filled_price},"
+            f"{order.commission_fee}\n"
+        )
+        self.buffer.append(line)
+
+        # 如果缓冲区满了，写入文件
+        if len(self.buffer) >= self.buffer_size:
+            self.flush()
+
+    def flush(self, flush_to_disk: bool = False):
+        # 强制写入缓冲区到文件
+        if not self.buffer:
+            return
+        if not self.file or self.file.closed:
+            return
+        self.file.writelines(self.buffer)
+        if flush_to_disk:
+            self.file.flush()
+        self.buffer.clear()

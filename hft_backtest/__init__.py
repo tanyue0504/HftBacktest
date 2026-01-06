@@ -11,6 +11,6 @@ from .delaybus import LatencyModel, FixedDelayModel, DelayBus
 from .matcher import MatchEngine
 from .backtest import BacktestEngine
 from .account import Account
-from .recorder import Recorder, TradeRecorder, AccountRecorder
+from .recorder import Recorder, TradeRecorder, AccountRecorder, OrderRecorder
 from .strategy import Strategy
 from .helper import EventPrinter

@@ -3,3 +3,5 @@
 """
 from hft_backtest.okx.event import OKXBookticker, OKXTrades, OKXDelivery, OKXFundingRate, OKXPremium
 from hft_backtest.okx.account import OKXAccount
+
+from hft_backtest.okx.factor_evaluator import FactorEvaluator

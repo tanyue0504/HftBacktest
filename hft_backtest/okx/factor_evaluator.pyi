@@ -14,11 +14,12 @@ class FactorEvaluator(Component):
     evaluation statistics (distribution, forward-return relationship, hit rate,
     delay stats), and can print a detailed report to console.
 
-    Notes
-    - Forward return definition: $r = (p_t - p_0) / p_0$ where $p_0$ is the
-      reference mid-price at factor time, and $p_t$ is the first mid-price
-      observed at timestamp >= factor_ts + horizon.
-    - If horizon == 0, this effectively becomes the next available mid-price.
+        Notes
+        - Forward return definition: $r = (p_t - p_0) / p_0$ where $p_0$ is the
+            reference mid-price at factor time, and $p_t$ is the first mid-price
+            observed at timestamp >= factor_ts + horizon.
+        - Autocorr proxy: computes lag-1 autocorrelation of factor values per symbol
+            (`x_autocorr1`). Lower values typically imply higher turnover.
     """
 
     event_engine: Any

@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import math
-import random
 from collections import deque
 
 from libc.math cimport sqrt, fabs
@@ -146,10 +145,15 @@ cdef class _SymbolStats:
     cdef public long long n_hit
     cdef public long long n_miss
 
-    # optional stored samples for quantiles
-    cdef public object x_store
-    cdef public object y_store
-    cdef public object delay_store
+    # factor autocorrelation (lag-1) as turnover proxy
+    cdef public bint has_last_x
+    cdef public double last_x
+    cdef public long long n_ac
+    cdef public double sum_x_prev
+    cdef public double sum_x_curr
+    cdef public double sum_x_prev2
+    cdef public double sum_x_curr2
+    cdef public double sum_x_prev_curr
 
     def __cinit__(self):
         self.symbol = ""
@@ -182,9 +186,14 @@ cdef class _SymbolStats:
         self.n_y_zero = 0
         self.n_hit = 0
         self.n_miss = 0
-        self.x_store = []
-        self.y_store = []
-        self.delay_store = []
+        self.has_last_x = False
+        self.last_x = 0.0
+        self.n_ac = 0
+        self.sum_x_prev = 0.0
+        self.sum_x_curr = 0.0
+        self.sum_x_prev2 = 0.0
+        self.sum_x_curr2 = 0.0
+        self.sum_x_prev_curr = 0.0
 
 
 cdef class FactorEvaluator(Component):
@@ -232,22 +241,23 @@ cdef class FactorEvaluator(Component):
         if ts > self._global_last_ts:
             self._global_last_ts = ts
 
-    def _maybe_store(self, _SymbolStats st, double x, double y, double d):
-        if not self.enable_store or self.max_store <= 0:
+    def _update_x_autocorr(self, _SymbolStats st, double x):
+        """Update lag-1 autocorrelation stats for factor values.
+
+        This uses correlation between consecutive factor values (x_{t-1}, x_t).
+        Lower autocorr usually implies higher turnover (more jitter).
+        """
+        if not _isfinite(x):
             return
-        cdef long long n = st.n_xy
-        # Reservoir sampling into fixed-size lists.
-        if len(st.x_store) < self.max_store:
-            st.x_store.append(x)
-            st.y_store.append(y)
-            st.delay_store.append(d)
-        else:
-            # replace with probability max_store/n
-            j = random.randrange(n) if n > 0 else 0
-            if j < self.max_store:
-                st.x_store[j] = x
-                st.y_store[j] = y
-                st.delay_store[j] = d
+        if st.has_last_x:
+            st.n_ac += 1
+            st.sum_x_prev += st.last_x
+            st.sum_x_curr += x
+            st.sum_x_prev2 += st.last_x * st.last_x
+            st.sum_x_curr2 += x * x
+            st.sum_x_prev_curr += st.last_x * x
+        st.last_x = x
+        st.has_last_x = True
 
     def _update_xy(self, _SymbolStats st, double x, double y):
         if not _isfinite(x) or not _isfinite(y):
@@ -315,7 +325,6 @@ cdef class FactorEvaluator(Component):
             st.delay_stats.update(delay)
             self._update_xy(st, x, y)
             self._update_sign_stats(st, x, y)
-            self._maybe_store(st, x, y, delay)
 
     cpdef start(self, EventEngine engine):
         self.event_engine = engine
@@ -350,6 +359,9 @@ cdef class FactorEvaluator(Component):
         cdef _SymbolStats st = self._get_or_create(signal.symbol)
         st.n_factor += 1
         self._touch_ts(st, signal.timestamp)
+
+        # Turnover proxy: update autocorr regardless of whether we can evaluate y.
+        self._update_x_autocorr(st, signal.value)
 
         if st.last_mid <= 0.0:
             st.n_skipped_no_price += 1
@@ -408,6 +420,10 @@ cdef class FactorEvaluator(Component):
         cdef double alpha = _nan()
         cdef double tstat = _nan()
 
+        # factor autocorr (lag-1)
+        cdef double x_autocorr1 = _nan()
+        cdef double turnover_proxy = _nan()
+
         cdef double n
         cdef double cov
         cdef double vx
@@ -430,6 +446,19 @@ cdef class FactorEvaluator(Component):
             # correlation t-stat approximation
             if st.n_xy > 2 and _isfinite(corr) and fabs(corr) < 1.0:
                 tstat = corr * sqrt((st.n_xy - 2) / (1.0 - corr * corr))
+
+        if st.n_ac >= 2:
+            n = <double>st.n_ac
+            cov = st.sum_x_prev_curr / n - (st.sum_x_prev / n) * (st.sum_x_curr / n)
+            vx = st.sum_x_prev2 / n - (st.sum_x_prev / n) * (st.sum_x_prev / n)
+            vy = st.sum_x_curr2 / n - (st.sum_x_curr / n) * (st.sum_x_curr / n)
+            if vx < 0.0 and vx > -1e-18:
+                vx = 0.0
+            if vy < 0.0 and vy > -1e-18:
+                vy = 0.0
+            if vx > 0.0 and vy > 0.0:
+                x_autocorr1 = cov / sqrt(vx * vy)
+                turnover_proxy = 1.0 - x_autocorr1
 
         d["params"] = {
             "horizon": self.horizon,
@@ -460,17 +489,14 @@ cdef class FactorEvaluator(Component):
             "hit": st.n_hit,
             "miss": st.n_miss,
             "hit_rate": _safe_div(<double>st.n_hit, <double>(st.n_hit + st.n_miss)) if (st.n_hit + st.n_miss) > 0 else _nan(),
+            "x_autocorr1": x_autocorr1,
+            "turnover_proxy": turnover_proxy,
         }
         d["delay"] = {
             "mean": md,
             "std": sd,
             "min": st.delay_stats.min_v,
             "max": st.delay_stats.max_v,
-        }
-        d["stored"] = {
-            "enabled": bool(self.enable_store),
-            "max_store": int(self.max_store),
-            "stored": len(st.x_store),
         }
         return d
 
@@ -495,20 +521,6 @@ cdef class FactorEvaluator(Component):
         out["symbols"] = list(self._sym.keys())
         out["per_symbol"] = {k: self._symbol_dict(v) for k, v in self._sym.items()}
         return out
-
-    def _quantile(self, list values, double q):
-        if values is None:
-            return _nan()
-        cdef int n = len(values)
-        if n <= 0:
-            return _nan()
-        cdef list tmp = sorted(values)
-        cdef int idx = <int>round(q * (n - 1))
-        if idx < 0:
-            idx = 0
-        elif idx >= n:
-            idx = n - 1
-        return <double>tmp[idx]
 
     def _format_symbol_report(self, _SymbolStats st):
         d = self._symbol_dict(st)
@@ -549,32 +561,13 @@ cdef class FactorEvaluator(Component):
         lines.append(
             "  Relation: "
             f"corr={rel['corr']:.6g} t={rel['corr_tstat']:.6g} beta={rel['reg_beta']:.6g} alpha={rel['reg_alpha']:.6g} "
-            f"hit_rate={rel['hit_rate']:.4f} (hit={rel['hit']} miss={rel['miss']})"
+            f"hit_rate={rel['hit_rate']:.4f} (hit={rel['hit']} miss={rel['miss']}) "
+            f"x_autocorr1={rel['x_autocorr1']:.6g} turnover_proxy={rel['turnover_proxy']:.6g}"
         )
         lines.append(
             "  Delay: "
             f"mean={delay['mean']:.6g} std={delay['std']:.6g} min={delay['min']:.6g} max={delay['max']:.6g}"
         )
-
-        if self.enable_store and len(st.x_store) > 0:
-            fx_p05 = self._quantile(st.x_store, 0.05)
-            fx_p25 = self._quantile(st.x_store, 0.25)
-            fx_p50 = self._quantile(st.x_store, 0.50)
-            fx_p75 = self._quantile(st.x_store, 0.75)
-            fx_p95 = self._quantile(st.x_store, 0.95)
-            ry_p05 = self._quantile(st.y_store, 0.05)
-            ry_p25 = self._quantile(st.y_store, 0.25)
-            ry_p50 = self._quantile(st.y_store, 0.50)
-            ry_p75 = self._quantile(st.y_store, 0.75)
-            ry_p95 = self._quantile(st.y_store, 0.95)
-            lines.append(
-                "  Quantiles(x): "
-                f"p05={fx_p05:.6g} p25={fx_p25:.6g} p50={fx_p50:.6g} p75={fx_p75:.6g} p95={fx_p95:.6g}"
-            )
-            lines.append(
-                "  Quantiles(y): "
-                f"p05={ry_p05:.6g} p25={ry_p25:.6g} p50={ry_p50:.6g} p75={ry_p75:.6g} p95={ry_p95:.6g}"
-            )
 
         return lines
 

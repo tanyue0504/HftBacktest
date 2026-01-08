@@ -106,6 +106,11 @@ extensions = [
         ["hft_backtest/timer.pyx"],
         define_macros=define_macros,
     ),
+    Extension(
+        "hft_backtest.factor", 
+        ["hft_backtest/factor.pyx"],
+        define_macros=define_macros,
+    ),
 ]
 
 setup(

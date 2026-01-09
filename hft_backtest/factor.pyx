@@ -11,14 +11,18 @@ cdef class FactorSignal(Event):
     通用因子信号协议
     用于 Client 向 Server 发送计算好的因子值。
     """
-    def __init__(self, str symbol, double value):
+    def __init__(self, str symbol, double value, str name):
         # timestamp 默认为 0，等待 EventEngine 在 put 时自动赋值（或经过 DelayBus 赋值）
         super().__init__(0)
+        self.name = name
         self.symbol = symbol
         self.value = value
 
     def __repr__(self):
-        return f"FactorSignal(symbol='{self.symbol}', value={self.value:.4f}, ts={self.timestamp})"
+        return (
+            f"FactorSignal(name='{self.name}', symbol='{self.symbol}', "
+            f"value={self.value:.4f}, ts={self.timestamp})"
+        )
 
     cpdef Event derive(self):
         # 实现深拷贝逻辑，用于跨线程或延迟队列时保持状态独立
@@ -26,6 +30,7 @@ cdef class FactorSignal(Event):
         evt.timestamp = 0
         evt.source = 0
         evt.producer = 0
+        evt.name = self.name
         evt.symbol = self.symbol
         evt.value = self.value
         return evt

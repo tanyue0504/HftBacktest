@@ -27,7 +27,7 @@ class TestOKXFactorEvaluator:
             )
         )
 
-        f1 = FactorSignal(sym, 1.0)
+        f1 = FactorSignal(sym, 1.0, name="test_factor")
         f1.timestamp = 1000
         ee.put(f1)
 
@@ -43,7 +43,7 @@ class TestOKXFactorEvaluator:
             )
         )
 
-        f2 = FactorSignal(sym, -2.0)
+        f2 = FactorSignal(sym, -2.0, name="test_factor")
         f2.timestamp = 1020
         ee.put(f2)
 
@@ -107,7 +107,7 @@ class TestOKXFactorEvaluator:
             )
         )
 
-        f = FactorSignal(sym, 1.0)
+        f = FactorSignal(sym, 1.0, name="test_factor")
         f.timestamp = 1000
         ee.put(f)
 
@@ -152,7 +152,7 @@ class TestOKXFactorEvaluator:
 
         sym = "SOL-USDT-SWAP"
 
-        f = FactorSignal(sym, 1.0)
+        f = FactorSignal(sym, 1.0, name="test_factor")
         f.timestamp = 1000
         ee.put(f)
 

@@ -5,3 +5,5 @@ from hft_backtest.okx.event import OKXBookticker, OKXTrades, OKXDelivery, OKXFun
 from hft_backtest.okx.account import OKXAccount
 
 from hft_backtest.okx.factor_evaluator import FactorEvaluator
+from hft_backtest.okx.factor_market_sampler import FactorMarketSampler
+from hft_backtest.okx.label_sampler import OKXLabelSampler

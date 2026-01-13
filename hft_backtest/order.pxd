@@ -38,6 +38,10 @@ cdef class Order(Event):
     # 成交回报数据
     cdef public double filled_price
     cdef public double commission_fee
+
+    # 下单约束
+    # post_only=True 表示该订单只允许作为 Maker 挂单；若会立即吃单则应被拒单。
+    cdef public bint post_only
     
     # 内部缓存 (用于 price_int/quantity_int)
     cdef bint _quantity_cache_valid

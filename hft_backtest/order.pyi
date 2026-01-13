@@ -12,6 +12,7 @@ ORDER_STATE_SUBMITTED: int
 ORDER_STATE_RECEIVED: int
 ORDER_STATE_FILLED: int
 ORDER_STATE_CANCELED: int
+ORDER_STATE_REJECTED: int
 
 class Order(Event):
     # 类级常量
@@ -28,7 +29,7 @@ class Order(Event):
     ORDER_STATE_RECEIVED: int
     ORDER_STATE_FILLED: int
     ORDER_STATE_CANCELED: int
-    ORDER_SATTE_REJECTED: int
+    ORDER_STATE_REJECTED: int
 
     # cdef public 属性
     order_id: int
@@ -39,6 +40,7 @@ class Order(Event):
     traded: float
     filled_price: float
     commission_fee: float
+    post_only: bool
 
     def __init__(
         self, 
@@ -47,6 +49,7 @@ class Order(Event):
         symbol: str,
         quantity: float,
         price: float,
+        post_only: bool = False,
     ) -> None: ...
 
     # 状态判断属性
@@ -58,6 +61,9 @@ class Order(Event):
     def is_tracking_order(self) -> bool: ...
     @property
     def is_cancel_order(self) -> bool: ...
+
+    @property
+    def is_post_only(self) -> bool: ...
     @property
     def is_created(self) -> bool: ...
     @property
@@ -90,13 +96,16 @@ class Order(Event):
 
     # 工厂方法
     @staticmethod
-    def create_limit(symbol: str, quantity: float, price: float) -> Order: ...
+    def create_limit(symbol: str, quantity: float, price: float, post_only: bool = False) -> Order: ...
+
+    @staticmethod
+    def create_limit_post_only(symbol: str, quantity: float, price: float) -> Order: ...
     
     @staticmethod
     def create_market(symbol: str, quantity: float) -> Order: ...
     
     @staticmethod
-    def create_tracking(symbol: str, quantity: float) -> Order: ...
+    def create_tracking(symbol: str, quantity: float, post_only: bool = True) -> Order: ...
 
     @staticmethod
     def create_cancel(order: Order) -> Order: ...

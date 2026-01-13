@@ -25,9 +25,35 @@ class TestOrder:
         assert o.state == 0  # ORDER_STATE_CREATED
         assert o.is_limit_order
         assert not o.is_market_order
+        assert not o.is_post_only
         
         # 检查 ID 是否自动生成 (假设这是第一个或者是递增的)
         assert o.order_id > 0
+
+    def test_post_only_factories_and_flags(self):
+        symbol = "BTC-USDT"
+        qty = 1.0
+        price = 25000.0
+
+        o1 = Order.create_limit(symbol, qty, price)
+        assert o1.is_limit_order
+        assert not o1.is_post_only
+
+        o1b = Order.create_limit(symbol, qty, price, post_only=True)
+        assert o1b.is_limit_order
+        assert o1b.is_post_only
+
+        o2 = Order.create_limit_post_only(symbol, qty, price)
+        assert o2.is_limit_order
+        assert o2.is_post_only
+
+        o3 = Order.create_tracking(symbol, qty)
+        assert o3.is_tracking_order
+        assert o3.is_post_only
+
+        o4 = Order.create_market(symbol, qty)
+        assert o4.is_market_order
+        assert not o4.is_post_only
 
     def test_cache_mechanism(self):
         """测试价格/数量的整数缓存与失效机制"""

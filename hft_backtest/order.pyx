@@ -41,6 +41,7 @@ cdef class Order(Event):
         str symbol,
         double quantity,
         double price,
+        bint post_only=False,
     ):
         # 假设 Event.__init__ 只需要很少的参数，这里传入timestamp=0
         super().__init__(0) 
@@ -50,6 +51,8 @@ cdef class Order(Event):
         self.symbol = symbol
         self._quantity = quantity
         self._price = price
+        # 默认 False 保持兼容；Tracking 订单会在工厂方法里强制为 True
+        self.post_only = post_only
         self.state = ORDER_STATE_CREATED
 
         self._quantity_cache_valid = False
@@ -80,6 +83,10 @@ cdef class Order(Event):
     @property
     def is_cancel_order(self):
         return self.order_type == ORDER_TYPE_CANCEL
+
+    @property
+    def is_post_only(self):
+        return bool(self.post_only)
 
     @property
     def is_created(self):
@@ -147,7 +154,7 @@ cdef class Order(Event):
 
     # --- 5. 工厂方法 (Python 可调用) ---
     @staticmethod
-    def create_limit(str symbol, double quantity, double price):
+    def create_limit(str symbol, double quantity, double price, bint post_only=False):
         global global_order_id_counter
         global_order_id_counter += 1
         
@@ -157,6 +164,7 @@ cdef class Order(Event):
             symbol, 
             quantity, 
             price, 
+            post_only,
         )
 
     @staticmethod
@@ -169,11 +177,13 @@ cdef class Order(Event):
             ORDER_TYPE_MARKET, 
             symbol, 
             quantity,
-            -1
+            -1,
+            False,
         )
 
     @staticmethod
-    def create_tracking(str symbol, double quantity):
+    def create_tracking(str symbol, double quantity, bint post_only=True):
+        """创建跟踪单（默认 post-only）。"""
         global global_order_id_counter
         global_order_id_counter += 1
 
@@ -182,7 +192,8 @@ cdef class Order(Event):
             ORDER_TYPE_TRACKING, 
             symbol, 
             quantity,
-            -1
+            -1,
+            post_only,
         )
 
     @staticmethod
@@ -193,6 +204,7 @@ cdef class Order(Event):
         """
         cdef Order evt = <Order>order.derive()
         evt.order_type = ORDER_TYPE_CANCEL
+        evt.post_only = False
         evt.state = ORDER_STATE_NONE # 重置为初始状态
         return evt
 
@@ -213,6 +225,7 @@ cdef class Order(Event):
         evt.symbol = self.symbol
         evt._quantity = self._quantity
         evt._price = self._price
+        evt.post_only = self.post_only
         
         # 复制撮合/成交相关字段
         evt.rank = self.rank
@@ -231,4 +244,4 @@ cdef class Order(Event):
     def __repr__(self):
         # 仅用于打印调试，性能不敏感
         return (f"Order(id={self.order_id}, type={self.order_type}, "
-                f"symbol={self.symbol}, price={self.price}, state={self.state})")
+                f"symbol={self.symbol}, price={self.price}, state={self.state}, post_only={bool(self.post_only)})")

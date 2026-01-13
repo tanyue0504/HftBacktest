@@ -14,6 +14,8 @@ def test_order_derive_integrity():
         1.5,                # quantity
         50000.0             # price
     )
+    assert original_order.is_limit_order
+    assert not original_order.is_post_only
     # 设置父类字段
     original_order.timestamp = 123456789
     original_order.source = 1
@@ -50,6 +52,9 @@ def test_order_derive_integrity():
     # 根据具体的 derive 实现，这些应该被复制
     assert cloned_order.traded == 0.5
     assert cloned_order.state == 1
+
+    # 检查点 6: post_only 字段应被保留
+    assert cloned_order.is_post_only == original_order.is_post_only
     
     # 检查点 5: 模拟 DelayBus 的行为 (手动还原元数据)
     cloned_order.timestamp = original_order.timestamp

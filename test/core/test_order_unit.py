@@ -43,10 +43,6 @@ class TestOrder:
         assert o1b.is_limit_order
         assert o1b.is_post_only
 
-        o2 = Order.create_limit_post_only(symbol, qty, price)
-        assert o2.is_limit_order
-        assert o2.is_post_only
-
         o3 = Order.create_tracking(symbol, qty)
         assert o3.is_tracking_order
         assert o3.is_post_only

@@ -291,6 +291,7 @@ cdef class OKXMatcher(MatchEngine):
         cdef long match_price_int = self.best_ask_price_int if is_buy else self.best_bid_price_int
         cdef bint should_fill = False
         cdef long order_p_int
+        cdef Order cancel_report
         
         if new_order.is_market_order:
             should_fill = True
@@ -300,8 +301,14 @@ cdef class OKXMatcher(MatchEngine):
             else: should_fill = (order_p_int <= match_price_int)
                 
         if should_fill:
-            self.fill_order(new_order, match_price_int / <double>self.PRICE_SCALAR, True)
-            return
+            if not order.is_post_only:
+                self.fill_order(new_order, match_price_int / <double>self.PRICE_SCALAR, True)
+                return
+            else:
+                cancel_report = new_order.derive()
+                cancel_report.state = ORDER_STATE_CANCELED
+                self.event_engine.put(cancel_report)
+                return
             
         new_order.rank = self.INIT_RANK
         order_p_int = new_order.price_int # cache
@@ -362,6 +369,8 @@ cdef class OKXMatcher(MatchEngine):
         
         if event.side == 'buy':
             self.best_ask_price_int = price_int
+            if self.best_bid_price_int > self.best_ask_price_int:
+                self.best_bid_price_int = self.best_ask_price_int
             orders_to_check = list(self.sell_book)
             for order in orders_to_check:
                 order_p_int = order.price_int
@@ -380,6 +389,8 @@ cdef class OKXMatcher(MatchEngine):
                     
         else:
             self.best_bid_price_int = price_int
+            if self.best_ask_price_int < self.best_bid_price_int:
+                self.best_ask_price_int = self.best_bid_price_int
             orders_to_check = list(self.sell_book)
             for order in orders_to_check:
                 if order.price_int <= self.best_bid_price_int:

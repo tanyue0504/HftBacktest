@@ -53,9 +53,9 @@ class TestOKXMatcher:
     def create_trade(self, price, size, side):
         return OKXTrades(symbol=self.symbol, price=price, size=size, side=side)
 
-    def create_limit_order(self, price, qty, oid):
+    def create_limit_order(self, price, qty, oid, post_only=False):
         order_id = int(oid)
-        order = Order(order_id, Order.ORDER_TYPE_LIMIT, self.symbol, float(qty), float(price))
+        order = Order(order_id, Order.ORDER_TYPE_LIMIT, self.symbol, float(qty), float(price), bool(post_only))
         order.state = Order.ORDER_STATE_SUBMITTED
         return order
 
@@ -148,6 +148,39 @@ class TestOKXMatcher:
         assert len(self.engine.queue) == 1
         evt = self.engine.queue.pop()
         assert evt.state == Order.ORDER_STATE_FILLED
+
+    def test_06_post_only_limit_taker_is_canceled(self):
+        # Best bid/ask initialized in setup: 100/101
+        # Buy limit at 102 would take immediately -> should be canceled for post-only
+        order = self.create_limit_order(102, 1.0, "6", post_only=True)
+        self.matcher.on_order(order)
+
+        assert len(self.engine.queue) == 2
+        evt_recv = self.engine.queue.popleft()
+        evt_cancel = self.engine.queue.popleft()
+
+        assert evt_recv.state == Order.ORDER_STATE_RECEIVED
+        assert evt_recv.order_id == 6
+
+        assert evt_cancel.state == Order.ORDER_STATE_CANCELED
+        assert evt_cancel.order_id == 6
+
+        # Must not rest in the book
+        assert len(self.matcher.buy_book) == 0
+        assert len(self.matcher.sell_book) == 0
+
+    def test_07_post_only_limit_maker_is_accepted(self):
+        # Buy limit at 99 won't cross -> should be accepted and rest in book
+        order = self.create_limit_order(99, 1.0, "7", post_only=True)
+        self.matcher.on_order(order)
+
+        assert len(self.engine.queue) == 1
+        evt_recv = self.engine.queue.pop()
+        assert evt_recv.state == Order.ORDER_STATE_RECEIVED
+        assert evt_recv.order_id == 7
+        assert evt_recv.is_post_only
+
+        assert len(self.matcher.buy_book) == 1
 
 if __name__ == '__main__':
     sys.exit(pytest.main(["-v", __file__]))

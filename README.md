@@ -32,14 +32,22 @@
 HftBacktest 模拟了真实的物理交易链路。整个回测环境由两个独立的事件循环（Event Loop）组成，中间通过延迟总线连接。
 
 ```mermaid
-graph TD
-    subgraph "Server Engine (交易所端)"
+flowchart TD
+    subgraph ServerSide ["Server Engine (交易所端)"]
+        direction TB
+        %% 显式定义 ServerEngine 节点在子图内部
+        ServerEngine[交易所核心<br/>Server Core]
+        
         Matcher[撮合引擎<br/>Matching Engine]
         ServerAcc[交易所账户<br/>Exchange Account]
         Settlement[结算/费率<br/>Settlement]
     end
 
-    subgraph "Client Engine (策略端)"
+    subgraph ClientSide ["Client Engine (策略端)"]
+        direction TB
+        %% 显式定义 ClientEngine 节点在子图内部
+        ClientEngine[客户端核心<br/>Client Core]
+        
         Strategy[用户策略<br/>User Strategy]
         ClientAcc[本地影子账户<br/>Shadow Account]
         Risk[风控模块<br/>Risk Manager]

@@ -35,39 +35,35 @@ HftBacktest 模拟了真实的物理交易链路。整个回测环境由两个�
 flowchart TD
     subgraph ServerSide ["Server Engine (交易所端)"]
         direction TB
-        %% 显式定义 ServerEngine 节点在子图内部
-        ServerEngine[交易所核心<br/>Server Core]
-        
-        Matcher[撮合引擎<br/>Matching Engine]
-        ServerAcc[交易所账户<br/>Exchange Account]
-        Settlement[结算/费率<br/>Settlement]
+        ServerEngine["交易所核心<br/>Server Core"]
+        Matcher["撮合引擎<br/>Matching Engine"]
+        ServerAcc["交易所账户<br/>Exchange Account"]
+        Settlement["结算/费率<br/>Settlement"]
     end
 
     subgraph ClientSide ["Client Engine (策略端)"]
         direction TB
-        %% 显式定义 ClientEngine 节点在子图内部
-        ClientEngine[客户端核心<br/>Client Core]
-        
-        Strategy[用户策略<br/>User Strategy]
-        ClientAcc[本地影子账户<br/>Shadow Account]
-        Risk[风控模块<br/>Risk Manager]
+        ClientEngine["客户端核心<br/>Client Core"]
+        Strategy["用户策略<br/>User Strategy"]
+        ClientAcc["本地影子账户<br/>Shadow Account"]
+        Risk["风控模块<br/>Risk Manager"]
     end
 
-    %% 数据流向
-    Data[历史数据流<br/>Merged Dataset] -->|原始行情 (Book/Trade)| ServerEngine
+    %% 数据流向：给标签加上引号以避免括号报错
+    Data["历史数据流<br/>Merged Dataset"] -->|"原始行情 (Book/Trade)"| ServerEngine
     
-    %% 内部交互 (无延迟)
+    %% 内部交互
     ServerEngine <==> Matcher
     ServerEngine <==> ServerAcc
     
     ClientEngine <==> Strategy
     ClientEngine <==> ClientAcc
 
-    %% 跨网络交互 (带延迟)
-    ServerEngine -.->|行情推送 / 订单回报 (Latency)| BusS2C[DelayBus: Server -> Client]
+    %% 跨网络交互：给标签和节点描述加上引号
+    ServerEngine -.->|"行情推送 / 订单回报 (Latency)"| BusS2C["DelayBus: Server -> Client"]
     BusS2C -.-> ClientEngine
     
-    ClientEngine -.->|下单请求 / 撤单请求 (Latency)| BusC2S[DelayBus: Client -> Server]
+    ClientEngine -.->|"下单请求 / 撤单请求 (Latency)"| BusC2S["DelayBus: Client -> Server"]
     BusC2S -.-> ServerEngine
 ```
 

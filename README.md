@@ -120,8 +120,10 @@ flowchart TD
 ### 1. 环境准备 (Prerequisites)
 
 - **OS**: Linux (推荐) / Windows / MacOS
-- **Python**: 建议 **3.8 - 3.10**。
-- **重要**：目前不支持 Python 3.11+（Cython 扩展兼容性问题）。
+- **Python**: 建议 **3.8 - 3.10**（对 Cython 扩展最稳）。
+- **Python 3.11+ 说明**：不同平台/编译器/Cython 版本差异较大。
+    - 本仓库在 **Linux + Python 3.13** 下已能完成 `pip install -e .`、`python setup.py build_ext --inplace` 并跑通 Quick Start（截至 2026-01-16）。
+    - 但不做“所有环境都能过”的兼容性承诺；如果你遇到编译/运行问题，优先切回 Python 3.10。
 - **Compiler**:
     - Linux/MacOS: GCC 或 Clang
     - Windows: Microsoft Visual C++ 14.0+ (Build Tools)
@@ -159,6 +161,12 @@ $env:HFT_DEBUG="1"; python setup.py build_ext --inplace
 为了让您快速上手，我们提供了一个最小化的 Demo。请在项目根目录下创建一个名为 `demo.py` 的文件。
 
 **注意**：此 Demo 会在本地生成两份 Parquet（`./data/trades.parquet` 与 `./data/bookTicker.parquet`），无需外部数据；如果你要接入真实数据，请看下方“数据准备”。
+
+**重要（避免误覆盖）**：如果你本地已经有同名文件，这个 demo 会直接覆盖它们。建议：
+
+- 把 demo 输出目录改成 `./data/demo/`；或
+- 先备份原文件；或
+- 运行完按下方“清理”把 demo 生成物删掉。
 
 ```python
 # demo.py
@@ -331,6 +339,16 @@ if __name__ == "__main__":
     engine.run()
     print(f"[Run] Backtest finished in {time.time() - start_t:.4f}s")
 ```
+
+    **清理（强烈建议）**
+
+    Quick Start 验证通过后，可以删除临时文件，保持仓库干净：
+
+    ```bash
+    rm -f demo.py ./data/trades.parquet ./data/bookTicker.parquet
+    ```
+
+    如果你希望在 demo 里看到成交（FILLED），把下单价改成“更容易成交”的价格（例如买单把 price 设到 ask 之上），否则订单可能不会成交但回测依然能跑通。
 
 ---
 
@@ -1095,15 +1113,15 @@ from hft_backtest.delaybus import LatencyModel
 
 class MyLatency(LatencyModel):
     def __init__(self, base_delay: int = 5000):
-    self.base_delay = int(base_delay)
+        self.base_delay = int(base_delay)
 
     def get_delay(self, event):
-    # 示例：对 Order 增加额外 2ms
-    from hft_backtest.order import Order
+        # 示例：对 Order 增加额外 2ms
+        from hft_backtest.order import Order
 
-    if isinstance(event, Order):
-        return self.base_delay + 2000
-    return self.base_delay
+        if isinstance(event, Order):
+            return self.base_delay + 2000
+        return self.base_delay
 ```
 
 ### 2) 如何写一个 Component（通用扩展方式）
@@ -1117,11 +1135,11 @@ from hft_backtest.event_engine import Component, EventEngine
 
 class MyComponent(Component):
     def start(self, engine: EventEngine):
-    self.engine = engine
-    # engine.register(SomeEvent, self.on_event)
+        self.engine = engine
+        # engine.register(SomeEvent, self.on_event)
 
     def stop(self):
-    pass
+        pass
 ```
 
 ### 3) 如何根据数据定义新的事件（Event）
@@ -1246,7 +1264,14 @@ class MyComponent(Component):
 
 ### 1) Python 版本
 
-当前版本请使用 Python 3.10/3.9/3.8。Python 3.11+ 可能导致扩展编译失败或运行时异常。
+优先使用 Python 3.10/3.9/3.8（对 Cython 扩展最稳）。
+
+Python 3.11+ 在部分环境也可能编译/运行成功（本仓库在 Linux + Python 3.13 已跑通过 Quick Start，截至 2026-01-16），但如果你遇到：
+
+- 扩展编译失败
+- 导入 `.so` 崩溃或出现诡异行为
+
+请优先切回 Python 3.10 并重新 `build_ext --inplace`。
 
 ### 2) 常见导入问题
 

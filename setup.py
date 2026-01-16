@@ -117,6 +117,11 @@ extensions = [
         define_macros=define_macros,
     ),
     Extension(
+        "hft_backtest.alpha",
+        ["hft_backtest/alpha.pyx"],
+        define_macros=define_macros,
+    ),
+    Extension(
         "hft_backtest.factor_sampler",
         ["hft_backtest/factor_sampler.pyx"],
         define_macros=define_macros,

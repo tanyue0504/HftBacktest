@@ -15,4 +15,5 @@ from .recorder import Recorder, TradeRecorder, AccountRecorder, OrderRecorder
 from .strategy import Strategy
 from .helper import EventPrinter
 from .factor import FactorSignal
+from .alpha import AlphaSignal
 from .factor_sampler import FactorSampler

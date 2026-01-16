@@ -340,15 +340,15 @@ if __name__ == "__main__":
     print(f"[Run] Backtest finished in {time.time() - start_t:.4f}s")
 ```
 
-    **清理（强烈建议）**
+**清理（强烈建议）**
 
-    Quick Start 验证通过后，可以删除临时文件，保持仓库干净：
+Quick Start 验证通过后，可以删除临时文件，保持仓库干净：
 
-    ```bash
-    rm -f demo.py ./data/trades.parquet ./data/bookTicker.parquet
-    ```
+```bash
+rm -f demo.py ./data/trades.parquet ./data/bookTicker.parquet
+```
 
-    如果你希望在 demo 里看到成交（FILLED），把下单价改成“更容易成交”的价格（例如买单把 price 设到 ask 之上），否则订单可能不会成交但回测依然能跑通。
+如果你希望在 demo 里看到成交（FILLED），把下单价改成“更容易成交”的价格（例如买单把 price 设到 ask 之上），否则订单可能不会成交但回测依然能跑通。
 
 ---
 

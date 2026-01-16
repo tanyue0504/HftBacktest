@@ -11,15 +11,19 @@ from itertools import chain
 from hft_backtest.event cimport Event
 from hft_backtest.event_engine cimport EventEngine, Component
 from hft_backtest.reader cimport DataReader, PyDatasetWrapper
-# 引入 Bus 和它的结构体 BusItem (为了访问 _queue)
+# 引入 Bus 和它的结构体 BusItem
 from hft_backtest.delaybus cimport DelayBus, BusItem 
 
-# 引入 Python 层的 Timer 类 (用于实例化)
+# 引入 Python 层的 Timer 类
 from hft_backtest.timer import Timer
 
 cdef class BacktestEngine:
     """
     全 Cython 版回测引擎
+    包含防傻设计：
+    1. 时间单调性检查 (防止时间倒流)
+    2. 自动熔断机制 (End Time Check)
+    3. 类型安全检查
     """
     def __init__(
         self, 
@@ -35,7 +39,7 @@ cdef class BacktestEngine:
         self.server_components = []
         self.client_components = []
         
-        # 1. 处理数据集 (如果是普通 Dataset，自动包装)
+        # 1. 处理数据集
         if isinstance(dataset, DataReader):
             self.dataset = <DataReader>dataset
         else:
@@ -52,11 +56,11 @@ cdef class BacktestEngine:
             self._use_timer = True
             self._timer_interval_v = timer_interval
 
-        # 3. 【新增】记录起止时间
+        # 3. 记录起止时间
         self.start_time = start_time
         self.end_time = end_time
             
-        # 3. 自动接线
+        # 4. 自动接线
         self.server2client_bus.set_target_engine(self.client_engine)
         self.client2server_bus.set_target_engine(self.server_engine)
         
@@ -70,7 +74,7 @@ cdef class BacktestEngine:
             self.client_components.append(component)
             
     cpdef run(self):
-        # 1. 启动组件 (保持不变)
+        # 1. 启动组件
         cdef Component c
         for c_obj in self.server_components:
             c = <Component>c_obj
@@ -79,47 +83,65 @@ cdef class BacktestEngine:
             c = <Component>c_obj
             c.start(self.client_engine)
             
-        # 2. 声明 C 变量
-        cdef long t_data = LLONG_MAX
-        cdef long t_s2c = LLONG_MAX
-        cdef long t_c2s = LLONG_MAX
-        cdef long next_timer = LLONG_MAX
-        cdef long min_t
+        # 2. 声明 C 变量 (统一使用 long long 防止溢出)
+        cdef long long t_data = LLONG_MAX
+        cdef long long t_s2c = LLONG_MAX
+        cdef long long t_c2s = LLONG_MAX
+        cdef long long next_timer = LLONG_MAX
+        cdef long long min_t = 0
+        
+        # [防傻核心变量] 记录上一次处理的时间，初始为 start_time 或 0
+        cdef long long last_engine_time = self.start_time 
+        
         cdef Event current_data = None
         
         try:
             # 预读第一条数据
             current_data = self.dataset.fetch_next()
-            # 【新增】逻辑 1：快进到 start_time
-            # 如果有数据且早于 start_time，就一直读并丢弃
+            
+            # [逻辑]：快进到 start_time
             while current_data is not None and current_data.timestamp < self.start_time:
                 current_data = self.dataset.fetch_next()
             
-            # Timer 初始化
-            if current_data is not None and self._use_timer:
-                next_timer = current_data.timestamp
+            # Timer 初始化 (对齐到当前数据时间，或者 start_time)
+            if self._use_timer:
+                if current_data is not None:
+                    next_timer = current_data.timestamp
+                else:
+                    next_timer = self.start_time
                 
             # --- 主循环 (纯 C 速度) ---
             while current_data is not None:
                 t_data = current_data.timestamp
                 
-                # 【重构后】直接获取触发时间，空队列自动返回 LLONG_MAX
-                # 不再直接访问 ._queue
+                # 获取 DelayBus 触发时间
                 t_s2c = self.server2client_bus.peek_trigger_time()
                 t_c2s = self.client2server_bus.peek_trigger_time()
                     
-                # 手写 min 比较
+                # 计算最小值 min(t_data, t_s2c, t_c2s, next_timer)
                 min_t = t_data
                 if t_s2c < min_t: min_t = t_s2c
                 if t_c2s < min_t: min_t = t_c2s
                 if next_timer < min_t: min_t = next_timer
 
-                # 【新增】逻辑 2：熔断检查
-                # 如果系统推动到的最小时间已经超过了 end_time，直接结束回测
+                # --- [防傻设计 1]：时间单调性检查 (CRITICAL) ---
+                # 如果时间倒流，说明逻辑严重错误（如 DelayBus 计算错误或数据乱序）
+                if min_t < last_engine_time:
+                    raise RuntimeError(
+                        f"FATAL: Time travel detected! Engine time regression.\n"
+                        f"Current Engine Time: {last_engine_time}\n"
+                        f"Next Event Time:   {min_t}\n"
+                        f"Diff:              {min_t - last_engine_time}\n"
+                        f"Debug Sources:     Data={t_data}, S2C={t_s2c}, C2S={t_c2s}, Timer={next_timer}"
+                    )
+                last_engine_time = min_t
+                # ------------------------------------------------
+
+                # --- [防傻设计 2]：熔断检查 (End Time) ---
                 if min_t > self.end_time:
                     break
         
-                # 优先级处理
+                # 优先级处理与事件分发
                 if t_s2c <= min_t:
                     self.server2client_bus.process_until(t_s2c)
                     continue
@@ -140,9 +162,8 @@ cdef class BacktestEngine:
                     self.server_engine.put(current_data)
                     current_data = self.dataset.fetch_next()
             
-            # --- 收尾逻辑 ---
+            # --- 收尾逻辑 (处理剩余的在途延迟消息) ---
             while True:
-                # 【重构后】收尾阶段同样使用新接口
                 t_s2c = self.server2client_bus.peek_trigger_time()
                 t_c2s = self.client2server_bus.peek_trigger_time()
                     
@@ -155,7 +176,15 @@ cdef class BacktestEngine:
                 else:
                     min_t = t_c2s
                 
-                # 【新增】收尾阶段也要熔断
+                # --- [防傻设计 1 复用]：收尾阶段的时间单调性检查 ---
+                if min_t < last_engine_time:
+                     raise RuntimeError(
+                        f"FATAL: Time travel detected during teardown!\n"
+                        f"Current Engine Time: {last_engine_time}, Next: {min_t}"
+                    )
+                last_engine_time = min_t
+                
+                # --- [防傻设计 2 复用]：收尾阶段熔断 ---
                 if min_t > self.end_time:
                     break
                     
@@ -163,7 +192,7 @@ cdef class BacktestEngine:
                      self.server2client_bus.process_until(t_s2c)
                 else:
                      self.client2server_bus.process_until(t_c2s)
-                     
+                      
         finally:
             # 停止组件
             for c_obj in chain(self.server_components, self.client_components):

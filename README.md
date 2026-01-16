@@ -1209,6 +1209,12 @@ class MyComponent(Component):
 - 因子生成逻辑尽可能 **跨交易所复用**（通用）
 - 标签定义与市场适配尽可能 **贴近交易所规则**（专用）
 
+**最佳实践（速度最快）**
+
+- 因子数据尽量 **提前离线算好**，做成 `FactorSignal` 的**事件流**（例如写成 Parquet，再用 `ParquetDataset(mode='event')` 回放；或写一个 `DataReader` 直接吐出 FactorSignal）。
+- 回测时把「市场事件流」与「因子事件流」一起喂给 `MergedDataset`，让它们在统一时间轴上自然对齐。
+- 尽量避免在每个行情回调（例如 `on_bookticker/on_trades`）里实时算因子再 `put(FactorSignal)`：这种模式会把计算开销放大到“事件频率级别”，在高频数据下最容易成为性能瓶颈。
+
 ### 1) FactorSignal：因子事件协议
 
 `FactorSignal(symbol, value, name)` 是一个事件（见 [hft_backtest/factor.pyx](hft_backtest/factor.pyx)）。策略或因子组件可以把它 `put` 到引擎里。
@@ -1281,6 +1287,7 @@ Python 3.11+ 在部分环境也可能编译/运行成功（本仓库在 Linux + 
 ### 3) 性能建议（优先级从高到低）
 
 - 读数据优先走 `batch + ArrayReader` 路线
+- 因子数据优先“离线预计算 → 回放 FactorSignal 事件流”，不要在每条行情事件里实时计算再推送
 - 避免在策略回调里做重 pandas 操作（把 heavy compute 做成离线或用 numpy）
 - 事件里尽量只放必要字段；不要频繁挂动态属性
 - Recorder 写盘用 buffer（项目内 Recorder 已做 buffer）

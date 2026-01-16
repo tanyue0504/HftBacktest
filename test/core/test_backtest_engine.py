@@ -44,6 +44,20 @@ class PingPongStrategy(Component):
         self.target_engine.put(e)
 
 class TestBacktestEngine:
+    def test_time_travel_detection_raises(self):
+        """数据时间戳逆序时，引擎应检测到时间倒流并报错"""
+        bus_s2c = DelayBus(FixedDelayModel(0))
+        bus_c2s = DelayBus(FixedDelayModel(0))
+
+        # 故意构造逆序时间戳：先 200 再 100
+        dataset = [Event(200), Event(100)]
+
+        # 关闭 Timer，避免把测试复杂化
+        engine = BacktestEngine(dataset, bus_s2c, bus_c2s, timer_interval=None)
+
+        with pytest.raises(RuntimeError, match=r"Time travel detected! Engine time regression"):
+            engine.run()
+
     def test_basic_flow_and_timer(self):
         """测试基础数据流和 Timer 生成"""
         # 1. 准备组件

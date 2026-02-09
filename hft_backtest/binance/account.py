@@ -13,11 +13,18 @@ class BinanceAccount(Account):
         self.order_dict: dict[int, Order] = {}
         self.position_dict: dict[str, float] = {}
         self.price_dict: dict[str, float] = {}
+        self.strategy_id: int | None = None
+
+    def register_strategy(self, strategy_id: int):
+        self.strategy_id = int(strategy_id)
 
     def on_order(self, order: Order):
         assert isinstance(order, Order)
         # 撤单指令本身不计入账户状态（目标订单的状态变更会单独推送）
         if order.is_cancel:
+            return
+
+        if self.strategy_id is not None and order.strategy_id != self.strategy_id:
             return
         # 状态机处理
         state = order.state

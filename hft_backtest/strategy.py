@@ -19,6 +19,9 @@ class Strategy(Component, ABC):
         _strategy_id_counter += 1
         self.id_num = _strategy_id_counter
 
+        if self.account is not None:
+            self.account.register_strategy(self.id_num)
+
     def start(self, engine: EventEngine):
         """
         生命周期钩子：策略启动

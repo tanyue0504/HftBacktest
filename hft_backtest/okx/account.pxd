@@ -4,6 +4,9 @@ from hft_backtest.order cimport Order
 from hft_backtest.okx.event cimport OKXTrades, OKXFundingRate, OKXDelivery
 
 cdef class OKXAccount(Account):
+    cdef long _strategy_id
+    cdef bint _strategy_id_set
+
     cdef public double cash_balance
     cdef public object position_dict
     cdef public object order_dict
@@ -16,6 +19,8 @@ cdef class OKXAccount(Account):
     cdef public object total_funding_fee
     cdef public object net_cash_flow
     cdef public object total_trade_count
+
+    cpdef void register_strategy(self, long strategy_id)
 
     cpdef start(self, EventEngine engine)
     cpdef stop(self)

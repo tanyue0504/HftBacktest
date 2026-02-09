@@ -21,6 +21,9 @@ cdef class Account(Component):
     # 如果子类不需要特殊的启动逻辑，可以不重写 start。
     
     # --- 核心逻辑 ---
+    cpdef void register_strategy(self, long strategy_id):
+        raise NotImplementedError("Account.register_strategy must be implemented by subclass")
+
     cpdef void on_order(self, Order order):
         raise NotImplementedError("Account.on_order must be implemented by subclass")
 

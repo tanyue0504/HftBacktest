@@ -5,6 +5,9 @@ from hft_backtest.order cimport Order
 from hft_backtest.event_engine cimport Component, EventEngine
 
 cdef class Account(Component):
+    # --- 策略注册 (必须实现) ---
+    cpdef void register_strategy(self, long strategy_id)
+
     # --- 核心事件回调 (必须实现) ---
     cpdef void on_order(self, Order order)
     

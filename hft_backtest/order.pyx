@@ -47,6 +47,7 @@ cdef class Order(Event):
         super().__init__(0) 
         
         self.order_id = order_id
+        self.strategy_id = 0
         self.order_type = order_type
         self.symbol = symbol
         self._quantity = quantity
@@ -220,6 +221,7 @@ cdef class Order(Event):
         
         # 复制 Order 核心字段
         evt.order_id = self.order_id
+        evt.strategy_id = self.strategy_id
         evt.order_type = self.order_type
         evt.state = self.state
         evt.symbol = self.symbol
@@ -243,5 +245,5 @@ cdef class Order(Event):
 
     def __repr__(self):
         # 仅用于打印调试，性能不敏感
-        return (f"Order(id={self.order_id}, type={self.order_type}, "
-                f"symbol={self.symbol}, price={self.price}, state={self.state}, post_only={bool(self.post_only)})")
+        return (f"Order(id={self.order_id}, strategy_id={self.strategy_id}, type={self.order_type}, "
+            f"symbol={self.symbol}, price={self.price}, state={self.state}, post_only={bool(self.post_only)})")

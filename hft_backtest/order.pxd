@@ -23,6 +23,7 @@ cdef class Order(Event):
     # 使用 C 类型 (long, int, double) 确保 8字节对齐和极致性能
     
     cdef public long order_id
+    cdef public long strategy_id
     cdef public int order_type      # 对应上面的 Enum
     cdef public int state           # 对应上面的 Enum
     

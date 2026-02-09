@@ -3,6 +3,8 @@ from hft_backtest.order import Order
 from hft_backtest.event_engine import Component, EventEngine
 
 class Account(Component):
+    strategy_id: int
+
     def __init__(self) -> None: ...
     
     # Component 接口

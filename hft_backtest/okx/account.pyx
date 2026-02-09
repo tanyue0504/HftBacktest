@@ -13,8 +13,8 @@ cdef class OKXAccount(Account):
     def __init__(self, double initial_balance = 0.0):
         super().__init__()
 
-        self._strategy_id = 0
-        self._strategy_id_set = False
+        # 单策略账户；0 表示未注册/不过滤
+        self.strategy_id = 0
         
         # --- 核心状态 ---
         self.cash_balance = initial_balance
@@ -35,8 +35,7 @@ cdef class OKXAccount(Account):
         self.total_trade_count = defaultdict(int)
 
     cpdef void register_strategy(self, long strategy_id):
-        self._strategy_id = strategy_id
-        self._strategy_id_set = True
+        self.strategy_id = strategy_id
 
     cpdef start(self, EventEngine engine):
         engine.register(Order, self.on_order)
@@ -61,7 +60,7 @@ cdef class OKXAccount(Account):
             return
 
         # 单策略账户：注册后仅处理该策略订单
-        if self._strategy_id_set and order.strategy_id != self._strategy_id:
+        if self.strategy_id != 0 and order.strategy_id != self.strategy_id:
             return
 
         # 2. 【核心修复】如果订单已知已终结，忽略任何后续消息 (如迟到的 RECEIVED)

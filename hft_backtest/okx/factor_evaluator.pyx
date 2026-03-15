@@ -12,8 +12,8 @@ from collections import deque
 
 from libc.math cimport sqrt, fabs
 
-from hft_backtest.event_engine cimport EventEngine, Component
-from hft_backtest.factor cimport FactorSignal
+from hft_backtest.core.event_engine cimport EventEngine, Component
+from hft_backtest.core.factor cimport FactorSignal
 from hft_backtest.okx.event cimport OKXBookticker, OKXTrades
 
 

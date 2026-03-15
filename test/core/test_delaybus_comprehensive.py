@@ -1,6 +1,6 @@
 import pytest
 from hft_backtest import Event, EventEngine
-from hft_backtest.delaybus import DelayBus, LatencyModel, FixedDelayModel
+from hft_backtest.core.delaybus import DelayBus, LatencyModel, FixedDelayModel
 
 # --- 辅助类：用于测试乱序到达的动态延迟模型 ---
 class MockVariableLatency(LatencyModel):

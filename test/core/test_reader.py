@@ -1,7 +1,7 @@
 import pytest
 import sys
-from hft_backtest.reader import PyDatasetWrapper, DataReader
-from hft_backtest.event import Event
+from hft_backtest.core.reader import PyDatasetWrapper, DataReader
+from hft_backtest.core.event import Event
 
 class TestReader:
     def test_wrap_list(self):

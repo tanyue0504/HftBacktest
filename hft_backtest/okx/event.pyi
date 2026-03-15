@@ -1,4 +1,4 @@
-from hft_backtest.event import Event
+from hft_backtest.core.event import Event
 
 class OKXBookticker(Event):
     symbol: str

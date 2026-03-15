@@ -3,15 +3,15 @@ import test
 from hft_backtest import CsvDataset, ParquetDataset
 from itertools import product
 from datetime import datetime
-from hft_backtest.dataset import MergedDataset
+from hft_backtest.core.dataset import MergedDataset
 from hft_backtest.okx.event import OKXTrades, OKXBookticker, OKXFundingRate, OKXDelivery
 from pathlib import Path
 import pandas as pd
 
 import pyximport
 pyximport.install()
-from hft_backtest.event import Event
-from hft_backtest.order import Order
+from hft_backtest.core.event import Event
+from hft_backtest.core.order import Order
 
 def test_okx_trades():
     ds_trades = ParquetDataset(

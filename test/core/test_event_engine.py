@@ -1,7 +1,7 @@
 import pytest
 import sys
-from hft_backtest.event import Event
-from hft_backtest.event_engine import EventEngine
+from hft_backtest.core.event import Event
+from hft_backtest.core.event_engine import EventEngine
 
 # 定义一些测试用的子类
 class MarketEvent(Event):

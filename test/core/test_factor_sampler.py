@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from hft_backtest import EventEngine, FactorSampler, Timer
-from hft_backtest.factor import FactorSignal
+from hft_backtest.core.factor import FactorSignal
 
 
 class TestFactorSampler:

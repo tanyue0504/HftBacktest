@@ -4,7 +4,7 @@
 # cython: wraparound=False
 # cython: initializedcheck=False
 
-from hft_backtest.event cimport Event
+from hft_backtest.core.event cimport Event
 
 # =============================================================================
 # OKXBookticker (已优化)

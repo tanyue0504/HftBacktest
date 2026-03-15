@@ -6,8 +6,8 @@
 
 import numpy as np
 cimport numpy as np
-from hft_backtest.event cimport Event
-from hft_backtest.reader cimport DataReader
+from hft_backtest.core.event cimport Event
+from hft_backtest.core.reader cimport DataReader
 from hft_backtest.okx.event cimport OKXTrades, OKXBookticker
 
 # 初始化 Numpy C-API

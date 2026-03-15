@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from loguru import logger
-from hft_backtest.helper import EventPrinter, OrderTracer
+from hft_backtest.core.helper import EventPrinter, OrderTracer
 from hft_backtest import Order
 
 class DummyEvent:

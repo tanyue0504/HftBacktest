@@ -1,6 +1,6 @@
 import pytest
 import sys
-from hft_backtest.order import (
+from hft_backtest.core.order import (
     Order, 
     ORDER_TYPE_LIMIT, 
     ORDER_TYPE_MARKET, 

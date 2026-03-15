@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional
-from hft_backtest.account import Account
-from hft_backtest.event_engine import EventEngine
-from hft_backtest.order import Order
+from hft_backtest.core.account import Account
+from hft_backtest.core.event_engine import EventEngine
+from hft_backtest.core.order import Order
 from hft_backtest.okx.event import OKXTrades, OKXFundingRate, OKXDelivery
 
 class OKXAccount(Account):

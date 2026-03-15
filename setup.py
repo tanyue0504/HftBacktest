@@ -1,10 +1,10 @@
 # 运行时执行以下命令以编译 Cython 模块
 # python setup.py build_ext --inplace
 # HFT_DEBUG=1 python setup.py build_ext --inplace
-# rm -rf build/ hft_backtest/*.so hft_backtest/*.cpp hft_backtest/*.c
+# rm -rf build/ hft_backtest/*.so hft_backtest/*.cpp hft_backtest/*.c hft_backtest/core/*.so hft_backtest/core/*.cpp hft_backtest/core/*.c
 # 生成pyi文件 
-# stubgen -m hft_backtest.order -o .
-# stubgen -m hft_backtest.event -o .
+# stubgen -m hft_backtest.core.order -o .
+# stubgen -m hft_backtest.core.event -o .
 import os
 import numpy # 需要导入 numpy 以获取 include 路径
 from setuptools import setup, find_packages, Extension
@@ -34,45 +34,45 @@ else:
 # 3. 定义扩展模块
 extensions = [
     Extension(
-        "hft_backtest.event", 
-        ["hft_backtest/event.pyx"],
+        "hft_backtest.core.event", 
+        ["hft_backtest/core/event.pyx"],
         define_macros=define_macros,
     ),
     Extension(
-        "hft_backtest.order",
-        ["hft_backtest/order.pyx"],
+        "hft_backtest.core.order",
+        ["hft_backtest/core/order.pyx"],
         define_macros=define_macros,
     ),
     Extension(
-        "hft_backtest.event_engine", 
-        ["hft_backtest/event_engine.pyx"],
+        "hft_backtest.core.event_engine", 
+        ["hft_backtest/core/event_engine.pyx"],
         define_macros=define_macros,
     ),
     Extension(
-        "hft_backtest.matcher", 
-        ["hft_backtest/matcher.pyx"],
+        "hft_backtest.core.matcher", 
+        ["hft_backtest/core/matcher.pyx"],
         define_macros=define_macros,
     ),
     Extension(
-        "hft_backtest.delaybus", 
-        ["hft_backtest/delaybus.pyx"],
+        "hft_backtest.core.delaybus", 
+        ["hft_backtest/core/delaybus.pyx"],
         language="c++",
         define_macros=define_macros,
     ),
     Extension(
-        "hft_backtest.merged_dataset",
-        ["hft_backtest/merged_dataset.pyx"],
+        "hft_backtest.core.merged_dataset",
+        ["hft_backtest/core/merged_dataset.pyx"],
         language="c++",
         define_macros=define_macros,
     ),
     Extension(
-        "hft_backtest.reader", 
-        ["hft_backtest/reader.pyx"],
+        "hft_backtest.core.reader", 
+        ["hft_backtest/core/reader.pyx"],
         define_macros=define_macros,
     ),
     Extension(
-        "hft_backtest.backtest", 
-        ["hft_backtest/backtest.pyx"], 
+        "hft_backtest.core.backtest", 
+        ["hft_backtest/core/backtest.pyx"], 
         language="c++",
         define_macros=define_macros,
     ),
@@ -82,8 +82,8 @@ extensions = [
         define_macros=define_macros,
     ),
     Extension(
-        "hft_backtest.account",
-        ["hft_backtest/account.pyx"],
+        "hft_backtest.core.account",
+        ["hft_backtest/core/account.pyx"],
         define_macros=define_macros,
     ),
     Extension(
@@ -107,23 +107,23 @@ extensions = [
         define_macros=define_macros,
     ),
     Extension(
-        "hft_backtest.timer",
-        ["hft_backtest/timer.pyx"],
+        "hft_backtest.core.timer",
+        ["hft_backtest/core/timer.pyx"],
         define_macros=define_macros,
     ),
     Extension(
-        "hft_backtest.factor", 
-        ["hft_backtest/factor.pyx"],
+        "hft_backtest.core.factor", 
+        ["hft_backtest/core/factor.pyx"],
         define_macros=define_macros,
     ),
     Extension(
-        "hft_backtest.alpha",
-        ["hft_backtest/alpha.pyx"],
+        "hft_backtest.core.alpha",
+        ["hft_backtest/core/alpha.pyx"],
         define_macros=define_macros,
     ),
     Extension(
-        "hft_backtest.factor_sampler",
-        ["hft_backtest/factor_sampler.pyx"],
+        "hft_backtest.core.factor_sampler",
+        ["hft_backtest/core/factor_sampler.pyx"],
         define_macros=define_macros,
     ),
 ]

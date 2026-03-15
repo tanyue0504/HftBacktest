@@ -1,7 +1,7 @@
 # cython: language_level=3
 
-from hft_backtest.event_engine cimport Component, EventEngine
-from hft_backtest.factor cimport FactorSignal
+from hft_backtest.core.event_engine cimport Component, EventEngine
+from hft_backtest.core.factor cimport FactorSignal
 from hft_backtest.okx.event cimport OKXBookticker, OKXTrades
 
 

@@ -1,11 +1,11 @@
 from hft_backtest import MergedDataset, ParquetDataset, CsvDataset, Strategy, EventEngine, BacktestEngine, TradeRecorder, AccountRecorder, Order
-from hft_backtest.helper import EventPrinter
-from hft_backtest.delaybus import DelayBus, FixedDelayModel
-from hft_backtest.account import Account
+from hft_backtest.core.helper import EventPrinter
+from hft_backtest.core.delaybus import DelayBus, FixedDelayModel
+from hft_backtest.core.account import Account
 from hft_backtest.okx.event import OKXTrades, OKXFundingRate, OKXBookticker, OKXDelivery
 from hft_backtest.okx.account import OKXAccount
 from hft_backtest.okx.matcher import OKXMatcher
-from hft_backtest.timer import Timer
+from hft_backtest.core.timer import Timer
 from pathlib import Path
 
 
@@ -119,7 +119,7 @@ def main():
     # 监听 Trades 和 Order
     # 修改 demo.py 中的这一行
     # 加入 OKXFundingRate，这样第一条数据进去你就能看到
-    # 如果想看 Timer 刷屏，也可以加入 Timer (hft_backtest.timer)
+    # 如果想看 Timer 刷屏，也可以加入 Timer (hft_backtest.core.timer)
     event_printer = EventPrinter(tips="[Engine]", event_types=[OKXTrades, Order])
     
     backtest_engine = BacktestEngine(

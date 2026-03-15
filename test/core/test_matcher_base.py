@@ -1,9 +1,9 @@
 import pytest
 import sys
-from hft_backtest.matcher import MatchEngine
-from hft_backtest.event_engine import EventEngine
-from hft_backtest.order import Order
-from hft_backtest.event import Event
+from hft_backtest.core.matcher import MatchEngine
+from hft_backtest.core.event_engine import EventEngine
+from hft_backtest.core.order import Order
+from hft_backtest.core.event import Event
 
 class TestMatcherBase:
     def test_abstract_enforcement(self):

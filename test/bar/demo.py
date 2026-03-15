@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from pyarrow import parquet as pq
 
 from hft_backtest import Strategy, Data, Order, BacktestEngine
-from hft_backtest.dataset import Dataset
+from hft_backtest.core.dataset import Dataset
 from hft_backtest.low_freq import BarAccount, BarMatcher, BarRecorder
 
 

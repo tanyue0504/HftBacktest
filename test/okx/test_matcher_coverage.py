@@ -1,9 +1,9 @@
 import pytest
 import sys
 from hft_backtest.okx.matcher import OKXMatcher
-from hft_backtest.event_engine import EventEngine
+from hft_backtest.core.event_engine import EventEngine
 from hft_backtest.okx.event import OKXBookticker, OKXTrades
-from hft_backtest.order import (
+from hft_backtest.core.order import (
     Order, 
     ORDER_STATE_RECEIVED, 
     ORDER_STATE_FILLED, 
@@ -145,7 +145,7 @@ class TestOKXMatcherCoverage:
         matcher2 = OKXMatcher("BTC-USDT")
         
         # 【修复点】使用真实的 EventEngine 替代 MockEngine
-        # 因为 Cython 的 start 方法强制检查参数类型是否为 hft_backtest.event_engine.EventEngine
+        # 因为 Cython 的 start 方法强制检查参数类型是否为 hft_backtest.core.event_engine.EventEngine
         engine2 = EventEngine()
         captured_events2 = []
         engine2.global_register(lambda e: captured_events2.append(e))

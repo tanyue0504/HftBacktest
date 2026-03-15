@@ -3,7 +3,7 @@ import sys
 import pytest
 
 from hft_backtest import EventEngine
-from hft_backtest.factor import FactorSignal
+from hft_backtest.core.factor import FactorSignal
 from hft_backtest.okx import OKXBookticker, OKXTrades, FactorEvaluator
 
 

@@ -4,8 +4,8 @@ from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import Any, Deque, Dict, Iterable, List, Optional, Tuple
 
-from hft_backtest.event_engine import Component, EventEngine
-from hft_backtest.factor import FactorSignal
+from hft_backtest.core.event_engine import Component, EventEngine
+from hft_backtest.core.factor import FactorSignal
 from hft_backtest.okx.event import OKXBookticker
 
 

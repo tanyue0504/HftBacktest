@@ -1,6 +1,6 @@
 import pytest
-from hft_backtest.order import Order, ORDER_TYPE_LIMIT
-from hft_backtest.event import Event
+from hft_backtest.core.order import Order, ORDER_TYPE_LIMIT
+from hft_backtest.core.event import Event
 
 def test_order_derive_integrity():
     """

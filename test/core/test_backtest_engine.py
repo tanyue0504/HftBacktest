@@ -1,11 +1,11 @@
 import pytest
 import sys
-from hft_backtest.event import Event
-from hft_backtest.backtest import BacktestEngine
-from hft_backtest.delaybus import DelayBus, FixedDelayModel
-from hft_backtest.event_engine import Component
-from hft_backtest.reader import PyDatasetWrapper
-from hft_backtest.timer import Timer
+from hft_backtest.core.event import Event
+from hft_backtest.core.backtest import BacktestEngine
+from hft_backtest.core.delaybus import DelayBus, FixedDelayModel
+from hft_backtest.core.event_engine import Component
+from hft_backtest.core.reader import PyDatasetWrapper
+from hft_backtest.core.timer import Timer
 
 # 模拟数据源
 def mock_data_generator():

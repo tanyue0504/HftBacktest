@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-from hft_backtest.event cimport Event
+from hft_backtest.core.event cimport Event
 
 cdef class OKXBookticker(Event):
     cdef public str symbol

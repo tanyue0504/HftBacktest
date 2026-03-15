@@ -1,7 +1,7 @@
 # hft_backtest/okx/reader.pxd
 # cython: language_level=3
 
-from hft_backtest.reader cimport DataReader
+from hft_backtest.core.reader cimport DataReader
 
 # OKXTrades 专用 Batch 读取器
 cdef class OKXTradesArrayReader(DataReader):

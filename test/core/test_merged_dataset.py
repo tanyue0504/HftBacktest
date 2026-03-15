@@ -1,8 +1,8 @@
 import pytest
 import sys
-from hft_backtest.event import Event
-from hft_backtest.reader import DataReader, PyDatasetWrapper
-from hft_backtest.merged_dataset import MergedDataset
+from hft_backtest.core.event import Event
+from hft_backtest.core.reader import DataReader, PyDatasetWrapper
+from hft_backtest.core.merged_dataset import MergedDataset
 
 # 辅助函数：生成简单的 Event 列表
 def create_events(timestamps, source_id=0):

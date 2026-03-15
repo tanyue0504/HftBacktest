@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from hft_backtest import Strategy, Order, Account, EventEngine
-from hft_backtest.order import Order, ORDER_TYPE_LIMIT, ORDER_STATE_CREATED, ORDER_STATE_SUBMITTED, ORDER_TYPE_CANCEL
+from hft_backtest.core.order import Order, ORDER_TYPE_LIMIT, ORDER_STATE_CREATED, ORDER_STATE_SUBMITTED, ORDER_TYPE_CANCEL
 
 # Mock 对象
 class MockAccount(Account):

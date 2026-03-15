@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from hft_backtest.event_engine import EventEngine, Component
-from hft_backtest.factor import FactorSignal
+from hft_backtest.core.event_engine import EventEngine, Component
+from hft_backtest.core.factor import FactorSignal
 from hft_backtest.okx.event import OKXBookticker, OKXTrades
 
 

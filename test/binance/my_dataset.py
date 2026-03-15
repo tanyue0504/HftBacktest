@@ -14,7 +14,7 @@ demo.py
 目前实现了一个基于binance bookticker & aggTrades/Trades数据的撮合引擎
 """
 
-from hft_backtest.dataset import Data, Dataset
+from hft_backtest.core.dataset import Data, Dataset
 
 import pandas as pd
 from loguru import logger

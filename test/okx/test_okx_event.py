@@ -1,6 +1,6 @@
 import pytest
 from hft_backtest.okx.event import OKXBookticker, OKXTrades, OKXFundingRate
-from hft_backtest.order import Order
+from hft_backtest.core.order import Order
 
 class TestOKXEvents:
     def test_bookticker_layout_and_derive(self):

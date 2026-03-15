@@ -1,6 +1,6 @@
 import pytest
 import sys
-from hft_backtest.event import Event
+from hft_backtest.core.event import Event
 
 class TestEvent:
     def test_basic_initialization(self):

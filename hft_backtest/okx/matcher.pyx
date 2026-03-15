@@ -4,9 +4,9 @@
 # cython: cdivision=True
 
 import math
-from hft_backtest.matcher cimport MatchEngine
-from hft_backtest.order import Order
-from hft_backtest.order cimport (
+from hft_backtest.core.matcher cimport MatchEngine
+from hft_backtest.core.order import Order
+from hft_backtest.core.order cimport (
     Order, 
     ORDER_STATE_FILLED, 
     ORDER_STATE_CANCELED, 
@@ -17,7 +17,7 @@ from hft_backtest.order cimport (
     ORDER_TYPE_CANCEL,
     ORDER_TYPE_TRACKING
 )
-from hft_backtest.event_engine cimport EventEngine
+from hft_backtest.core.event_engine cimport EventEngine
 from hft_backtest.okx.event cimport OKXBookticker, OKXTrades, OKXDelivery
 from libc.math cimport abs, fmax
 
@@ -31,7 +31,7 @@ cdef class OKXMatcher(MatchEngine):
         self.taker_fee = taker_fee
         self.maker_fee = maker_fee
         
-        from hft_backtest.order import Order as PyOrder
+        from hft_backtest.core.order import Order as PyOrder
         self.PRICE_SCALAR = PyOrder.SCALER
         
         self.INIT_RANK = 10.0**9

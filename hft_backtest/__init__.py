@@ -17,3 +17,14 @@ from .core.helper import EventPrinter
 from .core.factor import FactorSignal
 from .core.alpha import AlphaSignal
 from .core.factor_sampler import FactorSampler
+from .ashare import (
+	AshareAccount,
+	AshareBalanceSheetEvent,
+	AshareCashflowEvent,
+	AshareDailyBasicEvent,
+	AshareDailyEvent,
+	AshareDailyMatcher,
+	AshareIncomeEvent,
+	AshareNameChangeEvent,
+	AshareStkLimitEvent,
+)

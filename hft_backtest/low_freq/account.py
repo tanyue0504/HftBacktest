@@ -36,17 +36,9 @@ class BarAccount(Account):
         # 资金费累计（每次快照后由Recorder清空）
         self.funding_fee_dict: dict[str, float] = {}
 
-        self.strategy_id: int = 0
-
-    def register_strategy(self, strategy_id: int):
-        self.strategy_id = int(strategy_id)
-
     def on_order(self, order: Order):
         assert isinstance(order, Order)
         if order.is_cancel:
-            return
-
-        if self.strategy_id != 0 and order.strategy_id != self.strategy_id:
             return
 
         state = order.state

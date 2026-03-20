@@ -33,7 +33,6 @@ class Order(Event):
 
     # cdef public 属性
     order_id: int
-    strategy_id: int
     order_type: int
     state: int
     symbol: str

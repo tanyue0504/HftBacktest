@@ -4,8 +4,6 @@ from hft_backtest.core.event_engine import Component, EventEngine
 from hft_backtest.core.order import Order
 from hft_backtest.core.account import Account
 
-_strategy_id_counter: int = 0
-
 class Strategy(Component, ABC):
     """
     策略抽象基类
@@ -15,12 +13,6 @@ class Strategy(Component, ABC):
         # 这里的 super().__init__() 调用的是 object.__init__，通常没问题。
         self.account = account
         self.event_engine = None
-        global _strategy_id_counter
-        _strategy_id_counter += 1
-        self.id_num = _strategy_id_counter
-
-        if self.account is not None:
-            self.account.register_strategy(self.id_num)
 
     def start(self, engine: EventEngine):
         """
@@ -37,9 +29,6 @@ class Strategy(Component, ABC):
             
         # 确保是初始状态或撤单指令
         assert order.is_created or order.is_cancel_order, f"Invalid order state: {order.state}"
-
-        # 给订单打上策略标记
-        order.strategy_id = self.id_num
         
         # 修改状态为 SUBMITTED
         order.state = Order.ORDER_STATE_SUBMITTED

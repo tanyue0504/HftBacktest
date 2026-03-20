@@ -7,26 +7,33 @@ from hft_backtest.core.event_engine import EventEngine
 from hft_backtest.core.matcher import MatchEngine
 from hft_backtest.core.order import Order
 
+from .account import AshareAccount
 from .event import AshareDailyEvent, AshareStkLimitEvent
 
 
 class AshareDailyMatcher(MatchEngine):
     def __init__(
         self,
+        account: AshareAccount,
         fill_mode: str = "close",
         commission_rate: float = 0.0003,
         stamp_tax_rate: float = 0.001,
         min_commission: float = 5.0,
+        enforce_integer_lot: bool = False,
     ):
         if fill_mode not in {"close", "next_open"}:
             raise ValueError("fill_mode must be either 'close' or 'next_open'")
+        self.account = account
         self.fill_mode = fill_mode
         self.commission_rate = commission_rate
         self.stamp_tax_rate = stamp_tax_rate
         self.min_commission = min_commission
+        self.enforce_integer_lot = enforce_integer_lot
         self.event_engine = None
         self.active_orders: Dict[str, Dict[int, Order]] = defaultdict(dict)
         self.order_meta: Dict[int, dict] = {}
+        self.order_reserved_sell: Dict[int, float] = {}
+        self.symbol_reserved_sell: Dict[str, float] = defaultdict(float)
         self.latest_daily: Dict[str, AshareDailyEvent] = {}
         self.latest_limits: Dict[str, dict] = {}
 
@@ -53,6 +60,16 @@ class AshareDailyMatcher(MatchEngine):
         if not order.is_submitted:
             return
 
+        # A 股日线默认允许历史浮点仓位，整手检查通过开关控制。
+        if self.enforce_integer_lot and not self._is_integer_lot(order.quantity):
+            self._cancel_submitted_order(order)
+            return
+
+        if order.quantity < 0 and not self.account.allow_short:
+            if not self._reserve_sell_capacity(order):
+                self._cancel_submitted_order(order)
+                return
+
         received = order.derive()
         received.state = Order.ORDER_STATE_RECEIVED
         self.active_orders[received.symbol][received.order_id] = received
@@ -77,6 +94,7 @@ class AshareDailyMatcher(MatchEngine):
             report = existing.derive()
             report.order_type = Order.ORDER_TYPE_LIMIT
             report.state = Order.ORDER_STATE_CANCELED
+            self._release_sell_reservation(order_id, symbol)
             self.order_meta.pop(order_id, None)
             self.event_engine.put(report)
             if not orders:
@@ -90,12 +108,21 @@ class AshareDailyMatcher(MatchEngine):
         if not orders:
             return
 
+        # 同一批次内顺序扣减可卖仓位，防止多笔卖单在同一bar超卖。
+        remaining_sellable = self.account.get_sellable_qty(symbol)
+
         for order_id, order in list(orders.items()):
             meta = self.order_meta.get(order_id, {})
             if self.fill_mode == "next_open" and meta.get("eligible_after", -1) >= market_event.timestamp:
                 continue
 
-            limit_error = self._is_price_limit_invalid(order, market_event)
+            if order.quantity < 0 and not self.account.allow_short:
+                need = -float(order.quantity)
+                if need > remaining_sellable + 1e-12:
+                    self._cancel_invalid_order(order)
+                    continue
+
+            limit_error = self._is_price_limit_invalid(order)
             if limit_error:
                 self._cancel_invalid_order(order)
                 continue
@@ -109,6 +136,8 @@ class AshareDailyMatcher(MatchEngine):
                 continue
 
             self._fill_order(order, fill_price)
+            if order.quantity < 0 and not self.account.allow_short:
+                remaining_sellable = max(0.0, remaining_sellable + float(order.quantity))
 
     def _resolve_fill_price(self, order: Order, market_event: AshareDailyEvent) -> float | None:
         if self.fill_mode == "next_open":
@@ -141,7 +170,7 @@ class AshareDailyMatcher(MatchEngine):
             return False
         return fill_price > 0
 
-    def _is_price_limit_invalid(self, order: Order, market_event: AshareDailyEvent) -> str | None:
+    def _is_price_limit_invalid(self, order: Order) -> str | None:
         if order.is_market_order:
             return None
         limits = self.latest_limits.get(order.symbol)
@@ -164,6 +193,7 @@ class AshareDailyMatcher(MatchEngine):
         if report.quantity < 0:
             commission += notional * self.stamp_tax_rate
         report.commission_fee = commission
+        self._release_sell_reservation(order.order_id, order.symbol)
         self.active_orders[order.symbol].pop(order.order_id, None)
         if not self.active_orders[order.symbol]:
             self.active_orders.pop(order.symbol, None)
@@ -173,8 +203,42 @@ class AshareDailyMatcher(MatchEngine):
     def _cancel_invalid_order(self, order: Order):
         report = order.derive()
         report.state = Order.ORDER_STATE_CANCELED
+        self._release_sell_reservation(order.order_id, order.symbol)
         self.active_orders[order.symbol].pop(order.order_id, None)
         if not self.active_orders[order.symbol]:
             self.active_orders.pop(order.symbol, None)
         self.order_meta.pop(order.order_id, None)
         self.event_engine.put(report)
+
+    def _cancel_submitted_order(self, order: Order):
+        report = order.derive()
+        report.state = Order.ORDER_STATE_CANCELED
+        self.event_engine.put(report)
+
+    def _reserve_sell_capacity(self, order: Order) -> bool:
+        # 规则解释：卖单在提交阶段先占用可卖仓位，防止同一时刻多单超卖。
+        need = -float(order.quantity)
+        symbol = order.symbol
+        sellable = self.account.get_sellable_qty(symbol)
+        reserved = self.symbol_reserved_sell.get(symbol, 0.0)
+        available = sellable - reserved
+        if need > available + 1e-12:
+            return False
+        self.order_reserved_sell[order.order_id] = need
+        self.symbol_reserved_sell[symbol] = reserved + need
+        return True
+
+    def _release_sell_reservation(self, order_id: int, symbol: str):
+        reserved = self.order_reserved_sell.pop(order_id, None)
+        if reserved is None:
+            return
+        left = self.symbol_reserved_sell.get(symbol, 0.0) - reserved
+        if left <= 1e-12:
+            self.symbol_reserved_sell.pop(symbol, None)
+        else:
+            self.symbol_reserved_sell[symbol] = left
+
+    @staticmethod
+    def _is_integer_lot(quantity: float) -> bool:
+        quantity_i = round(float(quantity))
+        return abs(float(quantity) - quantity_i) < 1e-12

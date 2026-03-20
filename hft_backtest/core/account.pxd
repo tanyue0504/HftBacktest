@@ -5,12 +5,6 @@ from hft_backtest.core.order cimport Order
 from hft_backtest.core.event_engine cimport Component, EventEngine
 
 cdef class Account(Component):
-    # 单策略账户标识；0 表示未注册/不做过滤
-    cdef public long strategy_id
-
-    # --- 策略注册 (必须实现) ---
-    cpdef void register_strategy(self, long strategy_id)
-
     # --- 核心事件回调 (必须实现) ---
     cpdef void on_order(self, Order order)
     

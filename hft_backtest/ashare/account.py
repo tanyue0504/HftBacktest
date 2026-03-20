@@ -12,23 +12,21 @@ from .event import AshareDailyEvent
 class AshareAccount(Account):
     def __init__(self, initial_balance: float = 0.0, allow_short: bool = False):
         super().__init__()
-        self.strategy_id = 0
         self.initial_balance = float(initial_balance)
         self.cash_balance = float(initial_balance)
         self.allow_short = allow_short
 
         self.order_dict: Dict[int, Order] = {}
         self.position_qty: Dict[str, float] = {}
+        self.sellable_qty: Dict[str, float] = {}
         self.market_values: Dict[str, float] = {}
         self.last_close: Dict[str, float] = {}
         self.last_pct_chg: Dict[str, float] = {}
+        self.last_trade_date: Dict[str, str] = {}
 
         self.total_turnover = 0.0
         self.total_commission = 0.0
         self.total_trade_count = 0
-
-    def register_strategy(self, strategy_id: int):
-        self.strategy_id = int(strategy_id)
 
     def start(self, engine: EventEngine):
         engine.register(Order, self.on_order)
@@ -41,6 +39,16 @@ class AshareAccount(Account):
         symbol = event.ts_code
         close_price = getattr(event, "close", None)
         pct_chg = getattr(event, "pct_chg", None)
+        trade_date = str(getattr(event, "trade_date", ""))
+
+        # T+1 规则：进入新交易日后，上一日持仓转为可卖仓位。
+        if trade_date and self.last_trade_date.get(symbol) != trade_date:
+            position = self.position_qty.get(symbol, 0.0)
+            if position > 1e-12:
+                self.sellable_qty[symbol] = position
+            else:
+                self.sellable_qty.pop(symbol, None)
+            self.last_trade_date[symbol] = trade_date
 
         if close_price is not None:
             self.last_close[symbol] = float(close_price)
@@ -52,8 +60,6 @@ class AshareAccount(Account):
 
     def on_order(self, order: Order):
         if order.is_cancel_order:
-            return
-        if self.strategy_id and order.strategy_id != self.strategy_id:
             return
 
         if order.is_submitted or order.is_received:
@@ -74,8 +80,9 @@ class AshareAccount(Account):
         prev_value = self.market_values.get(symbol, 0.0)
         new_qty = prev_qty + qty
 
+        # 防御性校验：正常路径由 matcher 预先阻断，这里只兜底异常状态。
         if not self.allow_short and new_qty < -1e-12:
-            raise RuntimeError(f"Short selling is disabled for A-share account: {symbol}")
+            raise RuntimeError(f"Unexpected negative position in ledger: {symbol}")
 
         trade_notional = qty * float(order.filled_price)
         self.cash_balance -= trade_notional
@@ -91,15 +98,28 @@ class AshareAccount(Account):
             sell_qty = min(-qty, prev_qty)
             reduction_ratio = sell_qty / prev_qty
             new_value = prev_value * (1.0 - reduction_ratio)
+            if symbol in self.sellable_qty:
+                left = self.sellable_qty[symbol] - sell_qty
+                if left <= 1e-12:
+                    self.sellable_qty.pop(symbol, None)
+                else:
+                    self.sellable_qty[symbol] = left
         else:
             new_value = prev_value
 
         if abs(new_qty) < 1e-12:
             self.position_qty.pop(symbol, None)
+            self.sellable_qty.pop(symbol, None)
             self.market_values.pop(symbol, None)
         else:
             self.position_qty[symbol] = new_qty
             self.market_values[symbol] = new_value
+
+    def get_position_qty(self, symbol: str) -> float:
+        return float(self.position_qty.get(symbol, 0.0))
+
+    def get_sellable_qty(self, symbol: str) -> float:
+        return float(self.sellable_qty.get(symbol, 0.0))
 
     def get_positions(self):
         return self.position_qty.copy()

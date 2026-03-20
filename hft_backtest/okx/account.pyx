@@ -12,9 +12,6 @@ from hft_backtest.core.account cimport Account
 cdef class OKXAccount(Account):
     def __init__(self, double initial_balance = 0.0):
         super().__init__()
-
-        # 单策略账户；0 表示未注册/不过滤
-        self.strategy_id = 0
         
         # --- 核心状态 ---
         self.cash_balance = initial_balance
@@ -33,9 +30,6 @@ cdef class OKXAccount(Account):
         self.total_funding_fee = defaultdict(float)
         self.net_cash_flow = defaultdict(float)
         self.total_trade_count = defaultdict(int)
-
-    cpdef void register_strategy(self, long strategy_id):
-        self.strategy_id = strategy_id
 
     cpdef start(self, EventEngine engine):
         engine.register(Order, self.on_order)
@@ -57,10 +51,6 @@ cdef class OKXAccount(Account):
         # 1. 过滤掉单纯的撤单请求 (Type=CANCEL, State=None/Created)
         # 注意：如果你修改了 Matcher 发送 LIMIT 类型的 CANCELED 回报，这里不会拦截回报
         if order.is_cancel_order:
-            return
-
-        # 单策略账户：注册后仅处理该策略订单
-        if self.strategy_id != 0 and order.strategy_id != self.strategy_id:
             return
 
         # 2. 【核心修复】如果订单已知已终结，忽略任何后续消息 (如迟到的 RECEIVED)
